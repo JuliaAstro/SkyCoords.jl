@@ -1,13 +1,13 @@
 module SkyCoords
 
-export ICRSCoords,
-       FK5J2000Coords,
-       FK5Coords,
-       GalCoords,
+export ICRS,
+       FK5J2000,
+       FK5,
+       Galactic,
        to_icrs,
        to_fk5j2000,
        to_fk5,
-       to_gal
+       to_galactic
 
 # Helper functions -----------------------------------------------------------
 
@@ -103,9 +103,9 @@ const icrs_to_gal = gal_to_icrs'
 
 # equinox-independent systems
 abstract Coords
-for syms in ((:ICRSCoords, :ra, :dec),
-             (:FK5J2000Coords, :ra, :dec),
-             (:GalCoords, :l, :b))
+for syms in ((:ICRS, :ra, :dec),
+             (:FK5J2000, :ra, :dec),
+             (:Galactic, :l, :b))
     t, lon, lat = syms
     @eval begin
         immutable ($t) <: Coords
@@ -119,7 +119,7 @@ for syms in ((:ICRSCoords, :ra, :dec),
     end
 end
 
-for t = (:FK5Coords,)
+for t = (:FK5,)
     @eval begin
         immutable ($t) <: Coords
             ra::Float64
@@ -138,61 +138,61 @@ end
 # Functions ---------------------------------------------------------------
 
 # To FK5 at equinox J2000
-function to_fk5j2000(c::ICRSCoords)
+function to_fk5j2000(c::ICRS)
     r = icrs_to_fk5j2000 * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    FK5J2000Coords(lonlat[1], lonlat[2])
+    FK5J2000(lonlat[1], lonlat[2])
 end
-function to_fk5j2000(c::GalCoords)
+function to_fk5j2000(c::Galactic)
     r = gal_to_fk5j2000 * coords2cart(c.l, c.b)
     lonlat = cart2coords(r)
-    FK5J2000Coords(lonlat[1], lonlat[2])
+    FK5J2000(lonlat[1], lonlat[2])
 end 
-to_fk5j2000(c::FK5J2000Coords) = c
+to_fk5j2000(c::FK5J2000) = c
 
 # To FK5 with general equinox
-function to_fk5(c::ICRSCoords, equinox::Real)
+function to_fk5(c::ICRS, equinox::Real)
     pmat = precess_from_j2000_capitaine(equinox)
     r = icrs_to_fk5j2000 * pmat * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    FK5Coords(lonlat[1], lonlat[2], equinox)
+    FK5(lonlat[1], lonlat[2], equinox)
 end
 
 # To Galactic
-function to_gal(c::ICRSCoords)
+function to_galactic(c::ICRS)
     r = icrs_to_gal * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    GalCoords(lonlat[1], lonlat[2])
+    Galactic(lonlat[1], lonlat[2])
 end
-function to_gal(c::FK5J2000Coords)
+function to_galactic(c::FK5J2000)
     r = fk5j2000_to_gal * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    GalCoords(lonlat[1], lonlat[2])
+    Galactic(lonlat[1], lonlat[2])
 end    
-to_gal(c::GalCoords) = c
+to_galactic(c::Galactic) = c
 
 # To ICRS
-function to_icrs(c::GalCoords)
+function to_icrs(c::Galactic)
     r = gal_to_icrs * coords2cart(c.l, c.b)
     lonlat = cart2coords(r)
-    ICRSCoords(lonlat[1], lonlat[2])
+    ICRS(lonlat[1], lonlat[2])
 end
-function to_icrs(c::FK5J2000Coords)
+function to_icrs(c::FK5J2000)
     r = fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    ICRSCoords(lonlat[1], lonlat[2])
+    ICRS(lonlat[1], lonlat[2])
 end
-function to_icrs(c::FK5Coords)
+function to_icrs(c::FK5)
     pmat = precess_from_j2000_capitaine(c.equinox)'
     r = pmat * fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    ICRSCoords(lonlat[1], lonlat[2])
+    ICRS(lonlat[1], lonlat[2])
 end
-to_icrs(c::ICRSCoords) = c
+to_icrs(c::ICRS) = c
 
 # Vectorize all functions
-for t = (:FK5J2000Coords, :ICRSCoords, :GalCoords)
-    @eval @vectorize_1arg $t to_gal
+for t = (:FK5J2000, :ICRS, :Galactic)
+    @eval @vectorize_1arg $t to_galactic
     @eval @vectorize_1arg $t to_fk5j2000
     @eval @vectorize_1arg $t to_icrs
 end

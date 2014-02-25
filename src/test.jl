@@ -43,12 +43,12 @@ for i=1:size(data, 1)
     dec_in = deg2rad(data[i,4])
 
     # ICRS to FK5 (assume ra_in, dec_in are ICRS)
-    c1 = ICRSCoords(ra_in, dec_in)
+    c1 = ICRS(ra_in, dec_in)
     c2 = to_fk5(c1, equinox)
     @test angsep(deg2rad(data[i,5]), deg2rad(data[i,6]), c2.ra, c2.dec) < tol
 
     # FK5 to ICRS (assume ra_in and dec_in are FK5)
-    c1 = FK5Coords(ra_in, dec_in, equinox)
+    c1 = FK5(ra_in, dec_in, equinox)
     c2 = to_icrs(c1)
     @test angsep(deg2rad(data[i,7]), deg2rad(data[i,8]), c2.ra, c2.dec) < tol
 

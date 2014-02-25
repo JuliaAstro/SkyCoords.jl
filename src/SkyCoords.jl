@@ -6,6 +6,7 @@ export ICRSCoords,
        GalCoords,
        to_icrs,
        to_fk5j2000,
+       to_fk5,
        to_gal
 
 # Helper functions -----------------------------------------------------------
@@ -64,9 +65,9 @@ function precess_from_j2000_capitaine(epoch)
         z += pz[i] * tn
         theta += ptheta[i] * tn
     end
-    zeta /= 3600.0
-    z /= 3600.0
-    theta /= 3600.0
+    zeta = deg2rad(zeta/3600.0)
+    z = deg2rad(z/3600.0)
+    theta = deg2rad(theta/3600.0)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
 end
 

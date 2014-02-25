@@ -44,7 +44,7 @@ function cart2coords(r)
     [atan2(r[2], r[1]); atan2(r[3], sqrt(r[1]*r[1] + r[2]*r[2]))]
 end
 
-# Computes the precession matrix from J2000 to the given Julian Epoch.
+# Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
 # Circular 179.  This should match the IAU 2006 standard from SOFA.
 const pzeta =  [ 2.650545; 2306.083227;  0.2988499;  0.01801828; -0.000005971;
@@ -53,8 +53,8 @@ const pz =     [-2.650545; 2306.077181;  1.0927348;  0.01826837; -0.000028596;
                 -0.0000002904]
 const ptheta = [      0.0; 2004.191903; -0.4294934; -0.04182264; -0.000007089;
                 -0.0000001274]
-function precess_from_j2000_capitaine(epoch)
-    t = (epoch - 2000.0) / 100.0
+function precess_from_j2000_capitaine(equinox)
+    t = (equinox - 2000.0) / 100.0
     tn = 1.0
     zeta = pzeta[1]
     z = pz[1]
@@ -101,7 +101,7 @@ const icrs_to_gal = gal_to_icrs'
 
 # Types ----------------------------------------------------------------------
 
-# epoch-independent systems
+# equinox-independent systems
 abstract Coords
 for syms in ((:ICRSCoords, :ra, :dec),
              (:FK5J2000Coords, :ra, :dec),
@@ -124,10 +124,10 @@ for t = (:FK5Coords,)
         immutable ($t) <: Coords
             ra::Float64
             dec::Float64
-            epoch::Float64
+            equinox::Float64
         
-            function ($t)(ra::Real, dec::Real, epoch::Real)
-                new(mod(float64(ra), 2pi), float64(dec), float64(epoch))
+            function ($t)(ra::Real, dec::Real, equinox::Real)
+                new(mod(float64(ra), 2pi), float64(dec), float64(equinox))
             end
         end
     end
@@ -137,7 +137,7 @@ end
 
 # Functions ---------------------------------------------------------------
 
-# To FK5 at epoch J2000
+# To FK5 at equinox J2000
 function to_fk5j2000(c::ICRSCoords)
     r = icrs_to_fk5j2000 * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
@@ -150,12 +150,12 @@ function to_fk5j2000(c::GalCoords)
 end 
 to_fk5j2000(c::FK5J2000Coords) = c
 
-# To FK5 with general epoch
-function to_fk5(c::ICRSCoords, epoch::Real)
-    pmat = precess_from_j2000_capitaine(epoch)
+# To FK5 with general equinox
+function to_fk5(c::ICRSCoords, equinox::Real)
+    pmat = precess_from_j2000_capitaine(equinox)
     r = icrs_to_fk5j2000 * pmat * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
-    FK5Coords(lonlat[1], lonlat[2], epoch)
+    FK5Coords(lonlat[1], lonlat[2], equinox)
 end
 
 # To Galactic
@@ -183,7 +183,7 @@ function to_icrs(c::FK5J2000Coords)
     ICRSCoords(lonlat[1], lonlat[2])
 end
 function to_icrs(c::FK5Coords)
-    pmat = precess_from_j2000_capitaine(c.epoch)'
+    pmat = precess_from_j2000_capitaine(c.equinox)'
     r = pmat * fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
     lonlat = cart2coords(r)
     ICRSCoords(lonlat[1], lonlat[2])

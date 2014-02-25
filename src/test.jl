@@ -38,17 +38,17 @@ tol = deg2rad(0.03 / 3600.)
 data, hdr = readcsv("testdata/icrs_fk5.csv", has_header=true)
 
 for i=1:size(data, 1)
-    epoch = float(data[i,1][2:end])
+    equinox = float(data[i,1][2:end])
     ra_in = deg2rad(data[i,3])
     dec_in = deg2rad(data[i,4])
 
     # ICRS to FK5 (assume ra_in, dec_in are ICRS)
     c1 = ICRSCoords(ra_in, dec_in)
-    c2 = to_fk5(c1, epoch)
+    c2 = to_fk5(c1, equinox)
     @test angsep(deg2rad(data[i,5]), deg2rad(data[i,6]), c2.ra, c2.dec) < tol
 
     # FK5 to ICRS (assume ra_in and dec_in are FK5)
-    c1 = FK5Coords(ra_in, dec_in, epoch)
+    c1 = FK5Coords(ra_in, dec_in, equinox)
     c2 = to_icrs(c1)
     @test angsep(deg2rad(data[i,7]), deg2rad(data[i,8]), c2.ra, c2.dec) < tol
 

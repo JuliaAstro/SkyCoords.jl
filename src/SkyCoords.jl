@@ -36,13 +36,11 @@ function zrotmat(angle)
       0.  0.  1.]
 end
 
-# (lon, lat) -> (x, y, z) unit vector
+# (lon, lat) -> [x, y, z] unit vector
 coords2cart(lon, lat) = [cos(lat)*cos(lon); cos(lat)*sin(lon); sin(lat)]
 
-# (x,y,z) unit vector -> (lon, lat)
-function cart2coords(r)
-    [atan2(r[2], r[1]); atan2(r[3], sqrt(r[1]*r[1] + r[2]*r[2]))]
-end
+# [x, y, z] unit vector -> (lon, lat)
+cart2coords(r) = atan2(r[2], r[1]), atan2(r[3], sqrt(r[1]*r[1] + r[2]*r[2]))
 
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
@@ -140,13 +138,13 @@ end
 # To FK5 at equinox J2000
 function to_fk5j2000(c::ICRS)
     r = icrs_to_fk5j2000 * coords2cart(c.ra, c.dec)
-    lonlat = cart2coords(r)
-    FK5J2000(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    FK5J2000(lon, lat)
 end
 function to_fk5j2000(c::Galactic)
     r = gal_to_fk5j2000 * coords2cart(c.l, c.b)
-    lonlat = cart2coords(r)
-    FK5J2000(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    FK5J2000(lon, lat)
 end 
 to_fk5j2000(c::FK5J2000) = c
 
@@ -154,39 +152,39 @@ to_fk5j2000(c::FK5J2000) = c
 function to_fk5(c::ICRS, equinox::Real)
     pmat = precess_from_j2000_capitaine(equinox)
     r = icrs_to_fk5j2000 * pmat * coords2cart(c.ra, c.dec)
-    lonlat = cart2coords(r)
-    FK5(lonlat[1], lonlat[2], equinox)
+    lon, lat = cart2coords(r)
+    FK5(lon, lat, equinox)
 end
 
 # To Galactic
 function to_galactic(c::ICRS)
     r = icrs_to_gal * coords2cart(c.ra, c.dec)
-    lonlat = cart2coords(r)
-    Galactic(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    Galactic(lon, lat)
 end
 function to_galactic(c::FK5J2000)
     r = fk5j2000_to_gal * coords2cart(c.ra, c.dec)
-    lonlat = cart2coords(r)
-    Galactic(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    Galactic(lon, lat)
 end    
 to_galactic(c::Galactic) = c
 
 # To ICRS
 function to_icrs(c::Galactic)
     r = gal_to_icrs * coords2cart(c.l, c.b)
-    lonlat = cart2coords(r)
-    ICRS(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    ICRS(lon, lat)
 end
 function to_icrs(c::FK5J2000)
     r = fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
-    lonlat = cart2coords(r)
-    ICRS(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    ICRS(lon, lat)
 end
 function to_icrs(c::FK5)
     pmat = precess_from_j2000_capitaine(c.equinox)'
     r = pmat * fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
-    lonlat = cart2coords(r)
-    ICRS(lonlat[1], lonlat[2])
+    lon, lat = cart2coords(r)
+    ICRS(lon, lat)
 end
 to_icrs(c::ICRS) = c
 

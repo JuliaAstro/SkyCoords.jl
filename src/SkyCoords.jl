@@ -71,8 +71,11 @@ end
 
 # Constants --------------------------------------------------------------
 
-# TODO: can remove this in julia 0.3 (degrees2radians has become deg2rad)
-deg2rad = degrees2radians
+# Delete once 0.2 is no longer supported:
+if !isdefined(:rad2deg)
+  const rad2deg = radians2degrees
+  const deg2rad = degrees2radians
+end
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
 eta0 = deg2rad(-19.9 / 3600000.)

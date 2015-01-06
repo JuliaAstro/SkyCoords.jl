@@ -11,36 +11,77 @@ export ICRS,
 
 # Helper functions -----------------------------------------------------------
 
+# Use an immutable array to avoid memory allocations all over the place.
+immutable Matrix33
+    a11::Float64
+    a12::Float64
+    a13::Float64
+    a21::Float64
+    a22::Float64
+    a23::Float64
+    a31::Float64
+    a32::Float64
+    a33::Float64
+end
+
+immutable Vector3
+    x::Float64
+    y::Float64
+    z::Float64
+end
+
+function *(x::Matrix33, y::Matrix33)
+    Matrix33(x.a11 * y.a11 + x.a12 * y.a21 + x.a13 * y.a31,
+             x.a11 * y.a12 + x.a12 * y.a22 + x.a13 * y.a32,
+             x.a11 * y.a13 + x.a12 * y.a23 + x.a13 * y.a33,
+             x.a21 * y.a11 + x.a22 * y.a21 + x.a23 * y.a31,
+             x.a21 * y.a12 + x.a22 * y.a22 + x.a23 * y.a32,
+             x.a21 * y.a13 + x.a22 * y.a23 + x.a23 * y.a33,
+             x.a31 * y.a11 + x.a32 * y.a21 + x.a33 * y.a31,
+             x.a31 * y.a12 + x.a32 * y.a22 + x.a33 * y.a32,
+             x.a31 * y.a13 + x.a32 * y.a23 + x.a33 * y.a33)
+end
+
+transpose(m::Matrix33) = Matrix33(m.a11, m.a21, m.a31,
+                                  m.a12, m.a22, m.a32,
+                                  m.a13, m.a23, m.a33)
+
+function *(m::Matrix33, v::Vector3)
+    Vector3(m.a11 * v.x + m.a12 * v.y + m.a13 * v.z,
+            m.a21 * v.x + m.a22 * v.y + m.a23 * v.z,
+            m.a31 * v.x + m.a32 * v.y + m.a33 * v.z)
+end
+
 # Create rotation matrix about a given axis (x, y, z)
 function xrotmat(angle)
     s = sin(angle)
     c = cos(angle)
-    [1.  0.  0.;
-     0.  c   s ;
-     0. -s   c ]
+    Matrix33(1., 0., 0.,
+             0.,  c,  s,
+             0., -s,  c)
 end
 
 function yrotmat(angle)
     s = sin(angle)
     c = cos(angle)
-    [c   0. -s ;
-     0.  1.  0.;
-     s   0.  c ]
+    Matrix33(c,  0., -s,
+             0., 1., 0.,
+             s,  0.,  c)
 end
 
 function zrotmat(angle)
     s = sin(angle)
     c = cos(angle)
-    [ c   s   0.;
-     -s   c   0.;
-      0.  0.  1.]
+    Matrix33(c,   s,  0.,
+             -s,  c,  0.,
+             0., 0.,  1.)
 end
 
 # (lon, lat) -> [x, y, z] unit vector
-coords2cart(lon, lat) = [cos(lat)*cos(lon); cos(lat)*sin(lon); sin(lat)]
+coords2cart(lon, lat) = Vector3(cos(lat)*cos(lon), cos(lat)*sin(lon), sin(lat))
 
 # [x, y, z] unit vector -> (lon, lat)
-cart2coords(r) = atan2(r[2], r[1]), atan2(r[3], sqrt(r[1]*r[1] + r[2]*r[2]))
+cart2coords(v) = atan2(v.y, v.x), atan2(v.z, sqrt(v.x*v.x + v.y*v.y))
 
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
@@ -72,10 +113,10 @@ end
 # Constants --------------------------------------------------------------
 
 # Delete once 0.2 is no longer supported:
-if !isdefined(:rad2deg)
-  const rad2deg = radians2degrees
-  const deg2rad = degrees2radians
-end
+#if !isdefined(:rad2deg)
+#  const rad2deg = radians2degrees
+#  const deg2rad = degrees2radians
+#end
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
 eta0 = deg2rad(-19.9 / 3600000.)

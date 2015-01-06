@@ -49,40 +49,42 @@ ICRS(0.0,-8.673617379884037e-19)  # pretty close to round-tripping
 
 ## Speed
 
-For small numbers of points, this can be much faster than
-`astropy.coordinates`. Here is an example transforming 100 points
-from ICRS to Galactic:
+For small numbers of points, this package can be much faster than
+`astropy.coordinates` in Python. The following is an example of
+transforming points from ICRS to Galactic. The speed difference is
+factor of approximately 10,000 for 10 coordinates, 80 for 1000
+coordinates and 4 for 100,000 coordinates.
 
 **astropy.coordinates**
 
 ```python
-In [1]: from astropy.coordinates import ICRS
+In [1]: from numpy import pi
 
-In [2]: import numpy as np
+In [2]: from numpy.random import rand
 
-In [3]: ra = 2.* np.pi * np.random.rand(100)
+In [3]: from astropy.coordinates import SkyCoord
 
-In [4]: dec = np.pi * np.random.rand(100) - np.pi/2.
-
-In [5]: c1 = ICRS(ra, dec, unit=('rad', 'rad'))
-
-In [6]: %timeit c1.galactic
-100 loops, best of 3: 6.68 ms per loop
+In [4]: for n in [10, 1000, 100000]:
+   ...:     c = SkyCoord(2.*pi*rand(n), pi*rand(n)-pi/2, unit=('rad', 'rad'))
+   ...:     %timeit c.galactic
+   ...: 
+100 loops, best of 3: 12.5 ms per loop
+100 loops, best of 3: 13 ms per loop
+10 loops, best of 3: 66.7 ms per loop
 ```
 
-**SkyCoords**
+**SkyCoords.jl**
 
-```julia
+```jlcon
 julia> using SkyCoords
 
 julia> using TimeIt
 
-julia> ra = 2pi*rand(100)
-
-julia> dec = pi*rand(100) - pi/2.
-
-julia> c1 = [ICRS(ra[i], dec[i]) for i=1:100]
-
-julia> @timeit to_galactic(c1)
-10000 loops, best of 3: 61.16 µs per loop
+julia> for n in [10, 1000, 100000]
+           c = [ICRS(2pi*rand(), pi*(rand() - 0.5)) for i=1:n]
+           @timeit to_galactic(c)
+       end
+100000 loops, best of 3: 1.33 µs per loop
+1000 loops, best of 3: 163.94 µs per loop
+10 loops, best of 3: 16.23 ms per loop
 ```

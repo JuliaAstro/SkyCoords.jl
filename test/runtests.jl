@@ -1,9 +1,6 @@
-include("SkyCoords.jl")
+#!/usr/bin/env julia
 using SkyCoords
 using Base.Test
-
-rad2deg = radians2degrees
-deg2rad = degrees2radians
 
 # Angular separation between two points (angles in radians)
 #
@@ -35,7 +32,7 @@ tol = deg2rad(0.03 / 3600.)
 # The testdata file was generated with the ref_icrs_fk5.py script in
 # astropy.coordinates.test.accuracy. The reference values were computed
 # using AST.
-data, hdr = readcsv("testdata/icrs_fk5.csv", has_header=true)
+data, hdr = readcsv("testdata/icrs_fk5.csv", header=true)
 
 for i=1:size(data, 1)
     equinox = float(data[i,1][2:end])

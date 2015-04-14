@@ -3,7 +3,7 @@ using Compat
 
 export AbstractSkyCoords,
        ICRSCoords,
-       GalacticCoords,
+       GalCoords,
        FK5Coords
 
 import Base: convert
@@ -160,11 +160,11 @@ immutable ICRSCoords <: AbstractSkyCoords
                                                   Float64(dec))
 end
 
-immutable GalacticCoords <: AbstractSkyCoords
+immutable GalCoords <: AbstractSkyCoords
     l::Float64
     b::Float64
-    GalacticCoords(l::Real, b::Real) = @compat new(mod(Float64(l), 2pi),
-                                                   Float64(b))
+    GalCoords(l::Real, b::Real) = @compat new(mod(Float64(l), 2pi),
+                                              Float64(b))
 end
 
 # FK5 is parameterized by equinox (e)
@@ -179,19 +179,19 @@ end
 
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::ICRSCoords) = coords2cart(c.ra, c.dec)
-coords2cart(c::GalacticCoords) = coords2cart(c.l, c.b)
+coords2cart(c::GalCoords) = coords2cart(c.l, c.b)
 coords2cart{e}(c::FK5Coords{e}) = coords2cart(c.ra, c.dec)
 
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
-rotmat(::Type{GalacticCoords}, ::Type{ICRSCoords}) = icrs_to_gal
-rotmat(::Type{ICRSCoords}, ::Type{GalacticCoords}) = gal_to_icrs
+rotmat(::Type{GalCoords}, ::Type{ICRSCoords}) = icrs_to_gal
+rotmat(::Type{ICRSCoords}, ::Type{GalCoords}) = gal_to_icrs
 rotmat{e}(::Type{FK5Coords{e}}, ::Type{ICRSCoords}) =
     icrs_to_fk5j2000 * precess_from_j2000_capitaine(e)
-rotmat{e}(::Type{FK5Coords{e}}, ::Type{GalacticCoords}) =
+rotmat{e}(::Type{FK5Coords{e}}, ::Type{GalCoords}) =
     gal_to_fk5j2000 * precess_from_j2000_capitaine(e)
 rotmat{e}(::Type{ICRSCoords}, ::Type{FK5Coords{e}}) = 
     fk5j2000_to_icrs * precess_from_j2000_capitaine(e)'
-rotmat{e}(::Type{GalacticCoords}, ::Type{FK5Coords{e}}) =
+rotmat{e}(::Type{GalCoords}, ::Type{FK5Coords{e}}) =
     fk5j2000_to_gal * precess_from_j2000_capitaine(e)'
 
 

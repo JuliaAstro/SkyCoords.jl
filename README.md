@@ -14,7 +14,7 @@ julia> Pkg.add("git://github.com/kbarbary/SkyCoords.jl.git")
 There are three supported coordinate systems:
 
 - `ICRSCoords`
-- `GalacticCoords`
+- `GalCoords`
 - `FK5Coords`
 
 ```julia
@@ -29,8 +29,8 @@ julia> c1.ra
 0.0
 
 # convert to a different system
-julia> c2 = convert(GalacticCoords, c1)
-GalacticCoords(1.681404315278054,-1.0504869904089078)
+julia> c2 = convert(GalCoords, c1)
+GalCoords(1.681404315278054,-1.0504869904089078)
 
 # Note that galactic coordinate fields are l, b
 julia> c2.l
@@ -50,11 +50,11 @@ julia> c1 = [ICRSCoords(0., 0.) for i=1:3]
  ICRSCoords(0.0,0.0)
 
 # convert entire array to a different system
-julia> convert(Vector{GalacticCoords}, c1)
-3-element Array{GalacticCoords,1}:
- GalacticCoords(1.681404315278054,-1.0504869904089078)
- GalacticCoords(1.681404315278054,-1.0504869904089078)
- GalacticCoords(1.681404315278054,-1.0504869904089078)
+julia> convert(Vector{GalCoords}, c1)
+3-element Array{GalCoords,1}:
+ GalCoords(1.681404315278054,-1.0504869904089078)
+ GalCoords(1.681404315278054,-1.0504869904089078)
+ GalCoords(1.681404315278054,-1.0504869904089078)
 
 # There's no performance gain from using this "vectorized" convert,
 # except conversions to/from FK5Coords, where the equinox precession

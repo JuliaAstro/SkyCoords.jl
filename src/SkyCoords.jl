@@ -1,17 +1,20 @@
 module SkyCoords
+using Compat
 
-export ICRS,
-       FK5J2000,
-       FK5,
-       Galactic,
-       to_icrs,
-       to_fk5j2000,
-       to_fk5,
-       to_galactic
+export AbstractSkyCoords,
+       ICRSCoords,
+       GalacticCoords,
+       FK5Coords
 
-# Helper functions -----------------------------------------------------------
+import Base: convert
 
-# Use an immutable array to avoid memory allocations all over the place.
+# -----------------------------------------------------------------------------
+# Helper functions: Immutable array operations
+
+# We use immutable array operations to avoid allocating memory for
+# small arrays. Eventually, base Julia should support immutable arrays, at
+# which point we should switch to using that functionality in base.
+
 immutable Matrix33
     a11::Float64
     a12::Float64
@@ -52,7 +55,9 @@ function *(m::Matrix33, v::Vector3)
             m.a31 * v.x + m.a32 * v.y + m.a33 * v.z)
 end
 
-# Create rotation matrix about a given axis (x, y, z)
+# -----------------------------------------------------------------------------
+# Helper functions: Create rotation matrix about a given axis (x, y, z)
+
 function xrotmat(angle)
     s = sin(angle)
     c = cos(angle)
@@ -78,7 +83,10 @@ function zrotmat(angle)
 end
 
 # (lon, lat) -> [x, y, z] unit vector
-coords2cart(lon, lat) = Vector3(cos(lat)*cos(lon), cos(lat)*sin(lon), sin(lat))
+function coords2cart(lon, lat)
+    coslat = cos(lat)
+    Vector3(coslat*cos(lon), coslat*sin(lon), sin(lat))
+end
 
 # [x, y, z] unit vector -> (lon, lat)
 cart2coords(v) = atan2(v.y, v.x), atan2(v.z, sqrt(v.x*v.x + v.y*v.y))
@@ -86,11 +94,11 @@ cart2coords(v) = atan2(v.y, v.x), atan2(v.z, sqrt(v.x*v.x + v.y*v.y))
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
 # Circular 179.  This should match the IAU 2006 standard from SOFA.
-const pzeta =  [ 2.650545; 2306.083227;  0.2988499;  0.01801828; -0.000005971;
+const pzeta =  [ 2.650545, 2306.083227,  0.2988499,  0.01801828, -0.000005971,
                 -0.0000003173]
-const pz =     [-2.650545; 2306.077181;  1.0927348;  0.01826837; -0.000028596;
+const pz =     [-2.650545, 2306.077181,  1.0927348,  0.01826837, -0.000028596,
                 -0.0000002904]
-const ptheta = [      0.0; 2004.191903; -0.4294934; -0.04182264; -0.000007089;
+const ptheta = [      0.0, 2004.191903, -0.4294934, -0.04182264, -0.000007089,
                 -0.0000001274]
 function precess_from_j2000_capitaine(equinox)
     t = (equinox - 2000.0) / 100.0
@@ -110,13 +118,7 @@ function precess_from_j2000_capitaine(equinox)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
 end
 
-# Constants --------------------------------------------------------------
-
-# Delete once 0.2 is no longer supported:
-#if !isdefined(:rad2deg)
-#  const rad2deg = radians2degrees
-#  const deg2rad = degrees2radians
-#end
+# Constants -------------------------------------------------------------------
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
 eta0 = deg2rad(-19.9 / 3600000.)
@@ -141,102 +143,82 @@ const gal_to_fk5j2000 = fk5j2000_to_gal'
 const gal_to_icrs = gal_to_fk5j2000 * fk5j2000_to_icrs
 const icrs_to_gal = gal_to_icrs'
 
+# rotation matrix as a function of equinox, to and from FK5
+icrs_to_fk5(e) = icrs_to_fk5j2000 * precess_from_j2000_capitaine(e)
+gal_to_fk5(e) = gal_to_fk5j2000 * precess_from_j2000_capitaine(e)
+fk5_to_icrs(e) = fk5j2000_to_icrs * precess_from_j2000_capitaine(e)'
+fk5_to_gal(e) = fk5j2000_to_gal * precess_from_j2000_capitaine(e)'
+
 # Types ----------------------------------------------------------------------
 
-# equinox-independent systems
-abstract Coords
-for syms in ((:ICRS, :ra, :dec),
-             (:FK5J2000, :ra, :dec),
-             (:Galactic, :l, :b))
-    t, lon, lat = syms
-    @eval begin
-        immutable ($t) <: Coords
-            ($lon)::Float64
-            ($lat)::Float64
+abstract AbstractSkyCoords
 
-            function ($t)(($lon)::Real, ($lat)::Real)
-                new(mod(float64($lon), 2pi), float64($lat))
-            end
-        end
+immutable ICRSCoords <: AbstractSkyCoords
+    ra::Float64
+    dec::Float64
+    ICRSCoords(ra::Real, dec::Real) = @compat new(mod(Float64(ra), 2pi),
+                                                  Float64(dec))
+end
+
+immutable GalacticCoords <: AbstractSkyCoords
+    l::Float64
+    b::Float64
+    GalacticCoords(l::Real, b::Real) = @compat new(mod(Float64(l), 2pi),
+                                                   Float64(b))
+end
+
+# FK5 is parameterized by equinox (e)
+immutable FK5Coords{e} <: AbstractSkyCoords
+    ra::Float64
+    dec::Float64
+    FK5Coords(ra::Real, dec::Real) = @compat new(mod(Float64(ra), 2pi),
+                                                 Float64(dec))
+end
+
+# Convert methods -------------------------------------------------------------
+
+# Abstract away specific field names (ra, dec vs l, b)
+coords2cart(c::ICRSCoords) = coords2cart(c.ra, c.dec)
+coords2cart(c::GalacticCoords) = coords2cart(c.l, c.b)
+coords2cart{e}(c::FK5Coords{e}) = coords2cart(c.ra, c.dec)
+
+# Rotation matrix between coordinate systems: `rotmat(to, from)`
+rotmat(::Type{GalacticCoords}, ::Type{ICRSCoords}) = icrs_to_gal
+rotmat(::Type{ICRSCoords}, ::Type{GalacticCoords}) = gal_to_icrs
+rotmat{e}(::Type{FK5Coords{e}}, ::Type{ICRSCoords}) =
+    icrs_to_fk5j2000 * precess_from_j2000_capitaine(e)
+rotmat{e}(::Type{FK5Coords{e}}, ::Type{GalacticCoords}) =
+    gal_to_fk5j2000 * precess_from_j2000_capitaine(e)
+rotmat{e}(::Type{ICRSCoords}, ::Type{FK5Coords{e}}) = 
+    fk5j2000_to_icrs * precess_from_j2000_capitaine(e)'
+rotmat{e}(::Type{GalacticCoords}, ::Type{FK5Coords{e}}) =
+    fk5j2000_to_gal * precess_from_j2000_capitaine(e)'
+
+
+# Identity transform
+convert{T<:AbstractSkyCoords}(::Type{T}, c::T) = c
+
+function convert{T<:AbstractSkyCoords, S<:AbstractSkyCoords}(::Type{T}, c::S)
+    r = rotmat(T, S) * coords2cart(c)
+    lon, lat = cart2coords(r)
+    T(lon, lat)
+end
+
+# Vectorized forms, so that we only compute the rotation matrix once for FK5,
+# and apply it to the entire vector. The compiler doesn't seem to figure out
+# that rotmat(T, S) is a constant for FK5Coords{e} types.
+convert{T<:AbstractSkyCoords,n}(::Type{Array{T,n}}, c::Array{T,n}) = c
+
+function convert{T<:AbstractSkyCoords, n, S<:AbstractSkyCoords}(
+    ::Type{Array{T,n}}, c::Array{S, n})
+    m = rotmat(T, S)
+    result = similar(c, T)
+    for i in 1:length(c)
+        r = m * coords2cart(c[i])
+        lon, lat = cart2coords(r)
+        result[i] = T(lon, lat)
     end
-end
-
-for t = (:FK5,)
-    @eval begin
-        immutable ($t) <: Coords
-            ra::Float64
-            dec::Float64
-            equinox::Float64
-        
-            function ($t)(ra::Real, dec::Real, equinox::Real)
-                new(mod(float64(ra), 2pi), float64(dec), float64(equinox))
-            end
-        end
-    end
-end
-
-
-
-# Functions ---------------------------------------------------------------
-
-# To FK5 at equinox J2000
-function to_fk5j2000(c::ICRS)
-    r = icrs_to_fk5j2000 * coords2cart(c.ra, c.dec)
-    lon, lat = cart2coords(r)
-    FK5J2000(lon, lat)
-end
-function to_fk5j2000(c::Galactic)
-    r = gal_to_fk5j2000 * coords2cart(c.l, c.b)
-    lon, lat = cart2coords(r)
-    FK5J2000(lon, lat)
-end 
-to_fk5j2000(c::FK5J2000) = c
-
-# To FK5 with general equinox
-function to_fk5(c::ICRS, equinox::Real)
-    pmat = precess_from_j2000_capitaine(equinox)
-    r = icrs_to_fk5j2000 * pmat * coords2cart(c.ra, c.dec)
-    lon, lat = cart2coords(r)
-    FK5(lon, lat, equinox)
-end
-
-# To Galactic
-function to_galactic(c::ICRS)
-    r = icrs_to_gal * coords2cart(c.ra, c.dec)
-    lon, lat = cart2coords(r)
-    Galactic(lon, lat)
-end
-function to_galactic(c::FK5J2000)
-    r = fk5j2000_to_gal * coords2cart(c.ra, c.dec)
-    lon, lat = cart2coords(r)
-    Galactic(lon, lat)
-end    
-to_galactic(c::Galactic) = c
-
-# To ICRS
-function to_icrs(c::Galactic)
-    r = gal_to_icrs * coords2cart(c.l, c.b)
-    lon, lat = cart2coords(r)
-    ICRS(lon, lat)
-end
-function to_icrs(c::FK5J2000)
-    r = fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
-    lon, lat = cart2coords(r)
-    ICRS(lon, lat)
-end
-function to_icrs(c::FK5)
-    pmat = precess_from_j2000_capitaine(c.equinox)'
-    r = pmat * fk5j2000_to_icrs * coords2cart(c.ra, c.dec)
-    lon, lat = cart2coords(r)
-    ICRS(lon, lat)
-end
-to_icrs(c::ICRS) = c
-
-# Vectorize all functions
-for t = (:FK5J2000, :ICRS, :Galactic)
-    @eval @vectorize_1arg $t to_galactic
-    @eval @vectorize_1arg $t to_fk5j2000
-    @eval @vectorize_1arg $t to_icrs
+    result
 end
 
 end # module

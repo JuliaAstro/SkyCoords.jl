@@ -1,4 +1,5 @@
-# SkyCoords
+SkyCoords.jl
+============
 
 Astronomical coordinate systems in Julia
 
@@ -10,81 +11,76 @@ julia> Pkg.add("git://github.com/kbarbary/SkyCoords.jl.git")
 
 ## Usage
 
-#### Static systems: `ICRS`, `Galactic`, `FK5J2000`
+There are three supported coordinate systems:
+
+- `ICRSCoords`
+- `GalacticCoords`
+- `FK5Coords`
 
 ```julia
 julia> using SkyCoords
 
-julia> c1 = ICRS(0., 0.)  # ra, dec in radians
-ICRS(0.0,0.0)
+# create a coordinates object
+julia> c1 = ICRSCoords(0., 0.)  # inputs are ra, dec in radians
+ICRSCoords(0.0,0.0)
 
+# access ra, dec individually
 julia> c1.ra
 0.0
 
-julia> c2 = to_galactic(c1)
-Galactic(1.681404315278054,-1.0504869904089078)
+# convert to a different system
+julia> c2 = convert(GalacticCoords, c1)
+GalacticCoords(1.681404315278054,-1.0504869904089078)
 
-julia> c2.l  # galactic coordinate fields are l, b rather than ra, dec
+# Note that galactic coordinate fields are l, b
+julia> c2.l
 1.681404315278054
 
-# FK5J2000 is a version of FK5 fixed at epoch J2000
-julia> to_fk5j2000(c1)
-FK5J2000(1.1102233710147402e-7,4.411803426976326e-8)
+# Note that FK5Coords is parameterized on equinox
+julia> convert(FK5Coords{2000}, c1)
+FK5Coords{2000}(1.1102233710147402e-7,4.411803426976326e-8)
+
+# Arrays of coordinates
+
+# create an array of coordinates 
+julia> c1 = [ICRSCoords(0., 0.) for i=1:3]
+3-element Array{ICRSCoords,1}:
+ ICRSCoords(0.0,0.0)
+ ICRSCoords(0.0,0.0)
+ ICRSCoords(0.0,0.0)
+
+# convert entire array to a different system
+julia> convert(Vector{GalacticCoords}, c1)
+3-element Array{GalacticCoords,1}:
+ GalacticCoords(1.681404315278054,-1.0504869904089078)
+ GalacticCoords(1.681404315278054,-1.0504869904089078)
+ GalacticCoords(1.681404315278054,-1.0504869904089078)
+
+# There's no performance gain from using this "vectorized" convert,
+# except conversions to/from FK5Coords, where the equinox precession
+# can be done just once for the entire vector, leading to a modest ~2x
+# speed up.
+julia> convert(Vector{FK5Coords{1975}}, c1)
+3-element Array{FK5Coords{1975},1}:
+ FK5Coords{1975}(6.277595732508468,-0.0024292220493946897)
+ FK5Coords{1975}(6.277595732508468,-0.0024292220493946897)
+ FK5Coords{1975}(6.277595732508468,-0.0024292220493946897)
 ```
 
 
-#### Dynamic systems: `FK5`
+## Performance
 
-These types include an extra field, `equinox`. The equinox must be specified
-when creating the object or converting from another coordinate system:
+For small numbers of coordinates, conversions are *much* faster than
+astropy.coordinates in Python. The follow plot shows the performance
+for converting ICRS coordinates to various other systems (Galactic,
+FK5J2000 and FK5J1975), using astropy.coordinates (`py_*`) and
+SkyCoords.jl (`jl_*`). The x axis denotes the number of coordinates
+being simultaneously converted, with 1 cooresponding to scalar
+coordinates.
 
-```julia
-julia> c2 = to_fk5(c1, 1970.)
-FK5(6.276477890771361,-0.0029150998550493794,1970.0)
+![times](bench/bench.png)
 
-julia> to_icrs(c2)
-ICRS(0.0,-8.673617379884037e-19)  # pretty close to round-tripping
-```
-
-
-## Speed
-
-For small numbers of points, this package can be much faster than
-`astropy.coordinates` in Python. The following is an example of
-transforming points from ICRS to Galactic. The speed difference is
-factor of approximately 10,000 for 10 coordinates, 80 for 1000
-coordinates and 4 for 100,000 coordinates.
-
-**astropy.coordinates**
-
-```python
-In [1]: from numpy import pi
-
-In [2]: from numpy.random import rand
-
-In [3]: from astropy.coordinates import SkyCoord
-
-In [4]: for n in [10, 1000, 100000]:
-   ...:     c = SkyCoord(2.*pi*rand(n), pi*rand(n)-pi/2, unit=('rad', 'rad'))
-   ...:     %timeit c.galactic
-   ...: 
-100 loops, best of 3: 12.5 ms per loop
-100 loops, best of 3: 13 ms per loop
-10 loops, best of 3: 66.7 ms per loop
-```
-
-**SkyCoords.jl**
-
-```jlcon
-julia> using SkyCoords
-
-julia> using TimeIt
-
-julia> for n in [10, 1000, 100000]
-           c = [ICRS(2pi*rand(), pi*(rand() - 0.5)) for i=1:n]
-           @timeit to_galactic(c)
-       end
-100000 loops, best of 3: 1.33 µs per loop
-1000 loops, best of 3: 163.94 µs per loop
-10 loops, best of 3: 16.23 ms per loop
-```
+For scalar coordinates, SkyCoords.jl is up to *100,000 times*
+faster. Even for a vector of one million coordinates, SkyCoords.jl is
+still 2-4 times faster.  The source code for these benchmarks can be
+found in `bench/`.

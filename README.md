@@ -14,9 +14,9 @@ julia> Pkg.add("git://github.com/kbarbary/SkyCoords.jl.git")
 There are currently three supported coordinate systems. The following
 immutable types are used to represent coordinates in each system:
 
-- `ICRSCoords`: ICRS coordinate system
-- `GalCoords`: Galactic coordinate system
-- `FK5Coords`: FK5 coordinate system with arbitrary equninox) 
+- `ICRSCoords`: ICRS coordinates system
+- `GalCoords`: Galactic coordinates system
+- `FK5Coords`: FK5 coordinates system (with arbitrary equninox)
 
 Each type holds a longitude and latitude, and each is a subtype of
 `AbstractSkyCoords`.
@@ -42,11 +42,12 @@ julia> c2.l
 
 # FK5Coords is parameterized on equinox.
 # Equinox refers to Julian year and can be floating-point or integer
-# (though integer seems to be slightly faster)
+# (though using integers seems to be slightly faster).
 julia> convert(FK5Coords{2000}, c1)
 FK5Coords{2000}(1.1102233710147402e-7,4.411803426976326e-8)
 
 # Arrays of coordinates
+# =====================
 
 # create an array of coordinates 
 julia> c1 = [ICRSCoords(0., 0.) for i=1:3]

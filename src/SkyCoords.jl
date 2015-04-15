@@ -127,27 +127,23 @@ da0 = deg2rad(-22.9 / 3600000.)
 const icrs_to_fk5j2000 = xrotmat(-eta0) * yrotmat(xi0) * zrotmat(da0)
 const fk5j2000_to_icrs = icrs_to_fk5j2000'
 
-# FK5 --> Gal
-# North galactic pole and zeropoint of l in FK4/FK5 coordinates. Needed for
-# transformations to/from FK4/5
-# These are from Reid & Brunthaler 2004
-ngp_fk5j2000_ra = deg2rad(192.859508)
-ngp_fk5j2000_dec = deg2rad(27.128336)
-lon0_fk5j2000 = deg2rad(122.932)
+# Galactic pole and zeropoint of l, from astropy.coordinates, which includes
+# the following note:
+# "This gives better consistency with other codes than using the values
+# from Reid & Brunthaler 2004 and the best self-consistency between FK5
+# -> Galactic and FK5 -> FK4 -> Galactic. The lon0 angle was found by
+# optimizing the self-consistency."
+ngp_fk5j2000_ra = deg2rad(192.8594812065348)
+ngp_fk5j2000_dec = deg2rad(27.12825118085622)
+lon0_fk5j2000 = deg2rad(122.9319185680026)
 const fk5j2000_to_gal = (zrotmat(pi - lon0_fk5j2000) *
                          yrotmat(pi/2. - ngp_fk5j2000_dec) *
                          zrotmat(ngp_fk5j2000_ra))
 const gal_to_fk5j2000 = fk5j2000_to_gal'
 
 # Gal -> ICRS
-const gal_to_icrs = gal_to_fk5j2000 * fk5j2000_to_icrs
+const gal_to_icrs = fk5j2000_to_icrs * gal_to_fk5j2000
 const icrs_to_gal = gal_to_icrs'
-
-# rotation matrix as a function of equinox, to and from FK5
-icrs_to_fk5(e) = icrs_to_fk5j2000 * precess_from_j2000_capitaine(e)
-gal_to_fk5(e) = gal_to_fk5j2000 * precess_from_j2000_capitaine(e)
-fk5_to_icrs(e) = fk5j2000_to_icrs * precess_from_j2000_capitaine(e)'
-fk5_to_gal(e) = fk5j2000_to_gal * precess_from_j2000_capitaine(e)'
 
 # Types ----------------------------------------------------------------------
 
@@ -186,13 +182,15 @@ coords2cart{e}(c::FK5Coords{e}) = coords2cart(c.ra, c.dec)
 rotmat(::Type{GalCoords}, ::Type{ICRSCoords}) = icrs_to_gal
 rotmat(::Type{ICRSCoords}, ::Type{GalCoords}) = gal_to_icrs
 rotmat{e}(::Type{FK5Coords{e}}, ::Type{ICRSCoords}) =
-    icrs_to_fk5j2000 * precess_from_j2000_capitaine(e)
+    precess_from_j2000_capitaine(e) * icrs_to_fk5j2000
 rotmat{e}(::Type{FK5Coords{e}}, ::Type{GalCoords}) =
-    gal_to_fk5j2000 * precess_from_j2000_capitaine(e)
+   precess_from_j2000_capitaine(e) * gal_to_fk5j2000
 rotmat{e}(::Type{ICRSCoords}, ::Type{FK5Coords{e}}) = 
     fk5j2000_to_icrs * precess_from_j2000_capitaine(e)'
 rotmat{e}(::Type{GalCoords}, ::Type{FK5Coords{e}}) =
     fk5j2000_to_gal * precess_from_j2000_capitaine(e)'
+rotmat{e1, e2}(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2}}) =
+    precess_from_j2000_capitaine(e1) * precess_from_j2000_capitaine(e2)'
 
 
 # Identity transform

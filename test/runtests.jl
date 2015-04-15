@@ -1,6 +1,11 @@
 #!/usr/bin/env julia
+
+# Tests against astropy.
+
 using SkyCoords
 using Base.Test
+
+TOL = 0.0001  # tolerance in arcseconds
 
 # Angular separation between two points (angles in radians)
 #
@@ -26,27 +31,52 @@ function angsep(lon1, lat1, lon2, lat2)
     atan2(sqrt(num1*num1 + num2*num2), denom)
 end
 
-# Tolerance is 0.03 arcsec
-tol = deg2rad(0.03 / 3600.)
+lon(c::GalCoords) = c.l
+lat(c::GalCoords) = c.b
+lon(c::AbstractSkyCoords) = c.ra
+lat(c::AbstractSkyCoords) = c.dec
 
-# The testdata file was generated with the ref_icrs_fk5.py script in
-# astropy.coordinates.test.accuracy. The reference values were computed
-# using AST.
-data, hdr = readcsv("testdata/icrs_fk5.csv", header=true)
-
-for i=1:size(data, 1)
-    equinox = float(data[i,1][2:end])
-    ra_in = deg2rad(data[i,3])
-    dec_in = deg2rad(data[i,4])
-
-    # ICRS to FK5 (assume ra_in, dec_in are ICRS)
-    c1 = ICRS(ra_in, dec_in)
-    c2 = to_fk5(c1, equinox)
-    @test angsep(deg2rad(data[i,5]), deg2rad(data[i,6]), c2.ra, c2.dec) < tol
-
-    # FK5 to ICRS (assume ra_in and dec_in are FK5)
-    c1 = FK5(ra_in, dec_in, equinox)
-    c2 = to_icrs(c1)
-    @test angsep(deg2rad(data[i,7]), deg2rad(data[i,8]), c2.ra, c2.dec) < tol
-
+function angsep{T<:AbstractSkyCoords}(c1::T, c2::T)
+    angsep(lon(c1), lat(c1), lon(c2), lat(c2))
 end
+
+function angsep{T<:AbstractSkyCoords}(c1::Array{T}, c2::Array{T})
+    size(c1) == size(c2) || error("size mismatch")
+    result = similar(c1, Float64)
+    for i=1:length(c1)
+        result[i] = angsep(c1[i], c2[i])
+    end
+    result
+end
+
+rad2arcsec(r) = 3600.*rad2deg(r)
+
+# input coordinates
+indata, inhdr = readcsv("data/input_coords.csv"; header=true)
+
+for (insys, T) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
+                   ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
+
+    c_in = T[T(indata[i, 1], indata[i, 2]) for i=1:size(indata,1)]
+
+    for (outsys, S) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
+                        ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
+        (outsys == insys) && continue    
+        c_out = convert(Vector{S}, c_in)
+
+        # Read in reference answers.
+        refdata, hdr = readcsv("data/$(insys)_to_$(outsys).csv"; header=true)
+        c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
+
+        # compare
+        sep = angsep(c_out, c_ref)
+        maxsep = rad2arcsec(maximum(sep))
+        meansep = rad2arcsec(mean(sep))
+        minsep = rad2arcsec(minimum(sep))
+        @printf "%8s --> %8s : max=%6.4f\"  mean=%6.4f\"   min=%6.4f\"\n" insys outsys maxsep meansep minsep
+        @test maxsep < TOL
+    end
+end
+
+println()
+println("All tests passed.")

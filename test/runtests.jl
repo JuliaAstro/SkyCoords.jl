@@ -5,6 +5,7 @@
 using SkyCoords
 using Base.Test
 
+datapath = joinpath(dirname(@__FILE__), "data")
 TOL = 0.0001  # tolerance in arcseconds
 
 # Angular separation between two points (angles in radians)
@@ -52,7 +53,8 @@ end
 rad2arcsec(r) = 3600.*rad2deg(r)
 
 # input coordinates
-indata, inhdr = readcsv("data/input_coords.csv"; header=true)
+fname = joinpath(datapath, "input_coords.csv")
+indata, inhdr = readcsv(fname; header=true)
 
 for (insys, T) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
                    ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
@@ -65,7 +67,8 @@ for (insys, T) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
         c_out = convert(Vector{S}, c_in)
 
         # Read in reference answers.
-        refdata, hdr = readcsv("data/$(insys)_to_$(outsys).csv"; header=true)
+        fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
+        refdata, hdr = readcsv(fname; header=true)
         c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
 
         # compare

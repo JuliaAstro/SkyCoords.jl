@@ -6,7 +6,7 @@ Basic astronomical coordinate systems in Julia
 ## Install
 
 ```julia
-julia> Pkg.add("git://github.com/kbarbary/SkyCoords.jl.git")
+julia> Pkg.clone("git://github.com/kbarbary/SkyCoords.jl.git")
 ```
 
 ## Usage

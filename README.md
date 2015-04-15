@@ -11,11 +11,15 @@ julia> Pkg.add("git://github.com/kbarbary/SkyCoords.jl.git")
 
 ## Usage
 
-There are three supported coordinate systems:
+There are currently three supported coordinate systems. The following
+immutable types are used to represent coordinates in each system:
 
-- `ICRSCoords`
-- `GalCoords`
-- `FK5Coords`
+- `ICRSCoords`: ICRS coordinate system
+- `GalCoords`: Galactic coordinate system
+- `FK5Coords`: FK5 coordinate system with arbitrary equninox) 
+
+Each type holds a longitude and latitude, and each is a subtype of
+`AbstractSkyCoords`.
 
 ```julia
 julia> using SkyCoords
@@ -36,7 +40,9 @@ GalCoords(1.681404315278054,-1.0504869904089078)
 julia> c2.l
 1.681404315278054
 
-# Note that FK5Coords is parameterized on equinox
+# FK5Coords is parameterized on equinox.
+# Equinox refers to Julian year and can be floating-point or integer
+# (though integer seems to be slightly faster)
 julia> convert(FK5Coords{2000}, c1)
 FK5Coords{2000}(1.1102233710147402e-7,4.411803426976326e-8)
 
@@ -76,23 +82,29 @@ astropy.coordinates has been tested against many other tools.
 
 ## Performance
 
-For small numbers of coordinates, conversions are *much* faster than
-astropy.coordinates in Python. The follow plot shows the performance
-for converting ICRS coordinates to various other systems (Galactic,
-FK5J2000 and FK5J1975), using astropy.coordinates (`py_*`) and
-SkyCoords.jl (`jl_*`). The x axis denotes the number of coordinates
-being simultaneously converted, with 1 corresponding to scalar
-coordinates.
+For small and moderate numbers of coordinates, conversions are much
+faster than astropy.coordinates in Python. The follow plot shows the
+performance for converting ICRS coordinates to various other systems
+(Galactic, FK5J2000 and FK5J1975), using astropy.coordinates (`py_*`
+labels) and SkyCoords.jl (`jl_*` labels). The x axis denotes the
+number of coordinates being simultaneously converted, with 1
+corresponding to scalar coordinates.
 
 ![times](bench/bench.png)
 
-For scalar coordinates, SkyCoords.jl is up to *100,000 times*
-faster. Even for a vector of one million coordinates, SkyCoords.jl is
-still 2-4 times faster.  The source code for these benchmarks can be
-found in `bench/`.
+For scalar coordinates, SkyCoords.jl is up to 100,000 times
+faster. For very large vectors of one million coordinates or more,
+SkyCoords.jl is 2-4 times faster.  The source code for these
+benchmarks can be found in `bench/`.
 
 ## Known Issues
 
 A warning is thrown on Julia v0.3.7 about ambiguous method
 definition. This doesn't happen on Julia v0.4-dev. I think the warning
 on v0.3.7 is erroneous, but any help would be appreciated.
+
+## License and Credits
+
+License is MIT. This package profits from the hard work that went into
+astropy.coordinates, *especially* in terms of testing and coordinate system
+definitions.

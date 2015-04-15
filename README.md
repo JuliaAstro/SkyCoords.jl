@@ -1,7 +1,7 @@
 SkyCoords.jl
 ============
 
-Astronomical coordinate systems in Julia
+Basic astronomical coordinate systems in Julia
 
 ## Install
 
@@ -67,6 +67,12 @@ julia> convert(Vector{FK5Coords{1975}}, c1)
  FK5Coords{1975}(6.277595732508468,-0.0024292220493946897)
 ```
 
+## Accuracy
+
+All the supported conversions have been compared to the results of
+astropy.coordinates (to better than 0.0001 arcsec agreement). In turn,
+astropy.coordinates has been tested against many other tools.
+
 
 ## Performance
 
@@ -75,7 +81,7 @@ astropy.coordinates in Python. The follow plot shows the performance
 for converting ICRS coordinates to various other systems (Galactic,
 FK5J2000 and FK5J1975), using astropy.coordinates (`py_*`) and
 SkyCoords.jl (`jl_*`). The x axis denotes the number of coordinates
-being simultaneously converted, with 1 cooresponding to scalar
+being simultaneously converted, with 1 corresponding to scalar
 coordinates.
 
 ![times](bench/bench.png)
@@ -84,3 +90,9 @@ For scalar coordinates, SkyCoords.jl is up to *100,000 times*
 faster. Even for a vector of one million coordinates, SkyCoords.jl is
 still 2-4 times faster.  The source code for these benchmarks can be
 found in `bench/`.
+
+## Known Issues
+
+A warning is thrown on Julia v0.3.7 about ambiguous method
+definition. This doesn't happen on Julia v0.4-dev. I think the warning
+on v0.3.7 is erroneous, but any help would be appreciated.

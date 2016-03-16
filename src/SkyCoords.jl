@@ -6,7 +6,7 @@ export AbstractSkyCoords,
        GalCoords,
        FK5Coords
 
-import Base: convert
+import Base: convert, *, transpose
 
 # -----------------------------------------------------------------------------
 # Types

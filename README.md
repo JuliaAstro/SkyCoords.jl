@@ -3,6 +3,9 @@ SkyCoords.jl
 
 Basic astronomical coordinate systems in Julia
 
+[![Build Status](https://img.shields.io/travis/kbarbary/SkyCoords.jl.svg?style=flat-square)](https://travis-ci.org/kbarbary/SkyCoords.jl)
+[![Coverage Status](http://img.shields.io/coveralls/kbarbary/SkyCoords.jl.svg?style=flat-square)](https://coveralls.io/r/kbarbary/SkyCoords.jl?branch=master)
+
 ## Install
 
 ```julia

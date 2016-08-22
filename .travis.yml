@@ -1,13 +1,13 @@
-language: cpp
-compiler:
-  - clang
+language: julia
+os:
+  - osx
+  - linux
+julia:
+  - 0.3
+  - 0.4
+  - 0.5
+  - nightly
 notifications:
   email: false
-before_install:
-  - sudo add-apt-repository ppa:staticfloat/julia-deps -y
-  - sudo add-apt-repository ppa:staticfloat/julianightlies -y
-  - sudo apt-get update -qq -y
-  - sudo apt-get install libpcre3-dev julia -y
-script:
-  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("SkyCoords"))`); Pkg.pin("SkyCoords"); Pkg.resolve()'
-  - julia -e 'using SkyCoords; @assert isdefined(:SkyCoords); @assert typeof(SkyCoords) === Module'
+after_success:
+  - julia -e 'cd(Pkg.dir("SkyCoords")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())';

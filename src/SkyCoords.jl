@@ -13,27 +13,30 @@ import Base: convert, *, transpose
 
 abstract AbstractSkyCoords
 
-immutable ICRSCoords <: AbstractSkyCoords
-    ra::Float64
-    dec::Float64
-    ICRSCoords(ra::Real, dec::Real) = @compat new(mod(Float64(ra), 2pi),
-                                                  Float64(dec))
+immutable ICRSCoords{T<:AbstractFloat} <: AbstractSkyCoords
+    ra::T
+    dec::T
+    ICRSCoords(ra, dec) = new(mod(ra, 2pi), dec)
 end
+ICRSCoords{T<:AbstractFloat}(ra::T, dec::T) = ICRSCoords{T}(ra, dec)
+ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
 
-immutable GalCoords <: AbstractSkyCoords
-    l::Float64
-    b::Float64
-    GalCoords(l::Real, b::Real) = @compat new(mod(Float64(l), 2pi),
-                                              Float64(b))
+immutable GalCoords{T<:AbstractFloat} <: AbstractSkyCoords
+    l::T
+    b::T
+    GalCoords(l, b) = new(mod(l, 2pi), b)
 end
+GalCoords{T<:AbstractFloat}(l::T, b::T) = GalCoords{T}(l, b)
+GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
 
 # FK5 is parameterized by equinox (e)
-immutable FK5Coords{e} <: AbstractSkyCoords
-    ra::Float64
-    dec::Float64
-    FK5Coords(ra::Real, dec::Real) = @compat new(mod(Float64(ra), 2pi),
-                                                 Float64(dec))
+immutable FK5Coords{T<:AbstractFloat,e} <: AbstractSkyCoords
+    ra::T
+    dec::T
+    FK5Coords(ra, dec) = new(mod(ra, 2pi), dec)
 end
+FK5Coords{T<:AbstractFloat}(ra::T, dec::T) = FK5Coords{T}(ra, dec)
+FK5Coords(ra::Real, dec::Real) = FK5Coords(promote(float(ra), float(dec))...)
 
 # -----------------------------------------------------------------------------
 # Helper functions: Immutable array operations
@@ -42,22 +45,22 @@ end
 # small arrays. Eventually, base Julia should support immutable arrays, at
 # which point we should switch to using that functionality in base.
 
-immutable Matrix33
-    a11::Float64
-    a12::Float64
-    a13::Float64
-    a21::Float64
-    a22::Float64
-    a23::Float64
-    a31::Float64
-    a32::Float64
-    a33::Float64
+immutable Matrix33{T<:AbstractFloat}
+    a11::T
+    a12::T
+    a13::T
+    a21::T
+    a22::T
+    a23::T
+    a31::T
+    a32::T
+    a33::T
 end
 
-immutable Vector3
-    x::Float64
-    y::Float64
-    z::Float64
+immutable Vector3{T<:AbstractFloat}
+    x::T
+    y::T
+    z::T
 end
 
 function *(x::Matrix33, y::Matrix33)
@@ -144,7 +147,7 @@ const FK5J2000_TO_GAL = (zrotmat(pi - lon0_fk5j2000) *
                          zrotmat(ngp_fk5j2000_ra))
 const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 
-# Gal --> ICRS: simply chain through FK5J2000 
+# Gal --> ICRS: simply chain through FK5J2000
 const GAL_TO_ICRS = FK5J2000_TO_ICRS * GAL_TO_FK5J2000
 const ICRS_TO_GAL = GAL_TO_ICRS'
 
@@ -182,20 +185,21 @@ end
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::ICRSCoords) = coords2cart(c.ra, c.dec)
 coords2cart(c::GalCoords) = coords2cart(c.l, c.b)
-coords2cart{e}(c::FK5Coords{e}) = coords2cart(c.ra, c.dec)
+coords2cart{e,T}(c::FK5Coords{T,e}) = coords2cart(c.ra, c.dec)
 
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
-rotmat(::Type{GalCoords}, ::Type{ICRSCoords}) = ICRS_TO_GAL
-rotmat(::Type{ICRSCoords}, ::Type{GalCoords}) = GAL_TO_ICRS
-rotmat{e}(::Type{FK5Coords{e}}, ::Type{ICRSCoords}) =
+rotmat{T1<:AbstractFloat,T2<:AbstractFloat}(::Type{GalCoords{T1}},
+                                            ::Type{ICRSCoords{T2}}) = ICRS_TO_GAL
+rotmat{T1,T2}(::Type{ICRSCoords{T1}}, ::Type{GalCoords{T2}}) = GAL_TO_ICRS
+rotmat{e,T1,T2}(::Type{FK5Coords{T1,e}}, ::Type{ICRSCoords{T2}}) =
     precess_from_j2000(e) * ICRS_TO_FK5J2000
-rotmat{e}(::Type{FK5Coords{e}}, ::Type{GalCoords}) =
-   precess_from_j2000(e) * GAL_TO_FK5J2000
-rotmat{e}(::Type{ICRSCoords}, ::Type{FK5Coords{e}}) = 
+rotmat{e,T1,T2}(::Type{FK5Coords{T1,e}}, ::Type{GalCoords{T2}}) =
+    precess_from_j2000(e) * GAL_TO_FK5J2000
+rotmat{e,T1,T2}(::Type{ICRSCoords{T1}}, ::Type{FK5Coords{T2,e}}) =
     FK5J2000_TO_ICRS * precess_from_j2000(e)'
-rotmat{e}(::Type{GalCoords}, ::Type{FK5Coords{e}}) =
+rotmat{e,T1,T2}(::Type{GalCoords{T1}}, ::Type{FK5Coords{T2,e}}) =
     FK5J2000_TO_GAL * precess_from_j2000(e)'
-rotmat{e1, e2}(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2}}) =
+rotmat{e1,T1,e2,T2}(::Type{FK5Coords{T1,e1}}, ::Type{FK5Coords{T2,e2}}) =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # Scalar coordinate conversions

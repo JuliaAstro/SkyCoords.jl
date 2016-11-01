@@ -56,13 +56,13 @@ rad2arcsec(r) = 3600.*rad2deg(r)
 fname = joinpath(datapath, "input_coords.csv")
 indata, inhdr = readcsv(fname; header=true)
 
-for (insys, T) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
-                   ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
+for (insys, T) in (("icrs", ICRSCoords{Float64}), ("fk5j2000", FK5Coords{Float64,2000}),
+                   ("fk5j1975", FK5Coords{Float64,1975}), ("gal", GalCoords{Float64}))
 
     c_in = T[T(indata[i, 1], indata[i, 2]) for i=1:size(indata,1)]
 
-    for (outsys, S) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
-                        ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
+    for (outsys, S) in (("icrs", ICRSCoords{Float64}), ("fk5j2000", FK5Coords{Float64,2000}),
+                        ("fk5j1975", FK5Coords{Float64,1975}), ("gal", GalCoords{Float64}))
         (outsys == insys) && continue    
         c_out = convert(Vector{S}, c_in)
 

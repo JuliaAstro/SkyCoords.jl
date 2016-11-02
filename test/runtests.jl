@@ -56,20 +56,20 @@ rad2arcsec(r) = 3600.*rad2deg(r)
 fname = joinpath(datapath, "input_coords.csv")
 indata, inhdr = readcsv(fname; header=true)
 
-for (insys, T) in (("icrs", ICRSCoords{Float64}), ("fk5j2000", FK5Coords{Float64,2000}),
-                   ("fk5j1975", FK5Coords{Float64,1975}), ("gal", GalCoords{Float64}))
+for (insys, T) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
+                   ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
 
     c_in = T[T(indata[i, 1], indata[i, 2]) for i=1:size(indata,1)]
 
-    for (outsys, S) in (("icrs", ICRSCoords{Float64}), ("fk5j2000", FK5Coords{Float64,2000}),
-                        ("fk5j1975", FK5Coords{Float64,1975}), ("gal", GalCoords{Float64}))
+    for (outsys, S) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
+                        ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
         (outsys == insys) && continue    
-        c_out = convert(Vector{S}, c_in)
+        c_out = [convert(S, c) for c in c_in]
 
         # Read in reference answers.
         fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
         refdata, hdr = readcsv(fname; header=true)
-        c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
+        c_ref = [S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
 
         # compare
         sep = angsep(c_out, c_ref)

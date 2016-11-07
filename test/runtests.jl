@@ -6,7 +6,6 @@ using SkyCoords
 using Base.Test
 
 datapath = joinpath(dirname(@__FILE__), "data")
-TOL = 0.0001  # tolerance in arcseconds
 
 # Angular separation between two points (angles in radians)
 #
@@ -43,7 +42,7 @@ end
 
 function angsep{T<:AbstractSkyCoords}(c1::Array{T}, c2::Array{T})
     size(c1) == size(c2) || error("size mismatch")
-    result = similar(c1, Float64)
+    result = similar(c1, SkyCoords._eltype(first(c1)))
     for i=1:length(c1)
         result[i] = angsep(c1[i], c2[i])
     end
@@ -56,29 +55,46 @@ rad2arcsec(r) = 3600.*rad2deg(r)
 fname = joinpath(datapath, "input_coords.csv")
 indata, inhdr = readcsv(fname; header=true)
 
-for (insys, T) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
-                   ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
+# Float32 has a large tolerance compared to Float64 and BigFloat, but here we
+# are more interested in making sure that the infrastructure works for different
+# floating types.
+for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
+    println("Testing type ", F)
 
-    c_in = T[T(indata[i, 1], indata[i, 2]) for i=1:size(indata,1)]
+    for (insys, T) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
+                       ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
 
-    for (outsys, S) in (("icrs", ICRSCoords), ("fk5j2000", FK5Coords{2000}),
-                        ("fk5j1975", FK5Coords{1975}), ("gal", GalCoords))
-        (outsys == insys) && continue    
-        c_out = [convert(S, c) for c in c_in]
+        c_in = T[T(indata[i, 1], indata[i, 2]) for i=1:size(indata,1)]
 
-        # Read in reference answers.
-        fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
-        refdata, hdr = readcsv(fname; header=true)
-        c_ref = [S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
+        for (outsys, S) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
+                            ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
+            (outsys == insys) && continue
+            c_out = [convert(S, c) for c in c_in]
 
-        # compare
-        sep = angsep(c_out, c_ref)
-        maxsep = rad2arcsec(maximum(sep))
-        meansep = rad2arcsec(mean(sep))
-        minsep = rad2arcsec(minimum(sep))
-        @printf "%8s --> %8s : max=%6.4f\"  mean=%6.4f\"   min=%6.4f\"\n" insys outsys maxsep meansep minsep
-        @test maxsep < TOL
+            # Read in reference answers.
+            fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
+            refdata, hdr = readcsv(fname; header=true)
+            c_ref = [S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
+
+            # compare
+            sep = angsep(c_out, c_ref)
+            maxsep = rad2arcsec(maximum(sep))
+            meansep = rad2arcsec(mean(sep))
+            minsep = rad2arcsec(minimum(sep))
+            @printf "%8s --> %8s : max=%6.4f\"  mean=%6.4f\"   min=%6.4f\"\n" insys outsys maxsep meansep minsep
+            @test maxsep < TOL
+        end
     end
+end
+
+# Test conversion with mixed floating types.
+c1 = ICRSCoords(e, pi/2)
+for T in (GalCoords, FK5Coords{2000})
+    c2 = convert(T{Float32}, c1)
+    c3 = convert(T{Float64}, c1)
+    c4 = convert(T{BigFloat}, c1)
+    @test lat(c2) ≈ lat(c3) ≈ lat(c4)
+    @test lon(c2) ≈ lon(c3) ≈ lon(c4)
 end
 
 println()

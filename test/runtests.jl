@@ -69,12 +69,12 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
         for (outsys, S) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
                             ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
             (outsys == insys) && continue
-            c_out = [convert(S, c) for c in c_in]
+            c_out = S[convert(S, c) for c in c_in]
 
             # Read in reference answers.
             fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
             refdata, hdr = readcsv(fname; header=true)
-            c_ref = [S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
+            c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
 
             # compare
             sep = angsep(c_out, c_ref)
@@ -93,8 +93,13 @@ for T in (GalCoords, FK5Coords{2000})
     c2 = convert(T{Float32}, c1)
     c3 = convert(T{Float64}, c1)
     c4 = convert(T{BigFloat}, c1)
-    @test lat(c2) ≈ lat(c3) ≈ lat(c4)
-    @test lon(c2) ≈ lon(c3) ≈ lon(c4)
+    @test typeof(c2) === T{Float32}
+    @test typeof(c3) === T{Float64}
+    @test typeof(c4) === T{BigFloat}
+    @test isapprox(lat(c2), lat(c3), rtol=sqrt(eps(Float32)))
+    @test isapprox(lat(c3), lat(c4), rtol=sqrt(eps(Float64)))
+    @test isapprox(lon(c2), lon(c3), rtol=sqrt(eps(Float32)))
+    @test isapprox(lon(c3), lon(c4), rtol=sqrt(eps(Float64)))
 end
 
 println()

@@ -35,7 +35,7 @@ immutable FK5Coords{e, T<:AbstractFloat} <: AbstractSkyCoords
     dec::T
     FK5Coords(ra, dec) = new(mod(ra, 2pi), dec)
 end
-(::Type{FK5Coords{e}}){e,T}(ra::T, dec::T) = FK5Coords{e, T}(ra, dec)
+@compat (::Type{FK5Coords{e}}){e,T}(ra::T, dec::T) = FK5Coords{e, T}(ra, dec)
 
 # We'd like to define this promotion constructor, but in Julia 0.5,
 # the typing algorithm can't figure out that the previous method is
@@ -63,8 +63,8 @@ immutable Matrix33{T<:AbstractFloat}
     a33::T
 end
 
-(::Type{Matrix33{T}}){T}(m::Matrix33{T}) = m
-(::Type{Matrix33{T}}){T}(m::Matrix33) =
+@compat (::Type{Matrix33{T}}){T}(m::Matrix33{T}) = m
+@compat (::Type{Matrix33{T}}){T}(m::Matrix33) =
     Matrix33(T(m.a11), T(m.a12), T(m.a13),
              T(m.a21), T(m.a22), T(m.a23),
              T(m.a31), T(m.a32), T(m.a33))

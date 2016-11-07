@@ -5,49 +5,9 @@
 using SkyCoords
 using Base.Test
 
+import SkyCoords: lat, lon
+
 datapath = joinpath(dirname(@__FILE__), "data")
-
-# Angular separation between two points (angles in radians)
-#
-#   The angular separation is calculated using the Vincenty formula [1]_,
-#   which is slighly more complex and computationally expensive than
-#   some alternatives, but is stable at at all distances, including the
-#   poles and antipodes.
-#
-#   [1] http://en.wikipedia.org/wiki/Great-circle_distance
-function angsep(lon1, lat1, lon2, lat2)
-
-    sdlon = sin(lon2 - lon1)
-    cdlon = cos(lon2 - lon1)
-    slat1 = sin(lat1)
-    slat2 = sin(lat2)
-    clat1 = cos(lat1)
-    clat2 = cos(lat2)
-
-    num1 = clat2 * sdlon
-    num2 = clat1 * slat2 - slat1 * clat2 * cdlon
-    denom = slat1 * slat2 + clat1 * clat2 * cdlon
-
-    atan2(sqrt(num1*num1 + num2*num2), denom)
-end
-
-lon(c::GalCoords) = c.l
-lat(c::GalCoords) = c.b
-lon(c::AbstractSkyCoords) = c.ra
-lat(c::AbstractSkyCoords) = c.dec
-
-function angsep{T<:AbstractSkyCoords}(c1::T, c2::T)
-    angsep(lon(c1), lat(c1), lon(c2), lat(c2))
-end
-
-function angsep{T<:AbstractSkyCoords}(c1::Array{T}, c2::Array{T})
-    size(c1) == size(c2) || error("size mismatch")
-    result = similar(c1, SkyCoords._eltype(first(c1)))
-    for i=1:length(c1)
-        result[i] = angsep(c1[i], c2[i])
-    end
-    result
-end
 
 rad2arcsec(r) = 3600.*rad2deg(r)
 
@@ -77,7 +37,7 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
             c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
 
             # compare
-            sep = angsep(c_out, c_ref)
+            sep = separation(c_out, c_ref)
             maxsep = rad2arcsec(maximum(sep))
             meansep = rad2arcsec(mean(sep))
             minsep = rad2arcsec(minimum(sep))
@@ -87,8 +47,12 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
     end
 end
 
-# Test conversion with mixed floating types.
+# Test separation between coordinates and conversion with mixed floating types.
 c1 = ICRSCoords(e, pi/2)
+c5 = ICRSCoords(e, 1 + pi/2)
+@test separation(c1, c5) ≈ separation(c5, c1) ≈
+    separation(c1, convert(GalCoords, c5)) ≈
+    separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
 for T in (GalCoords, FK5Coords{2000})
     c2 = convert(T{Float32}, c1)
     c3 = convert(T{Float64}, c1)
@@ -100,6 +64,8 @@ for T in (GalCoords, FK5Coords{2000})
     @test isapprox(lat(c3), lat(c4), rtol=sqrt(eps(Float64)))
     @test isapprox(lon(c2), lon(c3), rtol=sqrt(eps(Float32)))
     @test isapprox(lon(c3), lon(c4), rtol=sqrt(eps(Float64)))
+    c6 = convert(T, c5)
+    @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
 end
 
 println()

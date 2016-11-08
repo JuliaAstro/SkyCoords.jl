@@ -79,6 +79,35 @@ julia> convert(Vector{FK5Coords{1975, Float64}}, c1)
  SkyCoords.FK5Coords{1975,Float64}(6.2776,-0.00242922)
 ```
 
+### Angular Separation between Coordinates
+
+The `separation` function allows you to compute the angular (great-circle)
+distance between two coordinates, in radians, using
+the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance).  The
+coordinates can be also given in different systems.  For example, according to
+SIMBAD the `FK5Coords{2000}` coordinates
+of [Mizar](http://simbad.u-strasbg.fr/simbad/sim-id?Ident=MIZAR) are
+
+```julia
+julia> mizar = FK5Coords{2000}(3.507787, 0.958628)
+```
+
+while the `GalCoords` coordinates of Alcor are
+
+```julia
+julia> alcor = GalCoords(1.968189, 1.072829)
+```
+
+Their angular separation is given by
+
+```julia
+julia> separation(mizar, alcor) # Radians
+0.003435309169452688
+
+julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
+11.809723003933872
+```
+
 ## Accuracy
 
 All the supported conversions have been compared to the results of

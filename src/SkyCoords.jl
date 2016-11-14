@@ -4,7 +4,8 @@ using Compat
 export AbstractSkyCoords,
        ICRSCoords,
        GalCoords,
-       FK5Coords
+       FK5Coords,
+       separation
 
 import Base: convert, *, transpose
 
@@ -195,10 +196,13 @@ end
 # -----------------------------------------------------------------------------
 # Type-dependent methods
 
+lon(c::GalCoords) = c.l
+lat(c::GalCoords) = c.b
+lon(c::AbstractSkyCoords) = c.ra
+lat(c::AbstractSkyCoords) = c.dec
+
 # Abstract away specific field names (ra, dec vs l, b)
-coords2cart(c::ICRSCoords) = coords2cart(c.ra, c.dec)
-coords2cart(c::GalCoords) = coords2cart(c.l, c.b)
-coords2cart(c::FK5Coords) = coords2cart(c.ra, c.dec)
+coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return Matrix33{Float64}, regardless of
@@ -231,13 +235,10 @@ rotmat{e1, T1, e2, T2}(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # get floating point type in coordinates
-_eltype{e,T}(::FK5Coords{e,T}) = T
-_eltype{T}(::GalCoords{T}) = T
-_eltype{T}(::ICRSCoords{T}) = T
 _eltype{e,T}(::Type{FK5Coords{e,T}}) = T
 _eltype{T}(::Type{GalCoords{T}}) = T
 _eltype{T}(::Type{ICRSCoords{T}}) = T
-
+_eltype(c::AbstractSkyCoords) = _eltype(typeof(c))
 
 # Scalar coordinate conversions
 convert{T<:AbstractSkyCoords}(::Type{T}, c::T) = c
@@ -264,5 +265,48 @@ function convert{T<:AbstractSkyCoords, n, S<:AbstractSkyCoords}(
     end
     result
 end
+
+# ------------------------------------------------------------------------------
+# Distance between coordinates
+
+function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
+    Δλ = λ_2 - λ_1
+    sin_Δλ = sin(Δλ)
+    cos_Δλ = cos(Δλ)
+    sin_ϕ1 = sin(ϕ_1)
+    sin_ϕ2 = sin(ϕ_2)
+    cos_ϕ1 = cos(ϕ_1)
+    cos_ϕ2 = cos(ϕ_2)
+    return atan2(hypot(cos_ϕ2 * sin_Δλ,
+                       cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
+                 sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ)
+end
+
+"""
+    separation(c1::AbstractSkyCoords, c2::AbstractSkyCoords) -> distance
+
+Return angular separation between two sky coordinates, in radians.
+
+The angular separation is calculated using the Vincenty formula
+(http://en.wikipedia.org/wiki/Great-circle_distance), which is slightly more
+complex and computationally expensive than some alternatives, but is stable at
+at all distances, including the poles and antipodes.
+"""
+separation{T<:AbstractSkyCoords}(c1::T, c2::T) =
+    _separation(lon(c1), lat(c1), lon(c2), lat(c2))
+
+separation{T1<:AbstractSkyCoords,T2<:AbstractSkyCoords}(c1::T1, c2::T2) =
+    separation(c1, convert(T1, c2))
+
+function separation{T<:AbstractSkyCoords}(c1::AbstractArray{T},
+                                          c2::AbstractArray{T})
+    @assert size(c1) == size(c2) "Size mismatch"
+    result = similar(c1, _eltype(first(c1)))
+    for i in eachindex(c1)
+        result[i] = separation(c1[i], c2[i])
+    end
+    return result
+end
+
 
 end # module

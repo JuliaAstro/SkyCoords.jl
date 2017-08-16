@@ -1,4 +1,5 @@
 module SkyCoords
+using StaticArrays
 
 export AbstractSkyCoords,
        ICRSCoords,
@@ -6,7 +7,7 @@ export AbstractSkyCoords,
        FK5Coords,
        separation
 
-import Base: convert, *, transpose
+import Base: convert
 
 # -----------------------------------------------------------------------------
 # Types
@@ -45,60 +46,6 @@ end
 #    FK5Coords{e}(promote(float(ra), float(dec))...)
 
 # -----------------------------------------------------------------------------
-# Helper functions: Immutable array operations
-
-# We use immutable array operations to avoid allocating memory for
-# small arrays. Eventually, base Julia should support immutable arrays, at
-# which point we should switch to using that functionality in base.
-
-immutable Matrix33{T<:AbstractFloat}
-    a11::T
-    a12::T
-    a13::T
-    a21::T
-    a22::T
-    a23::T
-    a31::T
-    a32::T
-    a33::T
-end
-
-(::Type{Matrix33{T}}){T}(m::Matrix33{T}) = m
-(::Type{Matrix33{T}}){T}(m::Matrix33) =
-    Matrix33(T(m.a11), T(m.a12), T(m.a13),
-             T(m.a21), T(m.a22), T(m.a23),
-             T(m.a31), T(m.a32), T(m.a33))
-
-immutable Vector3{T<:AbstractFloat}
-    x::T
-    y::T
-    z::T
-end
-
-function *(x::Matrix33, y::Matrix33)
-    Matrix33(x.a11 * y.a11 + x.a12 * y.a21 + x.a13 * y.a31,
-             x.a11 * y.a12 + x.a12 * y.a22 + x.a13 * y.a32,
-             x.a11 * y.a13 + x.a12 * y.a23 + x.a13 * y.a33,
-             x.a21 * y.a11 + x.a22 * y.a21 + x.a23 * y.a31,
-             x.a21 * y.a12 + x.a22 * y.a22 + x.a23 * y.a32,
-             x.a21 * y.a13 + x.a22 * y.a23 + x.a23 * y.a33,
-             x.a31 * y.a11 + x.a32 * y.a21 + x.a33 * y.a31,
-             x.a31 * y.a12 + x.a32 * y.a22 + x.a33 * y.a32,
-             x.a31 * y.a13 + x.a32 * y.a23 + x.a33 * y.a33)
-end
-
-transpose(m::Matrix33) = Matrix33(m.a11, m.a21, m.a31,
-                                  m.a12, m.a22, m.a32,
-                                  m.a13, m.a23, m.a33)
-
-function *(m::Matrix33, v::Vector3)
-    Vector3(m.a11 * v.x + m.a12 * v.y + m.a13 * v.z,
-            m.a21 * v.x + m.a22 * v.y + m.a23 * v.z,
-            m.a31 * v.x + m.a32 * v.y + m.a33 * v.z)
-end
-
-
-# -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
 
 if !isdefined(Base, :sincos)
@@ -107,34 +54,34 @@ end
 
 function xrotmat(angle)
     s, c = sincos(angle)
-    Matrix33(1., 0., 0.,
-             0.,  c,  s,
-             0., -s,  c)
+    SMatrix{3,3}(1, 0,  0,
+                 0, c, -s,
+                 0, s,  c)
 end
 
 function yrotmat(angle)
     s, c = sincos(angle)
-    Matrix33(c,  0., -s,
-             0., 1., 0.,
-             s,  0.,  c)
+    SMatrix{3,3}( c, 0, s,
+                  0, 1, 0,
+                 -s, 0, c)
 end
 
 function zrotmat(angle)
     s, c = sincos(angle)
-    Matrix33(c,   s,  0.,
-             -s,  c,  0.,
-             0., 0.,  1.)
+    SMatrix{3,3}(c, -s,  0,
+                 s,  c,  0,
+                 0,  0,  1)
 end
 
 # (lon, lat) -> [x, y, z] unit vector
 function coords2cart(lon, lat)
     sinlon, coslon = sincos(lon)
     sinlat, coslat = sincos(lat)
-    Vector3(coslat * coslon, coslat * sinlon, sinlat)
+    SVector{3}(coslat * coslon, coslat * sinlon, sinlat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
-cart2coords(v) = atan2(v.y, v.x), atan2(v.z, sqrt(v.x*v.x + v.y*v.y))
+cart2coords(v) = atan2(v[2], v[1]), atan2(v[3], sqrt(v[1] * v[1] + v[2] * v[2]))
 
 # -----------------------------------------------------------------------------
 # Constant rotation matricies and precession matrix function
@@ -206,7 +153,7 @@ lat(c::AbstractSkyCoords) = c.dec
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
-# Note that all of these return Matrix33{Float64}, regardless of
+# Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
 rotmat{T1<:GalCoords, T2<:ICRSCoords}(::Type{T1}, ::Type{T2}) = ICRS_TO_GAL
 rotmat{T1<:ICRSCoords, T2<:GalCoords}(::Type{T1}, ::Type{T2}) = GAL_TO_ICRS
@@ -244,7 +191,7 @@ _eltype(c::AbstractSkyCoords) = _eltype(typeof(c))
 # Scalar coordinate conversions
 convert{T<:AbstractSkyCoords}(::Type{T}, c::T) = c
 function convert{T<:AbstractSkyCoords, S<:AbstractSkyCoords}(::Type{T}, c::S)
-    r = Matrix33{_eltype(c)}(rotmat(T, S)) * coords2cart(c)
+    r = SMatrix{3,3}{_eltype(c)}(rotmat(T, S)) * coords2cart(c)
     lon, lat = cart2coords(r)
     T(lon, lat)
 end
@@ -257,7 +204,7 @@ end
 convert{T<:AbstractSkyCoords,n}(::Type{Array{T,n}}, c::Array{T,n}) = c
 function convert{T<:AbstractSkyCoords, n, S<:AbstractSkyCoords}(
     ::Type{Array{T,n}}, c::Array{S, n})
-    m = Matrix33{_eltype(S)}(rotmat(T, S))
+    m = SMatrix{3,3}{_eltype(S)}(rotmat(T, S))
     result = similar(c, T)
     for i in 1:length(c)
         r = m * coords2cart(c[i])

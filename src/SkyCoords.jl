@@ -161,25 +161,25 @@ rotmat{T1<:ICRSCoords, T2<:GalCoords}(::Type{T1}, ::Type{T2}) = GAL_TO_ICRS
 # Define both these so that `convert(FK5Coords{e}, ...)` and
 # `convert(FK5Coords{e,T}, ...)` both work. Similar with other
 # FK5Coords rotmat methods below.
-rotmat{e1, T2<:ICRSCoords}(::Type{FK5Coords{e1}}, ::Type{T2}) =
+@generated rotmat{e1,T2<:ICRSCoords}(::Type{FK5Coords{e1}}, ::Type{T2}) =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
-rotmat{e1, T1, T2<:ICRSCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
+@generated rotmat{e1,T1,T2<:ICRSCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
 
-rotmat{e1, T2<:GalCoords}(::Type{FK5Coords{e1}}, ::Type{T2}) =
+@generated rotmat{e1,T2<:GalCoords}(::Type{FK5Coords{e1}}, ::Type{T2}) =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
-rotmat{e1, T1, T2<:GalCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
+@generated rotmat{e1,T1,T2<:GalCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
 
-rotmat{T1<:ICRSCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat{T1<:ICRSCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2, T2}}) =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 
-rotmat{T1<:GalCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat{T1<:GalCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
 
-rotmat{e1, e2, T2}(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat{e1, e2, T2}(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
-rotmat{e1, T1, e2, T2}(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat{e1, T1, e2, T2}(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # get floating point type in coordinates

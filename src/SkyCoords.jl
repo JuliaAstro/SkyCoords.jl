@@ -102,25 +102,26 @@ end
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
 
+if !isdefined(Base, :sincos)
+    sincos(x::Real) = (sin(x), cos(x))
+end
+
 function xrotmat(angle)
-    s = sin(angle)
-    c = cos(angle)
+    s, c = sincos(angle)
     Matrix33(1., 0., 0.,
              0.,  c,  s,
              0., -s,  c)
 end
 
 function yrotmat(angle)
-    s = sin(angle)
-    c = cos(angle)
+    s, c = sincos(angle)
     Matrix33(c,  0., -s,
              0., 1., 0.,
              s,  0.,  c)
 end
 
 function zrotmat(angle)
-    s = sin(angle)
-    c = cos(angle)
+    s, c = sincos(angle)
     Matrix33(c,   s,  0.,
              -s,  c,  0.,
              0., 0.,  1.)
@@ -128,8 +129,9 @@ end
 
 # (lon, lat) -> [x, y, z] unit vector
 function coords2cart(lon, lat)
-    coslat = cos(lat)
-    Vector3(coslat*cos(lon), coslat*sin(lon), sin(lat))
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+    Vector3(coslat * coslon, coslat * sinlon, sinlat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
@@ -271,12 +273,9 @@ end
 
 function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
     Δλ = λ_2 - λ_1
-    sin_Δλ = sin(Δλ)
-    cos_Δλ = cos(Δλ)
-    sin_ϕ1 = sin(ϕ_1)
-    sin_ϕ2 = sin(ϕ_2)
-    cos_ϕ1 = cos(ϕ_1)
-    cos_ϕ2 = cos(ϕ_2)
+    sin_Δλ, cos_Δλ = sincos(Δλ)
+    sin_ϕ1, cos_ϕ1 = sincos(ϕ_1)
+    sin_ϕ2, cos_ϕ2 = sincos(ϕ_2)
     return atan2(hypot(cos_ϕ2 * sin_Δλ,
                        cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
                  sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ)

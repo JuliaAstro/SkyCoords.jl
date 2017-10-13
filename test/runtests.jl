@@ -37,7 +37,7 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
             c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
 
             # compare
-            sep = separation(c_out, c_ref)
+            sep = separation.(c_out, c_ref)
             maxsep = rad2arcsec(maximum(sep))
             meansep = rad2arcsec(mean(sep))
             minsep = rad2arcsec(minimum(sep))

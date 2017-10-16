@@ -9,7 +9,7 @@ import SkyCoords: lat, lon
 
 datapath = joinpath(dirname(@__FILE__), "data")
 
-rad2arcsec(r) = 3600.*rad2deg(r)
+rad2arcsec(r) = 3600 * rad2deg(r)
 
 # input coordinates
 fname = joinpath(datapath, "input_coords.csv")

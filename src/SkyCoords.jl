@@ -171,7 +171,7 @@ rotmat{T1<:ICRSCoords, T2<:GalCoords}(::Type{T1}, ::Type{T2}) = GAL_TO_ICRS
 @generated rotmat{e1,T1,T2<:GalCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
 
-@generated rotmat{T1<:ICRSCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2, T2}}) =
+@generated rotmat{T1<:ICRSCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 
 @generated rotmat{T1<:GalCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
@@ -182,37 +182,14 @@ rotmat{T1<:ICRSCoords, T2<:GalCoords}(::Type{T1}, ::Type{T2}) = GAL_TO_ICRS
 @generated rotmat{e1, T1, e2, T2}(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
-# get floating point type in coordinates
-_eltype{e,T}(::Type{FK5Coords{e,T}}) = T
-_eltype{T}(::Type{GalCoords{T}}) = T
-_eltype{T}(::Type{ICRSCoords{T}}) = T
-_eltype(c::AbstractSkyCoords) = _eltype(typeof(c))
-
 # Scalar coordinate conversions
 convert{T<:AbstractSkyCoords}(::Type{T}, c::T) = c
 function convert{T<:AbstractSkyCoords, S<:AbstractSkyCoords}(::Type{T}, c::S)
-    r = SMatrix{3,3}{_eltype(c)}(rotmat(T, S)) * coords2cart(c)
+    r = rotmat(T, S) * coords2cart(c)
     lon, lat = cart2coords(r)
     T(lon, lat)
 end
 
-# Vector coordinate conversions
-# This is useful for FK5Coords so that we only compute the rotation
-# matrix (a function of epoch) once and apply it to the entire
-# vector. The compiler doesn't seem to figure out that rotmat(T, S) is
-# a constant for FK5Coords{e} types.
-convert{T<:AbstractSkyCoords,n}(::Type{Array{T,n}}, c::Array{T,n}) = c
-function convert{T<:AbstractSkyCoords, n, S<:AbstractSkyCoords}(
-    ::Type{Array{T,n}}, c::Array{S, n})
-    m = SMatrix{3,3}{_eltype(S)}(rotmat(T, S))
-    result = similar(c, T)
-    for i in 1:length(c)
-        r = m * coords2cart(c[i])
-        lon, lat = cart2coords(r)
-        result[i] = T(lon, lat)
-    end
-    result
-end
 
 # ------------------------------------------------------------------------------
 # Distance between coordinates

@@ -3,7 +3,8 @@
 # Tests against astropy.
 
 using SkyCoords
-using Base.Test
+
+using Compat.Test, Compat.DelimitedFiles, Compat.Printf
 
 import SkyCoords: lat, lon
 
@@ -13,7 +14,7 @@ rad2arcsec(r) = 3600 * rad2deg(r)
 
 # input coordinates
 fname = joinpath(datapath, "input_coords.csv")
-indata, inhdr = readcsv(fname; header=true)
+indata, inhdr = readdlm(fname, ','; header=true)
 
 # Float32 has a large tolerance compared to Float64 and BigFloat, but here we
 # are more interested in making sure that the infrastructure works for different
@@ -32,8 +33,8 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
             c_out = S[convert(S, c) for c in c_in]
 
             # Read in reference answers.
-            fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
-            refdata, hdr = readcsv(fname; header=true)
+            ref_fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
+            refdata, hdr = readdlm(ref_fname, ','; header=true)
             c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
 
             # compare
@@ -67,6 +68,9 @@ for T in (GalCoords, FK5Coords{2000})
     c6 = convert(T, c5)
     @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
 end
+
+# Constructor of FK5Coords{1950} with non-float arguments
+@test typeof(FK5Coords{1950}(1, big(2))) == FK5Coords{1950,BigFloat}
 
 println()
 println("All tests passed.")

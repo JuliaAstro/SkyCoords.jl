@@ -14,38 +14,33 @@ import Base: convert
 # -----------------------------------------------------------------------------
 # Types
 
-abstract AbstractSkyCoords
+abstract type AbstractSkyCoords end
 
-immutable ICRSCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct ICRSCoords{T<:AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords(ra, dec) = new(mod(ra, 2pi), dec)
+    ICRSCoords{T}(ra, dec) where {T<:AbstractFloat} = new(mod2pi(ra), dec)
 end
-ICRSCoords{T<:AbstractFloat}(ra::T, dec::T) = ICRSCoords{T}(ra, dec)
+ICRSCoords(ra::T, dec::T) where {T<:AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
 
-immutable GalCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct GalCoords{T<:AbstractFloat} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords(l, b) = new(mod(l, 2pi), b)
+    GalCoords{T}(l, b) where {T<:AbstractFloat} = new(mod2pi(l), b)
 end
-GalCoords{T<:AbstractFloat}(l::T, b::T) = GalCoords{T}(l, b)
+GalCoords(l::T, b::T) where {T<:AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
 
 # FK5 is parameterized by equinox (e)
-immutable FK5Coords{e, T<:AbstractFloat} <: AbstractSkyCoords
+struct FK5Coords{e, T<:AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords(ra, dec) = new(mod(ra, 2pi), dec)
+    FK5Coords{e,T}(ra, dec) where {T<:AbstractFloat,e} = new(mod2pi(ra), dec)
 end
-(::Type{FK5Coords{e}}){e,T}(ra::T, dec::T) = FK5Coords{e, T}(ra, dec)
-
-# We'd like to define this promotion constructor, but in Julia 0.5,
-# the typing algorithm can't figure out that the previous method is
-# more specific, so this promotion constructor calls itself, resulting in
-# stack overflow.
-#(::Type{FK5Coords{e}}){e}(ra::Real, dec::Real) =
-#    FK5Coords{e}(promote(float(ra), float(dec))...)
+FK5Coords{e}(ra::T, dec::T) where {e,T<:AbstractFloat} = FK5Coords{e, T}(ra, dec)
+FK5Coords{e}(ra::Real, dec::Real) where {e} =
+   FK5Coords{e}(promote(float(ra), float(dec))...)
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
@@ -157,36 +152,36 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
-rotmat{T1<:GalCoords, T2<:ICRSCoords}(::Type{T1}, ::Type{T2}) = ICRS_TO_GAL
-rotmat{T1<:ICRSCoords, T2<:GalCoords}(::Type{T1}, ::Type{T2}) = GAL_TO_ICRS
+rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords, T2<:ICRSCoords} = ICRS_TO_GAL
+rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords, T2<:GalCoords} = GAL_TO_ICRS
 
 # Define both these so that `convert(FK5Coords{e}, ...)` and
 # `convert(FK5Coords{e,T}, ...)` both work. Similar with other
 # FK5Coords rotmat methods below.
-@generated rotmat{e1,T2<:ICRSCoords}(::Type{FK5Coords{e1}}, ::Type{T2}) =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:ICRSCoords} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
-@generated rotmat{e1,T1,T2<:ICRSCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:ICRSCoords} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
 
-@generated rotmat{e1,T2<:GalCoords}(::Type{FK5Coords{e1}}, ::Type{T2}) =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:GalCoords} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
-@generated rotmat{e1,T1,T2<:GalCoords}(::Type{FK5Coords{e1,T1}}, ::Type{T2}) =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:GalCoords} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
 
-@generated rotmat{T1<:ICRSCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords, e2, T2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 
-@generated rotmat{T1<:GalCoords, e2, T2}(::Type{T1}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords, e2, T2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
 
-@generated rotmat{e1, e2, T2}(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1, e2, T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
-@generated rotmat{e1, T1, e2, T2}(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1, T1, e2, T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # Scalar coordinate conversions
-convert{T<:AbstractSkyCoords}(::Type{T}, c::T) = c
-function convert{T<:AbstractSkyCoords, S<:AbstractSkyCoords}(::Type{T}, c::S)
+convert(::Type{T}, c::T) where {T<:AbstractSkyCoords} = c
+function convert(::Type{T}, c::S) where {T<:AbstractSkyCoords, S<:AbstractSkyCoords}
     r = rotmat(T, S) * coords2cart(c)
     lon, lat = cart2coords(r)
     T(lon, lat)
@@ -216,10 +211,10 @@ The angular separation is calculated using the Vincenty formula
 complex and computationally expensive than some alternatives, but is stable at
 at all distances, including the poles and antipodes.
 """
-separation{T<:AbstractSkyCoords}(c1::T, c2::T) =
+separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
 
-separation{T1<:AbstractSkyCoords,T2<:AbstractSkyCoords}(c1::T1, c2::T2) =
+separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
     separation(c1, convert(T1, c2))
 
 end # module

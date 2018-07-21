@@ -45,10 +45,6 @@ FK5Coords{e}(ra::Real, dec::Real) where {e} =
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
 
-if !isdefined(Base, :sincos)
-    sincos(x::Real) = (sin(x), cos(x))
-end
-
 function xrotmat(angle)
     s, c = sincos(angle)
     SMatrix{3,3}(1, 0,  0,
@@ -78,7 +74,7 @@ function coords2cart(lon, lat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
-cart2coords(v) = atan2(v[2], v[1]), atan2(v[3], sqrt(v[1] * v[1] + v[2] * v[2]))
+cart2coords(v) = atan(v[2], v[1]), atan(v[3], sqrt(v[1] * v[1] + v[2] * v[2]))
 
 # -----------------------------------------------------------------------------
 # Constant rotation matricies and precession matrix function
@@ -196,9 +192,9 @@ function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
     sin_Δλ, cos_Δλ = sincos(Δλ)
     sin_ϕ1, cos_ϕ1 = sincos(ϕ_1)
     sin_ϕ2, cos_ϕ2 = sincos(ϕ_2)
-    return atan2(hypot(cos_ϕ2 * sin_Δλ,
-                       cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
-                 sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ)
+    return atan(hypot(cos_ϕ2 * sin_Δλ,
+                      cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
+                sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ)
 end
 
 """

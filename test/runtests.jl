@@ -4,7 +4,7 @@
 
 using SkyCoords
 
-using Compat.Test, Compat.DelimitedFiles, Compat.Printf
+using Test, DelimitedFiles, Printf, Statistics
 
 import SkyCoords: lat, lon
 
@@ -49,8 +49,8 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
 end
 
 # Test separation between coordinates and conversion with mixed floating types.
-c1 = ICRSCoords(e, pi/2)
-c5 = ICRSCoords(e, 1 + pi/2)
+c1 = ICRSCoords(ℯ, pi/2)
+c5 = ICRSCoords(ℯ, 1 + pi/2)
 @test separation(c1, c5) ≈ separation(c5, c1) ≈
     separation(c1, convert(GalCoords, c5)) ≈
     separation(convert(FK5Coords{1980}, c5), c1) ≈ 1

@@ -101,7 +101,7 @@ In turn, astropy.coordinates has been tested against many other tools.
 ## Performance
 
 For small and moderate numbers of coordinates, conversions are much
-faster than astropy.coordinates in Python. The follow plot shows the
+faster than astropy.coordinates in Python. The following plot shows the
 performance for converting ICRS coordinates to various other systems
 (Galactic, FK5J2000 and FK5J1975), using astropy.coordinates (`py_*`
 labels) and SkyCoords.jl (`jl_*` labels). The x axis denotes the
@@ -109,6 +109,15 @@ number of coordinates being simultaneously converted, with 1
 corresponding to scalar coordinates.
 
 ![times](assets/bench.png)
+
+| Specs           |                                        |
+|:----------------|:---------------------------------------|
+| CPU             | Intel core i5-8259U @ 2.3GHz (4 cores) |
+| RAM             | 16GB                                   |
+| Julia Version   | 1.2 (JULIA\_NUM\_THREADS=8)            |
+| Python Version  | 3.7                                    |
+| Astropy Version | 3.1.2                                  |
+
 
 For scalar coordinates, SkyCoords.jl is up to 100,000 times
 faster. For very large vectors of one million coordinates or more,

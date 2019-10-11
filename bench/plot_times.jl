@@ -1,9 +1,9 @@
 #!/usr/bin/env julia
-using DataFrames
-using Gadfly
+using CSV
+using StatsPlots
 
-df1 = readtable("julia_times.csv")
-df2 = readtable("python_times.csv")
+df1 = CSV.read("julia_times.csv")
+df2 = CSV.read("python_times.csv")
 
 # rename systems
 df1[:system] = ["jl_" * s for s in df1[:system]]
@@ -11,7 +11,17 @@ df2[:system] = ["py_" * s for s in df2[:system]]
 df = vcat(df1, df2)
 
 # Plot
-p = plot(df, x="n", y="time", color="system", Geom.point, Geom.line,
-         Scale.x_log10, Scale.y_log10, Guide.xlabel("# coordinates"),
-         Guide.ylabel("time (s)"))
-draw(PNG("bench.png", 7inch, 5.5inch), p)
+@df df plot(:n, :time,
+    group = :system,
+    markershape = :circle,
+    markersize = 4,
+    markerstrokealpha = 0,
+    linewidth = 1,
+    alpha = 0.8,
+    xlabel = "Number of coordinates",
+    ylabel = "Time (s)",
+    xscale = :log10,
+    yscale = :log10,
+    legend = :bottomright,
+)
+savefig("bench.png")

@@ -29,7 +29,7 @@ immutable types are used to represent coordinates in each system:
 - [`FK5Coords`](@ref): FK5 coordinates system (with arbitrary equninox)
 
 Each type holds a longitude and latitude, and each is a subtype of
-`AbstractSkyCoords`.
+[`AbstractSkyCoords`](@ref).
 
 ```jldoctest
 julia> c1 = ICRSCoords(0., 0.)  # inputs are ra, dec in radians
@@ -61,7 +61,7 @@ ICRSCoords{Float64}(0.3490658503988659, 0.05235987755982989)
 
 ### Angular Separation between Coordinates
 
-The `separation` function allows you to compute the angular (great-circle)
+The [`separation`](@ref) function allows you to compute the angular (great-circle)
 distance between two coordinates, in radians, using
 the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance).  The
 coordinates can be also given in different systems.  For example, according to
@@ -95,15 +95,15 @@ julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
 ## Accuracy
 
 All the supported conversions have been compared to the results of
-astropy.coordinates (to better than 0.0001 arcsec agreement for Float64).
-In turn, astropy.coordinates has been tested against many other tools.
+[astropy.coordinates](https://docs.astropy.org/en/stable/coordinates/) (to better than 0.0001 arcsec agreement for `Float64`).
+In turn, [astropy.coordinates](https://docs.astropy.org/en/stable/coordinates/) has been tested against many other tools.
 
 ## Performance
 
 For small and moderate numbers of coordinates, conversions are much
-faster than astropy.coordinates in Python. The following plot shows the
+faster than [astropy.coordinates](https://docs.astropy.org/en/stable/coordinates/) in Python. The following plot shows the
 performance for converting ICRS coordinates to various other systems
-(Galactic, FK5J2000 and FK5J1975), using astropy.coordinates (`py_*`
+(Galactic, FK5J2000 and FK5J1975), using [astropy.coordinates](https://docs.astropy.org/en/stable/coordinates/) (`py_*`
 labels) and SkyCoords.jl (`jl_*` labels). The x axis denotes the
 number of coordinates being simultaneously converted, with 1
 corresponding to scalar coordinates.
@@ -117,7 +117,6 @@ corresponding to scalar coordinates.
 | Julia Version   | 1.2 (JULIA\_NUM\_THREADS=8)            |
 | Python Version  | 3.7                                    |
 | Astropy Version | 3.1.2                                  |
-
 
 For scalar coordinates, SkyCoords.jl is up to 100,000 times
 faster. For very large vectors of one million coordinates or more,

@@ -1,7 +1,6 @@
-__precompile__()
-
 module SkyCoords
 using StaticArrays
+using Unitful
 
 export AbstractSkyCoords,
        ICRSCoords,
@@ -16,31 +15,34 @@ import Base: convert
 
 abstract type AbstractSkyCoords end
 
-struct ICRSCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T<:AbstractFloat} = new(mod2pi(ra), dec)
+    ICRSCoords{T}(ra, dec) where {T <: AbstractFloat} = new(mod2pi(ra), dec)
 end
-ICRSCoords(ra::T, dec::T) where {T<:AbstractFloat} = ICRSCoords{T}(ra, dec)
+ICRSCoords(ra::T, dec::T) where {T <: AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
+ICRSCoords(ra::Quantity, dec::Quantity) = ICRSCoords(ustrip(u"rad", ra), ustrip(u"rad", dec))
 
-struct GalCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T<:AbstractFloat} = new(mod2pi(l), b)
+    GalCoords{T}(l, b) where {T <: AbstractFloat} = new(mod2pi(l), b)
 end
-GalCoords(l::T, b::T) where {T<:AbstractFloat} = GalCoords{T}(l, b)
+GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
+GalCoords(ra::Quantity, dec::Quantity) = GalCoords(ustrip(u"rad", ra), ustrip(u"rad", dec))
 
 # FK5 is parameterized by equinox (e)
-struct FK5Coords{e, T<:AbstractFloat} <: AbstractSkyCoords
+struct FK5Coords{e,T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e,T}(ra, dec) where {T<:AbstractFloat,e} = new(mod2pi(ra), dec)
+    FK5Coords{e,T}(ra, dec) where {T <: AbstractFloat,e} = new(mod2pi(ra), dec)
 end
-FK5Coords{e}(ra::T, dec::T) where {e,T<:AbstractFloat} = FK5Coords{e, T}(ra, dec)
+FK5Coords{e}(ra::T, dec::T) where {e,T <: AbstractFloat} = FK5Coords{e,T}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} =
    FK5Coords{e}(promote(float(ra), float(dec))...)
+FK5Coords{e}(ra::Quantity, dec::Quantity) where {e} = FK5Coords{e}(ustrip(u"rad", ra), ustrip(u"rad", dec))
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
@@ -54,7 +56,7 @@ end
 
 function yrotmat(angle)
     s, c = sincos(angle)
-    SMatrix{3,3}( c, 0, s,
+    SMatrix{3,3}(c, 0, s,
                   0, 1, 0,
                  -s, 0, c)
 end
@@ -98,7 +100,7 @@ ngp_fk5j2000_ra = deg2rad(192.8594812065348)
 ngp_fk5j2000_dec = deg2rad(27.12825118085622)
 lon0_fk5j2000 = deg2rad(122.9319185680026)
 const FK5J2000_TO_GAL = (zrotmat(pi - lon0_fk5j2000) *
-                         yrotmat(pi/2. - ngp_fk5j2000_dec) *
+                         yrotmat(pi / 2. - ngp_fk5j2000_dec) *
                          zrotmat(ngp_fk5j2000_ra))
 const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 
@@ -128,9 +130,9 @@ function precess_from_j2000(equinox)
         z += pz[i] * tn
         theta += ptheta[i] * tn
     end
-    zeta = deg2rad(zeta/3600.0)
-    z = deg2rad(z/3600.0)
-    theta = deg2rad(theta/3600.0)
+    zeta = deg2rad(zeta / 3600.0)
+    z = deg2rad(z / 3600.0)
+    theta = deg2rad(theta / 3600.0)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
 end
 
@@ -148,36 +150,36 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords, T2<:ICRSCoords} = ICRS_TO_GAL
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords, T2<:GalCoords} = GAL_TO_ICRS
+rotmat(::Type{T1}, ::Type{T2}) where {T1 <: GalCoords,T2 <: ICRSCoords} = ICRS_TO_GAL
+rotmat(::Type{T1}, ::Type{T2}) where {T1 <: ICRSCoords,T2 <: GalCoords} = GAL_TO_ICRS
 
 # Define both these so that `convert(FK5Coords{e}, ...)` and
 # `convert(FK5Coords{e,T}, ...)` both work. Similar with other
 # FK5Coords rotmat methods below.
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:ICRSCoords} =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2 <: ICRSCoords} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:ICRSCoords} =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2 <: ICRSCoords} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
 
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:GalCoords} =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2 <: GalCoords} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:GalCoords} =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2 <: GalCoords} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
 
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords, e2, T2} =
+@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1 <: ICRSCoords,e2,T2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords, e2, T2} =
+@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1 <: GalCoords,e2,T2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
 
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1, e2, T2} =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1,e2,T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1, T1, e2, T2} =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1,T1,e2,T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # Scalar coordinate conversions
-convert(::Type{T}, c::T) where {T<:AbstractSkyCoords} = c
-function convert(::Type{T}, c::S) where {T<:AbstractSkyCoords, S<:AbstractSkyCoords}
+convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c
+function convert(::Type{T}, c::S) where {T <: AbstractSkyCoords,S <: AbstractSkyCoords}
     r = rotmat(T, S) * coords2cart(c)
     lon, lat = cart2coords(r)
     T(lon, lat)
@@ -202,15 +204,14 @@ end
 
 Return angular separation between two sky coordinates, in radians.
 
-The angular separation is calculated using the Vincenty formula
-(http://en.wikipedia.org/wiki/Great-circle_distance), which is slightly more
+The angular separation is calculated using the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance), which is slightly more
 complex and computationally expensive than some alternatives, but is stable at
 at all distances, including the poles and antipodes.
 """
-separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
+separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
 
-separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
+separation(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords,T2 <: AbstractSkyCoords} =
     separation(c1, convert(T1, c2))
 
 end # module

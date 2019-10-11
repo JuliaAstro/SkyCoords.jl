@@ -4,7 +4,7 @@
 
 using SkyCoords
 
-using Test, DelimitedFiles, Printf, Statistics
+using Test, DelimitedFiles, Printf, Statistics, Unitful
 
 import SkyCoords: lat, lon
 
@@ -19,8 +19,7 @@ indata, inhdr = readdlm(fname, ','; header=true)
 # Float32 has a large tolerance compared to Float64 and BigFloat, but here we
 # are more interested in making sure that the infrastructure works for different
 # floating types.
-for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
-    println("Testing type ", F)
+@testset "Testing $F" for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
 
     for (insys, T) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
                        ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
@@ -49,28 +48,36 @@ for (F, TOL) in ((Float32, 0.2), (Float64, 0.0001), (BigFloat, 0.0001))
 end
 
 # Test separation between coordinates and conversion with mixed floating types.
-c1 = ICRSCoords(ℯ, pi/2)
-c5 = ICRSCoords(ℯ, 1 + pi/2)
-@test separation(c1, c5) ≈ separation(c5, c1) ≈
-    separation(c1, convert(GalCoords, c5)) ≈
-    separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
-for T in (GalCoords, FK5Coords{2000})
-    c2 = convert(T{Float32}, c1)
-    c3 = convert(T{Float64}, c1)
-    c4 = convert(T{BigFloat}, c1)
-    @test typeof(c2) === T{Float32}
-    @test typeof(c3) === T{Float64}
-    @test typeof(c4) === T{BigFloat}
-    @test isapprox(lat(c2), lat(c3), rtol=sqrt(eps(Float32)))
-    @test isapprox(lat(c3), lat(c4), rtol=sqrt(eps(Float64)))
-    @test isapprox(lon(c2), lon(c3), rtol=sqrt(eps(Float32)))
-    @test isapprox(lon(c3), lon(c4), rtol=sqrt(eps(Float64)))
-    c6 = convert(T, c5)
-    @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
+@testset "Separation" begin
+    c1 = ICRSCoords(ℯ, pi/2)
+    c5 = ICRSCoords(ℯ, 1 + pi/2)
+    @test separation(c1, c5) ≈ separation(c5, c1) ≈
+        separation(c1, convert(GalCoords, c5)) ≈
+        separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
+    for T in (GalCoords, FK5Coords{2000})
+        c2 = convert(T{Float32}, c1)
+        c3 = convert(T{Float64}, c1)
+        c4 = convert(T{BigFloat}, c1)
+        @test typeof(c2) === T{Float32}
+        @test typeof(c3) === T{Float64}
+        @test typeof(c4) === T{BigFloat}
+        @test isapprox(lat(c2), lat(c3), rtol=sqrt(eps(Float32)))
+        @test isapprox(lat(c3), lat(c4), rtol=sqrt(eps(Float64)))
+        @test isapprox(lon(c2), lon(c3), rtol=sqrt(eps(Float32)))
+        @test isapprox(lon(c3), lon(c4), rtol=sqrt(eps(Float64)))
+        c6 = convert(T, c5)
+        @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
+    end
 end
 
-# Constructor of FK5Coords{1950} with non-float arguments
-@test typeof(FK5Coords{1950}(1, big(2))) == FK5Coords{1950,BigFloat}
+@testset "Pre-conversion of inputs" begin
+    # Constructor of FK5Coords{1950} with non-float arguments
+    @test typeof(FK5Coords{1950}(1, big(2))) == FK5Coords{1950,BigFloat}
 
-println()
-println("All tests passed.")
+    # Unitful
+    @test ICRSCoords(20u"°", 0u"rad") == ICRSCoords(0.3490658503988659, 0.0)
+    @test GalCoords(20u"°", 0u"rad") == GalCoords(0.3490658503988659, 0.0)
+    @test FK5Coords{2000}(20u"°", 0u"rad") == FK5Coords{2000}(0.3490658503988659, 0.0)    
+end
+
+

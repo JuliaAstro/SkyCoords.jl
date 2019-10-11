@@ -71,6 +71,7 @@ FK5Coords{e}(ra::Quantity, dec::Quantity) where {e} = FK5Coords{e}(ustrip(u"rad"
 
 # Scalar coordinate conversions
 Base.convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c
+
 function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords,S <: AbstractSkyCoords}
     r = rotmat(T, S) * coords2cart(c)
     lon, lat = cart2coords(r)

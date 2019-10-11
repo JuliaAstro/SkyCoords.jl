@@ -25,6 +25,9 @@ indata, inhdr = readdlm(fname, ','; header = true)
                        ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
 
         c_in = T[T(indata[i, 1], indata[i, 2]) for i = 1:size(indata, 1)]
+        for c in c_in
+            @test convert(T, c) == c
+        end
 
         for (outsys, S) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
                             ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))

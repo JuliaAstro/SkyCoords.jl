@@ -48,8 +48,7 @@ julia> c = ICRSCoords(20u"°", 3u"°")
 ICRSCoords{Float64}(0.3490658503988659, 0.05235987755982989)
 ```
 
-
-For more information, visit [the documentation](https://juliaastro.github.io/skycoords.jl/stable)
+For more information, visit the [documentation](https://juliaastro.github.io/skycoords.jl/stable)
 
 ## License and Credits
 

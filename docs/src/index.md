@@ -4,7 +4,7 @@
 [![Build status](https://img.shields.io/appveyor/ci/kbarbary/skycoords-jl.svg?label=windows)](https://ci.appveyor.com/project/kbarbary/skycoords-jl/branch/master)
 [![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
-SkyCoords.jl provides a type system for astronomical coordinates with appropriate conversions between systems.
+SkyCoords.jl provides a type system for astronomical coordinate systems with appropriate conversions between them.
 
 ## Installation
 From the Julia REPL

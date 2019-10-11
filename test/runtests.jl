@@ -14,7 +14,7 @@ rad2arcsec(r) = 3600 * rad2deg(r)
 
 # input coordinates
 fname = joinpath(datapath, "input_coords.csv")
-indata, inhdr = readdlm(fname, ','; header=true)
+indata, inhdr = readdlm(fname, ','; header = true)
 
 # Float32 has a large tolerance compared to Float64 and BigFloat, but here we
 # are more interested in making sure that the infrastructure works for different
@@ -24,7 +24,7 @@ indata, inhdr = readdlm(fname, ','; header=true)
     for (insys, T) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
                        ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
 
-        c_in = T[T(indata[i, 1], indata[i, 2]) for i=1:size(indata,1)]
+        c_in = T[T(indata[i, 1], indata[i, 2]) for i = 1:size(indata, 1)]
 
         for (outsys, S) in (("icrs", ICRSCoords{F}), ("fk5j2000", FK5Coords{2000,F}),
                             ("fk5j1975", FK5Coords{1975,F}), ("gal", GalCoords{F}))
@@ -33,8 +33,8 @@ indata, inhdr = readdlm(fname, ','; header=true)
 
             # Read in reference answers.
             ref_fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
-            refdata, hdr = readdlm(ref_fname, ','; header=true)
-            c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i=1:size(refdata,1)]
+            refdata, hdr = readdlm(ref_fname, ','; header = true)
+            c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i = 1:size(refdata, 1)]
 
             # compare
             sep = separation.(c_out, c_ref)
@@ -49,8 +49,8 @@ end
 
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin
-    c1 = ICRSCoords(ℯ, pi/2)
-    c5 = ICRSCoords(ℯ, 1 + pi/2)
+    c1 = ICRSCoords(ℯ, pi / 2)
+    c5 = ICRSCoords(ℯ, 1 + pi / 2)
     @test separation(c1, c5) ≈ separation(c5, c1) ≈
         separation(c1, convert(GalCoords, c5)) ≈
         separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
@@ -61,10 +61,10 @@ end
         @test typeof(c2) === T{Float32}
         @test typeof(c3) === T{Float64}
         @test typeof(c4) === T{BigFloat}
-        @test isapprox(lat(c2), lat(c3), rtol=sqrt(eps(Float32)))
-        @test isapprox(lat(c3), lat(c4), rtol=sqrt(eps(Float64)))
-        @test isapprox(lon(c2), lon(c3), rtol=sqrt(eps(Float32)))
-        @test isapprox(lon(c3), lon(c4), rtol=sqrt(eps(Float64)))
+        @test isapprox(lat(c2), lat(c3), rtol = sqrt(eps(Float32)))
+        @test isapprox(lat(c3), lat(c4), rtol = sqrt(eps(Float64)))
+        @test isapprox(lon(c2), lon(c3), rtol = sqrt(eps(Float32)))
+        @test isapprox(lon(c3), lon(c4), rtol = sqrt(eps(Float64)))
         c6 = convert(T, c5)
         @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
     end
@@ -77,7 +77,5 @@ end
     # Unitful
     @test ICRSCoords(20u"°", 0u"rad") == ICRSCoords(0.3490658503988659, 0.0)
     @test GalCoords(20u"°", 0u"rad") == GalCoords(0.3490658503988659, 0.0)
-    @test FK5Coords{2000}(20u"°", 0u"rad") == FK5Coords{2000}(0.3490658503988659, 0.0)    
+    @test FK5Coords{2000}(20u"°", 0u"rad") == FK5Coords{2000}(0.3490658503988659, 0.0)
 end
-
-

@@ -5,7 +5,7 @@ Basic astronomical coordinate systems in Julia
 
 [![Build Status](https://img.shields.io/travis/JuliaAstro/SkyCoords.jl.svg?style=flat-square)](https://travis-ci.org/JuliaAstro/SkyCoords.jl)
 [![Build status](https://img.shields.io/appveyor/ci/kbarbary/skycoords-jl.svg?style=flat-square&label=windows)](https://ci.appveyor.com/project/kbarbary/skycoords-jl/branch/master)
-[![Coverage Status](http://img.shields.io/coveralls/JuliaAstro/SkyCoords.jl.svg?style=flat-square)](https://coveralls.io/r/JuliaAstro/SkyCoords.jl?branch=master)
+[![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
 ## Install
 

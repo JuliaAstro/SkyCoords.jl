@@ -9,7 +9,7 @@ makedocs(
         "API/Reference" => "api.md"
     ],
     modules = [SkyCoords],
-    # strict=true
+    strict=true
 )
 
 deploydocs(

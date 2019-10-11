@@ -92,4 +92,5 @@ end
     @test coord"38°47'01.2802\"" ≈ 0.6769030681498798
     @test coord"-  10° 02'  10.885 \"" ≈ -0.17389837681291273
     @test coord"2 h 12 m 33.33 s" ≈ 0.5783824791568358
+    @test_throws LoadError eval(:(coord"02 50 1242.444"))
 end

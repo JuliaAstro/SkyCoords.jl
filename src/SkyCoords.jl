@@ -38,7 +38,6 @@ macro coord_str(input::String)
     deg_r = r"([+-]?\d+)°(\d+)'(\d+\.?\d*)\""
     if occursin(ha_r, input)
         m = match(ha_r, input)
-        if m === nothing error("Could not parse $input to hour angle") end
         h, m, s = parse.(Float64, m.captures)
         rad = h * 2π / 24
         rad += m * 2π / 24 / 60
@@ -46,7 +45,6 @@ macro coord_str(input::String)
         return rad
     elseif occursin(deg_r, input)
         m = match(deg_r, input)
-        if m === nothing error("Could not parse $input to degrees") end
         d, m, s = parse.(Float64, m.captures)
         rad = deg2rad(d)
         rad += deg2rad(m / 60)

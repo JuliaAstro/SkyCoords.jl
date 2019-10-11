@@ -8,8 +8,6 @@ export AbstractSkyCoords,
        FK5Coords,
        separation
 
-import Base: convert
-
 include("types.jl")
 include("utils.jl")
 

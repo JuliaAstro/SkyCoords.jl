@@ -6,10 +6,56 @@ export AbstractSkyCoords,
        ICRSCoords,
        GalCoords,
        FK5Coords,
-       separation
+       separation,
+       @coord_str
 
 include("types.jl")
 include("utils.jl")
+
+# ------------------------------------------------------------------------------
+# generate coordinates given string
+
+"""
+    @coord_str input
+
+Parses strings that specify common astronomical coordinates into radians. The two supported formats are `XhYmZs` and `X°Y'Z"`
+
+# Examples
+```jldoctest
+julia> coord"12h52m64.300s"
+3.3731614843033575
+
+julia> coord"0°12'5\\\"" # Note that you have to escape the "
+0.003514899188044136
+
+julia> coord"-  10° 02 '  10.885 \\\"" # Whitespace does not matter
+-0.17389837681291273
+```
+"""
+macro coord_str(input::String)
+    input = replace(strip(input), r"\s" => "")
+    ha_r = r"([+-]?\d+)h(\d+)m(\d+\.?\d*)s"
+    deg_r = r"([+-]?\d+)°(\d+)'(\d+\.?\d*)\""
+    if occursin(ha_r, input)
+        m = match(ha_r, input)
+        if m === nothing error("Could not parse $input to hour angle") end
+        h, m, s = parse.(Float64, m.captures)
+        rad = h * 2π / 24
+        rad += m * 2π / 24 / 60
+        rad += s * 2π / 24 / 60 / 60
+        return rad
+    elseif occursin(deg_r, input)
+        m = match(deg_r, input)
+        if m === nothing error("Could not parse $input to degrees") end
+        d, m, s = parse.(Float64, m.captures)
+        rad = deg2rad(d)
+        rad += deg2rad(m / 60)
+        rad += deg2rad(s / 60 / 60)
+        return rad
+    else
+        error("Could not parse $input to sky coordinates")
+    end
+end
 
 # ------------------------------------------------------------------------------
 # Distance between coordinates

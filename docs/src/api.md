@@ -18,5 +18,6 @@ FK5Coords
 ## Functions
 
 ```@docs
+@coord_str
 separation
 ```

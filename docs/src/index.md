@@ -59,6 +59,18 @@ ICRSCoords{Float64}(0.3490658503988659, 0.05235987755982989)
 
 ```
 
+### Coordinate Strings
+
+The [`@coord_str`](@ref) macro string lets us parse common hour-angle and degree string conventions directly to radians.
+
+```jldoctest
+julia> coord"0h0m0s"
+0.0
+
+julia> vega = ICRSCoords(coord"18h36m56.33635s", coord"38°47'01.2802\"")
+ICRSCoords{Float64}(4.873565508047745, 0.6769030681498798)
+```
+
 ### Angular Separation between Coordinates
 
 The [`separation`](@ref) function allows you to compute the angular (great-circle)

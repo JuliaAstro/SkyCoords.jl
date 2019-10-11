@@ -82,3 +82,14 @@ end
     @test GalCoords(20u"°", 0u"rad") == GalCoords(0.3490658503988659, 0.0)
     @test FK5Coords{2000}(20u"°", 0u"rad") == FK5Coords{2000}(0.3490658503988659, 0.0)
 end
+
+@testset "Coord String" begin
+    @test coord"0h0m0s" == coord"0°0'0\"" == 0.0
+    @test coord"12h0m0s" ≈ coord"180°0'0\"" ≈ π
+    @test coord"-12h0m0s" ≈ coord"-180°0'0\"" ≈ -π
+    @test coord"+12h0m0s" ≈ coord"+180°0'0\"" ≈ π
+    @test coord"18h36m56.33635s" ≈ 4.873565508047745
+    @test coord"38°47'01.2802\"" ≈ 0.6769030681498798
+    @test coord"-  10° 02'  10.885 \"" ≈ -0.17389837681291273
+    @test coord"2 h 12 m 33.33 s" ≈ 0.5783824791568358
+end

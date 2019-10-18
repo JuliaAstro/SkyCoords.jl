@@ -9,7 +9,7 @@ SkyCoords.jl provides a type system for astronomical coordinate systems with app
 ## Installation
 From the Julia REPL
 
-```julia
+```julia-repl
 (v1.2) pkg> add SkyCoords
 
 julia> using SkyCoords

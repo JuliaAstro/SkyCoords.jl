@@ -28,7 +28,7 @@ This is the current standard adopted by the International Astronomical Union not
 
 # Coordinates
 - `ra` - Right ascension in radians (0, 2π)
-- `dec` - Declination in radians (-π, π)
+- `dec` - Declination in radians (-π/2, π/2)
 """
 struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
@@ -48,7 +48,7 @@ This coordinate system is defined based on the projection of the Milky Way galax
 
 # Coordinates
 - `l` - Galactic longitude in radians (-π, π)
-- `b` - Galactic latitude in radians (-π, π)
+- `b` - Galactic latitude in radians (-π/2, π/2)
 """
 struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
     l::T
@@ -68,7 +68,7 @@ This coordinate system maps the celestial sphere based on a geocentric observer.
 
 # Coordinates
 - `ra` - Right ascension in radians (0, 2π)
-- `dec` - Declination in radians (-π, π)
+- `dec` - Declination in radians (-π/2, π/2)
 """
 struct FK5Coords{e,T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
@@ -248,8 +248,7 @@ end
 
 Return angular separation between two sky coordinates, in radians.
 
-The angular separation is calculated using the Vincenty formula
-(http://en.wikipedia.org/wiki/Great-circle_distance), which is slightly more
+The angular separation is calculated using the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance), which is slightly more
 complex and computationally expensive than some alternatives, but is stable at
 at all distances, including the poles and antipodes.
 """

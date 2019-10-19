@@ -6,7 +6,7 @@ using SkyCoords
 
 using Test, DelimitedFiles, Printf, Statistics
 
-import SkyCoords: lat, lon
+import SkyCoords: lat, lon, str2rad
 
 datapath = joinpath(dirname(@__FILE__), "data")
 

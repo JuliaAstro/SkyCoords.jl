@@ -24,8 +24,8 @@ struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
 end
 ICRSCoords(ra::T, dec::T) where {T <: AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
-ICRSCoords(c::AbstractSkyCoords) = convert(ICRSCoords, c)
-
+ICRSCoords(c::T) where {T <: AbstractSkyCoords} = convert(ICRSCoords, c)
+ICRSCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(ICRSCoords{F}, c)
 
 """
     GalCoords(l, b)
@@ -45,7 +45,8 @@ struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
 end
 GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
-GalCoords(c::AbstractSkyCoords) = convert(GalCoords, c)
+GalCoords(c::T) where {T <: AbstractSkyCoords} = convert(GalCoords, c)
+GalCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(GalCoords{F}, c)
 
 """
     FK5Coords{equinox}(ra, dec)
@@ -66,8 +67,8 @@ end
 FK5Coords{e}(ra::T, dec::T) where {e,T <: AbstractFloat} = FK5Coords{e,T}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} =
    FK5Coords{e}(promote(float(ra), float(dec))...)
-FK5Coords{e}(c::AbstractSkyCoords) where {e} = convert(FK5Coords{e}, c)
-
+FK5Coords{e}(c::T) where {e,T <: AbstractSkyCoords} = convert(FK5Coords{e}, c)
+FK5Coords{e,F}(c::T) where {e,F,T <: AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
 
 
 # Scalar coordinate conversions
@@ -78,3 +79,5 @@ function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords,S <: Abstra
     lon, lat = cart2coords(r)
     T(lon, lat)
 end
+
+Base.:(==)(a::T, b::T) where {T <: AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)

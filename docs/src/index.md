@@ -44,7 +44,7 @@ GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
 julia> c2.l # Note that galactic coordinate fields are l, b
 1.6814027872278692
 
-julia> convert(FK5Coords{2000}, c1)
+julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
 FK5Coords{2000,Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
 
 ```

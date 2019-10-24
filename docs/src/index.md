@@ -104,7 +104,7 @@ corresponding to scalar coordinates.
 |:----------------|:---------------------------------------|
 | CPU             | Intel core i5-8259U @ 2.3GHz (4 cores) |
 | RAM             | 16GB                                   |
-| Julia Version   | 1.2 (JULIA\_NUM\_THREADS=8)            |
+| Julia Version   | 1.2                                    |
 | Python Version  | 3.7                                    |
 | Astropy Version | 3.1.2                                  |
 

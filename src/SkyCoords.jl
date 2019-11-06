@@ -221,15 +221,6 @@ rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords, T2<:GalCoords} = GAL_TO_IC
 @generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1, T1, e2, T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
-# Scalar coordinate conversions
-convert(::Type{T}, c::T) where {T<:AbstractSkyCoords} = c
-function convert(::Type{T}, c::S) where {T<:AbstractSkyCoords, S<:AbstractSkyCoords}
-    r = rotmat(T, S) * coords2cart(c)
-    lon, lat = cart2coords(r)
-    T(lon, lat)
-end
-
-
 # ------------------------------------------------------------------------------
 # Distance between coordinates
 

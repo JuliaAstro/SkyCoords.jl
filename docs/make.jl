@@ -15,5 +15,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/juliaastro/skycoords.jl.git"
+    repo = "github.com/JuliaAstro/SkyCoords.jl.git"
 )

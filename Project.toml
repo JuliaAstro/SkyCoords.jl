@@ -1,7 +1,7 @@
 name = "SkyCoords"
 uuid = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 authors = "Kyle Barbary, Mosé Giordano, and contributors"
-version = "0.4.0"
+version = "0.5.0-DEV"
 
 [deps]
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

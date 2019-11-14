@@ -14,42 +14,50 @@ include("types.jl")
 """
     str2rad(::AbstractString)
 
-Parses strings that specify common astronomical coordinates into radians. The two supported formats are `XhYmZs` and `X°Y'Z"`
+Parses strings that specify common astronomical coordinates into radians. A simplified version of the regex allowed for both
+
+* hour angle - `"xx [h] xx ['′m:] xx [\\\"″s]?"`
+* degree - `"xx [°d:] xx ['′m:] xx [\\\"″s]?"`
+
+So, you can see that this will parse an hour angle if the leading unit contains an `h` otherwise it will parse a degree if the leading unit contains a `°`, `d` or `:`. Also, you can forego the final unit, since it will be parsed automatically. The values (`xx`) will be parsed as `Float64`.
 
 # Examples
 ```jldoctest
-julia> coord"12h52m64.300s"
+julia> str2rad("12h52m64.300s")
 3.3731614843033575
 
-julia> coord"0°12'5\\\"" # Note that you have to escape the "
+julia> str2rad("0°12'5\\\"") # Note that you have to escape the "
 0.003514899188044136
 
-julia> coord"-  10° 02 '  10.885 \\\"" # Whitespace does not matter
+julia> str2rad("-  10° 02 ′  10.885 ″") # Whitespace does not matter
 -0.17389837681291273
 ```
 """
 function str2rad(input::AbstractString) 
     input = replace(strip(input), r"\s" => "")
-    ha_r = r"([+-]?\d+)h(\d+)m(\d+\.?\d*)s"
-    deg_r = r"([+-]?\d+)[°d](\d+)['′m](\d+\.?\d*)[\"″s]"
+    ha_r = r"([+-]?\d+\.?\d*)h(\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
+    deg_r = r"([+-]?\d+\.?\d*)[°d:](\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
     if occursin(ha_r, input)
         m = match(ha_r, input)
         h, m, s = parse.(Float64, m.captures)
-        rad = h * 2π / 24
-        rad += m * 2π / 24 / 60
-        rad += s * 2π / 24 / 60 / 60
+        rad = hr2rad(h)
+        rad += hr2rad(m / 60)
+        rad += hr2rad(s / 3600)
         return rad
     elseif occursin(deg_r, input)
         m = match(deg_r, input)
         d, m, s = parse.(Float64, m.captures)
         rad = deg2rad(d)
         rad += deg2rad(m / 60)
-        rad += deg2rad(s / 60 / 60)
+        rad += deg2rad(s / 3600)
         return rad
     else
         error("Could not parse $input to sky coordinates")
     end
 end
+
+@inline hr2rad(h::Number) = 2π/24 * h
+
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
 

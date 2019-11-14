@@ -102,7 +102,12 @@ end
     @test str2rad("180°0'0\"") ≈ π
     @test str2rad("180:0:0") ≈ π
     @test str2rad("180.0 ° 0.0 ′ 0.0    ″") ≈ π
-    
+
+    # bad
+    @test_throws ErrorException str2rad("180 0 0")
+    @test_throws ErrorException str2rad("elephant")
+    @test_throws ErrorException str2rad("180d0m0s", true)
+        
 end
 
 @testset "string construction" for C in [ICRSCoords, GalCoords, FK5Coords{2000}, FK5Coords{1970}]

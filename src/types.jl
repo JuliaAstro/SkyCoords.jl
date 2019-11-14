@@ -46,7 +46,7 @@ struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
 end
 GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
-GalCoords(l::AbstractString, b::AbstractString) = GalCoords(str2rad(l, true), str2rad(b))
+GalCoords(l::AbstractString, b::AbstractString) = GalCoords(str2rad(l), str2rad(b))
 GalCoords(c::T) where {T <: AbstractSkyCoords} = convert(GalCoords, c)
 GalCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(GalCoords{F}, c)
 

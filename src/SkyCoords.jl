@@ -7,12 +7,13 @@ export AbstractSkyCoords,
        ICRSCoords,
        GalCoords,
        FK5Coords,
-       separation
+       separation,
+       str2rad
 
 include("types.jl")
 
 """
-    str2rad(::AbstractString)
+    str2rad(::AbstractString, force_ha=false)
 
 Parses strings that specify common astronomical coordinates into radians. A simplified version of the regex allowed for both
 
@@ -20,6 +21,10 @@ Parses strings that specify common astronomical coordinates into radians. A simp
 * degree - `"xx [°d:] xx ['′m:] xx [\\\"″s]?"`
 
 So, you can see that this will parse an hour angle if the leading unit contains an `h` otherwise it will parse a degree if the leading unit contains a `°`, `d` or `:`. Also, you can forego the final unit, since it will be parsed automatically. The values (`xx`) will be parsed as `Float64`.
+
+If `force_ha` is `true` then the input will be parsed as an hour angle using a looser regex that allows the leading unit to be a `:`
+
+* loose hour angle - `"xx [h:] xx ['′m:] xx [\\\"″s]?"`
 
 # Examples
 ```jldoctest
@@ -31,13 +36,25 @@ julia> str2rad("0°12'5\\\"") # Note that you have to escape the "
 
 julia> str2rad("-  10° 02 ′  10.885 ″") # Whitespace does not matter
 -0.17389837681291273
+
+julia> str2rad("12:0:0", true)
+3.141592653589793
 ```
 """
-function str2rad(input::AbstractString) 
+function str2rad(input::AbstractString, force_ha=false) 
     input = replace(strip(input), r"\s" => "")
     ha_r = r"([+-]?\d+\.?\d*)h(\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
+    ha_r_loose = r"([+-]?\d+\.?\d*)[h:](\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
     deg_r = r"([+-]?\d+\.?\d*)[°d:](\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
-    if occursin(ha_r, input)
+    if force_ha
+        m = match(ha_r_loose, input)
+        isnothing(m) && error("Could not parse $input as hour angle")
+        h, m, s = parse.(Float64, m.captures)
+        rad = hr2rad(h)
+        rad += hr2rad(m / 60)
+        rad += hr2rad(s / 3600)
+        return rad % 2π
+    elseif occursin(ha_r, input)
         m = match(ha_r, input)
         h, m, s = parse.(Float64, m.captures)
         rad = hr2rad(h)

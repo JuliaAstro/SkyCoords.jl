@@ -24,7 +24,7 @@ struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
 end
 ICRSCoords(ra::T, dec::T) where {T <: AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
-ICRSCoords(ra::AbstractString, dec::AbstractString) = ICRSCoords(str2rad(ra), str2rad(dec))
+ICRSCoords(ra::AbstractString, dec::AbstractString) = ICRSCoords(str2rad(ra, true), str2rad(dec))
 ICRSCoords(c::T) where {T <: AbstractSkyCoords} = convert(ICRSCoords, c)
 ICRSCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(ICRSCoords{F}, c)
 
@@ -46,7 +46,7 @@ struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
 end
 GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
-GalCoords(l::AbstractString, b::AbstractString) = GalCoords(str2rad(l), str2rad(b))
+GalCoords(l::AbstractString, b::AbstractString) = GalCoords(str2rad(l, true), str2rad(b))
 GalCoords(c::T) where {T <: AbstractSkyCoords} = convert(GalCoords, c)
 GalCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(GalCoords{F}, c)
 
@@ -69,7 +69,7 @@ end
 FK5Coords{e}(ra::T, dec::T) where {e,T <: AbstractFloat} = FK5Coords{e,T}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} =
    FK5Coords{e}(promote(float(ra), float(dec))...)
-FK5Coords{e}(ra::AbstractString, dec::AbstractString) where {e} = FK5Coords{e}(str2rad(ra), str2rad(dec))
+FK5Coords{e}(ra::AbstractString, dec::AbstractString) where {e} = FK5Coords{e}(str2rad(ra, true), str2rad(dec))
 FK5Coords{e}(c::T) where {e,T <: AbstractSkyCoords} = convert(FK5Coords{e}, c)
 FK5Coords{e,F}(c::T) where {e,F,T <: AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
 

@@ -53,21 +53,21 @@ function str2rad(input::AbstractString, force_ha=false)
         rad = hr2rad(h)
         rad += hr2rad(m / 60)
         rad += hr2rad(s / 3600)
-        return rad % 2π
+        return rad
     elseif occursin(ha_r, input)
         m = match(ha_r, input)
         h, m, s = parse.(Float64, m.captures)
         rad = hr2rad(h)
         rad += hr2rad(m / 60)
         rad += hr2rad(s / 3600)
-        return rad % 2π
+        return rad
     elseif occursin(deg_r, input)
         m = match(deg_r, input)
         d, m, s = parse.(Float64, m.captures)
         rad = deg2rad(d)
         rad += deg2rad(m / 60)
         rad += deg2rad(s / 3600)
-        return rad % 2π
+        return rad
     else
         error("Could not parse $input to sky coordinates")
     end

@@ -87,9 +87,9 @@ end
 @testset "str2rad" begin
     # trivial
     @test str2rad("0h0m0") == 0
-    @test str2rad("24h0m0") == 0
+    @test str2rad("24h0m0") == 2π
     @test str2rad("0d0m0") == 0
-    @test str2rad("360d0m0") == 0
+    @test str2rad("360d0m0") == 2π
 
     # hour angles
     @test str2rad("12h0m0s") ≈ π
@@ -107,11 +107,11 @@ end
 
 @testset "string construction" for C in [ICRSCoords, GalCoords, FK5Coords{2000}, FK5Coords{1970}]
     @test C("0h0m0", "0d0m0") == C(0.0, 0.0)
-    @test C("12h 0.0m 0.0s", "180:0:0") == C(π, π)
-    @test C("24h0:0", "360:0:0") == C(0.0, 0.0)
+    @test C("12h 0.0m 0.0s", "90:0:0") == C(π, π/2)
+    @test C("24h0:0", "90:0:0") == C(0.0, π/2)
     if C == GalCoords
-        @test C("12:0:0", "180:0:0") == C(0.20943951023931956, π)
+        @test C("12:0:0", "90:0:0") == C(0.20943951023931956, π/2)
     else
-        @test C("12:0:0", "180:0:0") == C(π, π)
+        @test C("12:0:0", "90:0:0") == C(π, π/2)
     end
 end

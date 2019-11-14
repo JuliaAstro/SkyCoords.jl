@@ -20,7 +20,7 @@ This is the current standard adopted by the International Astronomical Union not
 struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T <: AbstractFloat} = new(mod2pi(ra), dec)
+    ICRSCoords{T}(ra, dec) where {T <: AbstractFloat} = new(ra % 2π, dec)
 end
 ICRSCoords(ra::T, dec::T) where {T <: AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
@@ -42,7 +42,7 @@ This coordinate system is defined based on the projection of the Milky Way galax
 struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T <: AbstractFloat} = new(mod2pi(l), b)
+    GalCoords{T}(l, b) where {T <: AbstractFloat} = new(l % 2π, b)
 end
 GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
@@ -64,7 +64,7 @@ This coordinate system maps the celestial sphere based on a geocentric observer.
 struct FK5Coords{e,T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e,T}(ra, dec) where {T <: AbstractFloat,e} = new(mod2pi(ra), dec)
+    FK5Coords{e,T}(ra, dec) where {T <: AbstractFloat,e} = new(ra % 2π, dec)
 end
 FK5Coords{e}(ra::T, dec::T) where {e,T <: AbstractFloat} = FK5Coords{e,T}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} =

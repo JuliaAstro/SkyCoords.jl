@@ -7,11 +7,14 @@ The supertype for all sky coordinate systems.
 abstract type AbstractSkyCoords end
 
 """
-    ICRSCoords(ra, dec)
+    ICRSCoords(ra::Real, dec::Real)
+    ICRSCoords(ra::AbstractString, dec::AbstractString)
 
 [International Celestial Reference System](https://en.wikipedia.org/wiki/International_Celestial_Reference_System)
 
 This is the current standard adopted by the International Astronomical Union notably due to its high level of accuracy compared to standard equatorial coordinate systems. What sets this apart from [`FK5Coords`](@ref) is that it is completely defined using extragalactic radio sources rather than a geocentric frame, which means the reference frame will not change due to Earth's motion.
+
+If the coordinates are given as numbers, they will be assumed to be radians. If they are given as strings, `ra` will be assumed to be an hour angle and `dec` will be assumed to be in degrees.
 
 # Coordinates
 - `ra` - Right ascension in radians (0, 2π)
@@ -35,6 +38,8 @@ ICRSCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(ICRSCoords{F}, c)
 
 This coordinate system is defined based on the projection of the Milky Way galaxy onto our celestial sphere, with (0, 0) being approximately the center of our galaxy.
 
+If the coordinates are given as numbers, they will be assumed to be radians. If they are given as strings, both will be assumed to be in degrees.
+
 # Coordinates
 - `l` - Galactic longitude in radians (-π, π)
 - `b` - Galactic latitude in radians (-π/2, π/2)
@@ -56,6 +61,8 @@ GalCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(GalCoords{F}, c)
 [Equatorial Coordinate System](https://en.wikipedia.org/wiki/Equatorial_coordinate_system)
 
 This coordinate system maps the celestial sphere based on a geocentric observer. Historically the oldest, this coordinate system has been shown to be inaccurate due to its definitions based on the Earth, which has long-scale precession causing the reference frame to change. Because of this, an equinox must be provided (typically 2000, commonly known as J2000) which defines the reference frame.
+
+If the coordinates are given as numbers, they will be assumed to be radians. If they are given as strings, `ra` will be assumed to be an hour angle and `dec` will be assumed to be in degrees.
 
 # Coordinates
 - `ra` - Right ascension in radians (0, 2π)

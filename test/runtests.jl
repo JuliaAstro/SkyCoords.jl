@@ -77,3 +77,36 @@ end
         @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
     end
 end
+
+@testset "dhr2rad" begin
+    @test SkyCoords.hr2rad(0) == 0
+    @test SkyCoords.hr2rad(24) ≈ 2π
+    @test SkyCoords.hr2rad(12.0) ≈ π
+end
+
+@testset "str2rad" begin
+    # trivial
+    @test str2rad("0h0m0") == 0
+    @test str2rad("24h0m0") == 0
+    @test str2rad("0d0m0") == 0
+    @test str2rad("360d0m0") == 0
+
+    # hour angles
+    @test str2rad("12h0m0s") ≈ π
+    @test str2rad("12h0:0") ≈ π
+    @test str2rad("12h0′0″") ≈ π
+    @test str2rad("12.0 h 0.00 ' 00.000 \"") ≈ π
+
+    # declination
+    @test str2rad("180d0m0s") ≈ π
+    @test str2rad("180°0'0\"") ≈ π
+    @test str2rad("180:0:0") ≈ π
+    @test str2rad("180.0 ° 0.0 ′ 0.0    ″") ≈ π
+    
+end
+
+@testset "string construction" for C in [ICRSCoords, GalCoords, FK5Coords{2000}, FK5Coords{1970}]
+    @test C("0h0m0", "0d0m0") == C(0.0, 0.0)
+    @test C("12h 0.0m 0.0s", "180:0:0") == C(π, π)
+    @test C("24h0:0", "360:0:0") == C(0.0, 0.0)
+end

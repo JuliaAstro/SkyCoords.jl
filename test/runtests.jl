@@ -113,7 +113,7 @@ end
 @testset "string construction" for C in [ICRSCoords, GalCoords, FK5Coords{2000}, FK5Coords{1970}]
     @test C("0h0m0", "0d0m0") == C(0.0, 0.0)
     @test C("12h 0.0m 0.0s", "90:0:0") == C(π, π/2)
-    @test C("24h0:0", "90:0:0") == C(0.0, π/2)
+    @test C("18h0:0", "90:0:0") == C(3π/2, π/2)
     if C == GalCoords
         @test C("12:0:0", "90:0:0") == C(0.20943951023931956, π/2)
     else

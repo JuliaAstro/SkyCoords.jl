@@ -23,7 +23,7 @@ If the coordinates are given as numbers, they will be assumed to be radians. If 
 struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T <: AbstractFloat} = new(ra % 2π, dec)
+    ICRSCoords{T}(ra, dec) where {T <: AbstractFloat} = new(mod2pi(ra), dec)
 end
 ICRSCoords(ra::T, dec::T) where {T <: AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
@@ -47,7 +47,7 @@ If the coordinates are given as numbers, they will be assumed to be radians. If 
 struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T <: AbstractFloat} = new(l % 2π, b)
+    GalCoords{T}(l, b) where {T <: AbstractFloat} = new(mod2pi(l), b)
 end
 GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
@@ -71,7 +71,7 @@ If the coordinates are given as numbers, they will be assumed to be radians. If 
 struct FK5Coords{e,T <: AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e,T}(ra, dec) where {T <: AbstractFloat,e} = new(ra % 2π, dec)
+    FK5Coords{e,T}(ra, dec) where {T <: AbstractFloat,e} = new(mod2pi(ra), dec)
 end
 FK5Coords{e}(ra::T, dec::T) where {e,T <: AbstractFloat} = FK5Coords{e,T}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} =

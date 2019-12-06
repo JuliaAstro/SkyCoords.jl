@@ -3,11 +3,7 @@ __precompile__()
 module SkyCoords
 using StaticArrays
 
-export AbstractSkyCoords,
-       ICRSCoords,
-       GalCoords,
-       FK5Coords,
-       separation
+export AbstractSkyCoords, ICRSCoords, GalCoords, FK5Coords, separation
 
 include("types.jl")
 
@@ -40,7 +36,7 @@ julia> str2rad("12:0:0", true)
 3.141592653589793
 ```
 """
-function str2rad(input::AbstractString, force_ha=false) 
+function str2rad(input::AbstractString, force_ha = false)
     input = replace(strip(input), r"\s" => "")
     ha_r = r"([+-]?\d+\.?\d*)h(\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
     ha_r_loose = r"([+-]?\d+\.?\d*)[h:](\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
@@ -79,23 +75,17 @@ end
 
 function xrotmat(angle)
     s, c = sincos(angle)
-    SMatrix{3,3}(1, 0,  0,
-                 0, c, -s,
-                 0, s,  c)
+    SMatrix{3,3}(1, 0, 0, 0, c, -s, 0, s, c)
 end
 
 function yrotmat(angle)
     s, c = sincos(angle)
-    SMatrix{3,3}( c, 0, s,
-                  0, 1, 0,
-                 -s, 0, c)
+    SMatrix{3,3}(c, 0, s, 0, 1, 0, -s, 0, c)
 end
 
 function zrotmat(angle)
     s, c = sincos(angle)
-    SMatrix{3,3}(c, -s,  0,
-                 s,  c,  0,
-                 0,  0,  1)
+    SMatrix{3,3}(c, -s, 0, s, c, 0, 0, 0, 1)
 end
 
 # (lon, lat) -> [x, y, z] unit vector
@@ -112,9 +102,9 @@ cart2coords(v) = atan(v[2], v[1]), atan(v[3], sqrt(v[1] * v[1] + v[2] * v[2]))
 # Constant rotation matricies and precession matrix function
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
-eta0 = deg2rad(-19.9 / 3600000.)
-xi0 = deg2rad(9.1 / 3600000.)
-da0 = deg2rad(-22.9 / 3600000.)
+eta0 = deg2rad(-19.9 / 3600000.0)
+xi0 = deg2rad(9.1 / 3600000.0)
+da0 = deg2rad(-22.9 / 3600000.0)
 const ICRS_TO_FK5J2000 = xrotmat(-eta0) * yrotmat(xi0) * zrotmat(da0)
 const FK5J2000_TO_ICRS = ICRS_TO_FK5J2000'
 
@@ -130,8 +120,7 @@ ngp_fk5j2000_ra = deg2rad(192.8594812065348)
 ngp_fk5j2000_dec = deg2rad(27.12825118085622)
 lon0_fk5j2000 = deg2rad(122.9319185680026)
 const FK5J2000_TO_GAL = (zrotmat(pi - lon0_fk5j2000) *
-                         yrotmat(pi/2. - ngp_fk5j2000_dec) *
-                         zrotmat(ngp_fk5j2000_ra))
+                         yrotmat(pi / 2.0 - ngp_fk5j2000_dec) * zrotmat(ngp_fk5j2000_ra))
 const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 
 # Gal --> ICRS: simply chain through FK5J2000
@@ -142,12 +131,9 @@ const ICRS_TO_GAL = GAL_TO_ICRS'
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
 # Circular 179.  This should match the IAU 2006 standard from SOFA.
-const pzeta = [2.650545, 2306.083227, 0.2988499, 0.01801828, -0.000005971,
-               -0.0000003173]
-const pz = [-2.650545, 2306.077181, 1.0927348, 0.01826837, -0.000028596,
-            -0.0000002904]
-const ptheta = [0.0, 2004.191903, -0.4294934, -0.04182264, -0.000007089,
-                -0.0000001274]
+const pzeta = [2.650545, 2306.083227, 0.2988499, 0.01801828, -0.000005971, -0.0000003173]
+const pz = [-2.650545, 2306.077181, 1.0927348, 0.01826837, -0.000028596, -0.0000002904]
+const ptheta = [0.0, 2004.191903, -0.4294934, -0.04182264, -0.000007089, -0.0000001274]
 function precess_from_j2000(equinox)
     t = (equinox - 2000.0) / 100.0
     tn = 1.0
@@ -160,9 +146,9 @@ function precess_from_j2000(equinox)
         z += pz[i] * tn
         theta += ptheta[i] * tn
     end
-    zeta = deg2rad(zeta/3600.0)
-    z = deg2rad(z/3600.0)
-    theta = deg2rad(theta/3600.0)
+    zeta = deg2rad(zeta / 3600.0)
+    z = deg2rad(z / 3600.0)
+    theta = deg2rad(theta / 3600.0)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
 end
 
@@ -180,8 +166,8 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords, T2<:ICRSCoords} = ICRS_TO_GAL
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords, T2<:GalCoords} = GAL_TO_ICRS
+rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords,T2<:ICRSCoords} = ICRS_TO_GAL
+rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords,T2<:GalCoords} = GAL_TO_ICRS
 
 # Define both these so that `convert(FK5Coords{e}, ...)` and
 # `convert(FK5Coords{e,T}, ...)` both work. Similar with other
@@ -196,15 +182,15 @@ rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords, T2<:GalCoords} = GAL_TO_IC
 @generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:GalCoords} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
 
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords, e2, T2} =
+@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords,e2,T2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords, e2, T2} =
+@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords,e2,T2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
 
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1, e2, T2} =
+@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1,e2,T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1, T1, e2, T2} =
+@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1,T1,e2,T2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # ------------------------------------------------------------------------------
@@ -215,9 +201,10 @@ function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
     sin_Δλ, cos_Δλ = sincos(Δλ)
     sin_ϕ1, cos_ϕ1 = sincos(ϕ_1)
     sin_ϕ2, cos_ϕ2 = sincos(ϕ_2)
-    return atan(hypot(cos_ϕ2 * sin_Δλ,
-                      cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
-                sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ)
+    return atan(
+        hypot(cos_ϕ2 * sin_Δλ, cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
+        sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ,
+    )
 end
 
 """

@@ -20,16 +20,17 @@ If the coordinates are given as numbers, they will be assumed to be radians. If 
 - `ra` - Right ascension in radians (0, 2π)
 - `dec` - Declination in radians (-π/2, π/2)
 """
-struct ICRSCoords{T <: AbstractFloat} <: AbstractSkyCoords
+struct ICRSCoords{T<:AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T <: AbstractFloat} = new(mod2pi(ra), dec)
+    ICRSCoords{T}(ra, dec) where {T<:AbstractFloat} = new(mod2pi(ra), dec)
 end
-ICRSCoords(ra::T, dec::T) where {T <: AbstractFloat} = ICRSCoords{T}(ra, dec)
+ICRSCoords(ra::T, dec::T) where {T<:AbstractFloat} = ICRSCoords{T}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
-ICRSCoords(ra::AbstractString, dec::AbstractString) = ICRSCoords(str2rad(ra, true), str2rad(dec))
-ICRSCoords(c::T) where {T <: AbstractSkyCoords} = convert(ICRSCoords, c)
-ICRSCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(ICRSCoords{F}, c)
+ICRSCoords(ra::AbstractString, dec::AbstractString) =
+    ICRSCoords(str2rad(ra, true), str2rad(dec))
+ICRSCoords(c::T) where {T<:AbstractSkyCoords} = convert(ICRSCoords, c)
+ICRSCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(ICRSCoords{F}, c)
 
 """
     GalCoords(l, b)
@@ -44,16 +45,16 @@ If the coordinates are given as numbers, they will be assumed to be radians. If 
 - `l` - Galactic longitude in radians (-π, π)
 - `b` - Galactic latitude in radians (-π/2, π/2)
 """
-struct GalCoords{T <: AbstractFloat} <: AbstractSkyCoords
+struct GalCoords{T<:AbstractFloat} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T <: AbstractFloat} = new(mod2pi(l), b)
+    GalCoords{T}(l, b) where {T<:AbstractFloat} = new(mod2pi(l), b)
 end
-GalCoords(l::T, b::T) where {T <: AbstractFloat} = GalCoords{T}(l, b)
+GalCoords(l::T, b::T) where {T<:AbstractFloat} = GalCoords{T}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
 GalCoords(l::AbstractString, b::AbstractString) = GalCoords(str2rad(l), str2rad(b))
-GalCoords(c::T) where {T <: AbstractSkyCoords} = convert(GalCoords, c)
-GalCoords{F}(c::T) where {F,T <: AbstractSkyCoords} = convert(GalCoords{F}, c)
+GalCoords(c::T) where {T<:AbstractSkyCoords} = convert(GalCoords, c)
+GalCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(GalCoords{F}, c)
 
 """
     FK5Coords{equinox}(ra, dec)
@@ -68,26 +69,27 @@ If the coordinates are given as numbers, they will be assumed to be radians. If 
 - `ra` - Right ascension in radians (0, 2π)
 - `dec` - Declination in radians (-π/2, π/2)
 """
-struct FK5Coords{e,T <: AbstractFloat} <: AbstractSkyCoords
+struct FK5Coords{e,T<:AbstractFloat} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e,T}(ra, dec) where {T <: AbstractFloat,e} = new(mod2pi(ra), dec)
+    FK5Coords{e,T}(ra, dec) where {T<:AbstractFloat,e} = new(mod2pi(ra), dec)
 end
-FK5Coords{e}(ra::T, dec::T) where {e,T <: AbstractFloat} = FK5Coords{e,T}(ra, dec)
+FK5Coords{e}(ra::T, dec::T) where {e,T<:AbstractFloat} = FK5Coords{e,T}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} =
-   FK5Coords{e}(promote(float(ra), float(dec))...)
-FK5Coords{e}(ra::AbstractString, dec::AbstractString) where {e} = FK5Coords{e}(str2rad(ra, true), str2rad(dec))
-FK5Coords{e}(c::T) where {e,T <: AbstractSkyCoords} = convert(FK5Coords{e}, c)
-FK5Coords{e,F}(c::T) where {e,F,T <: AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
+    FK5Coords{e}(promote(float(ra), float(dec))...)
+FK5Coords{e}(ra::AbstractString, dec::AbstractString) where {e} =
+    FK5Coords{e}(str2rad(ra, true), str2rad(dec))
+FK5Coords{e}(c::T) where {e,T<:AbstractSkyCoords} = convert(FK5Coords{e}, c)
+FK5Coords{e,F}(c::T) where {e,F,T<:AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
 
 
 # Scalar coordinate conversions
-Base.convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c
+Base.convert(::Type{T}, c::T) where {T<:AbstractSkyCoords} = c
 
-function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords,S <: AbstractSkyCoords}
+function Base.convert(::Type{T}, c::S) where {T<:AbstractSkyCoords,S<:AbstractSkyCoords}
     r = rotmat(T, S) * coords2cart(c)
     lon, lat = cart2coords(r)
     T(lon, lat)
 end
 
-Base.:(==)(a::T, b::T) where {T <: AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)
+Base.:(==)(a::T, b::T) where {T<:AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)

@@ -47,7 +47,7 @@ function str2rad(input::AbstractString, force_ha=false)
     deg_r = r"([+-]?\d+\.?\d*)[°d:](\d+\.?\d*)['′m:](\d+\.?\d*)[\"″s]?"
     if force_ha
         m = match(ha_r_loose, input)
-        isnothing(m) && error("Could not parse $input as hour angle")
+        m === nothing && error("Could not parse $input as hour angle")
         h, m, s = parse.(Float64, m.captures)
         rad = hr2rad(h)
         rad += hr2rad(m / 60)

@@ -48,7 +48,7 @@ julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
 FK5Coords{2000,Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
 
 julia> c3 = ICRSCoords("05:34:31.94", "+22:00:52.2") # construct with strings
-ICRSCoords{Float64}(0.0973115111840974, 0.38422550818029166)
+ICRSCoords{Float64}(1.4596726677614609, 0.38422550818029166)
 ```
 
 ### Angular Separation between Coordinates
@@ -78,10 +78,10 @@ Their angular separation is given by
 
 ```jldoctest sep
 julia> separation(mizar, alcor) # Radians
-0.00343530916945258
+0.0034353091694529297
 
 julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
-11.809723003933499
+11.809723003934701
 ```
 
 ## Accuracy

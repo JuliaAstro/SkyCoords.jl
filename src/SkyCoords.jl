@@ -8,7 +8,7 @@ export AbstractSkyCoords, ICRSCoords, GalCoords, FK5Coords, separation
 include("types.jl")
 
 """
-    str2rad(::AbstractString, force_ha=false)
+    SkyCoords.str2rad(::AbstractString, force_ha=false)
 
 Parses strings that specify common astronomical coordinates into radians. A simplified version of the regex allowed for both
 
@@ -23,6 +23,8 @@ If `force_ha` is `true` then the input will be parsed as an hour angle using a l
 
 # Examples
 ```jldoctest
+julia> import SkyCoords: str2rad
+
 julia> str2rad("12h52m64.300s")
 3.3731614843033575
 

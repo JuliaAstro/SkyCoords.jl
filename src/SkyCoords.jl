@@ -7,8 +7,7 @@ export AbstractSkyCoords,
        ICRSCoords,
        GalCoords,
        FK5Coords,
-       separation,
-       str2rad
+       separation
 
 include("types.jl")
 
@@ -73,7 +72,7 @@ function str2rad(input::AbstractString, force_ha=false)
     end
 end
 
-@inline hr2rad(h::Number) = 2π/24 * h
+@inline hr2rad(h::Number) = π * h / 12
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)

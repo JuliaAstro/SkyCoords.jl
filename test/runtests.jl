@@ -6,7 +6,7 @@ using SkyCoords
 
 using Test, DelimitedFiles, Printf, Statistics
 
-import SkyCoords: lat, lon, str2rad
+import SkyCoords: lat, lon, hr2rad, str2rad
 
 datapath = joinpath(dirname(@__FILE__), "data")
 
@@ -78,10 +78,12 @@ end
     end
 end
 
-@testset "dhr2rad" begin
-    @test SkyCoords.hr2rad(0) == 0
-    @test SkyCoords.hr2rad(24) ≈ 2π
-    @test SkyCoords.hr2rad(12.0) ≈ π
+@testset "hr2rad" begin
+    @test hr2rad(0) == 0
+    @test hr2rad(24) ≈ 2π
+    @test hr2rad(12.0) ≈ π
+    # https://github.com/JuliaAstro/SkyCoords.jl/pull/29#discussion_r354602964
+    @test 1 - hr2rad(big(12)) / π == -1.727233711018888925077270372560079914223200072887256277004740694033718360632485e-77
 end
 
 @testset "str2rad" begin

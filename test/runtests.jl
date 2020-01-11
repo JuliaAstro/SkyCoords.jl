@@ -92,9 +92,8 @@ end
     @test hr2rad(24) ≈ 2π
     @test hr2rad(12.0) ≈ π
     # https://github.com/JuliaAstro/SkyCoords.jl/pull/29#discussion_r354602964
-    @test 1 -
-          hr2rad(big(12)) /
-          π == -1.727233711018888925077270372560079914223200072887256277004740694033718360632485e-77
+    @test hr2rad(big(12)) ≈ π
+ 
 end
 
 @testset "str2rad" begin

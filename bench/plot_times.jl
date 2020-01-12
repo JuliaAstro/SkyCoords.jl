@@ -11,7 +11,9 @@ df2[:system] = ["py_" * s for s in df2[:system]]
 df = vcat(df1, df2)
 
 # Plot
-@df df plot(:n, :time,
+@df df plot(
+    :n,
+    :time,
     group = :system,
     markershape = :circle,
     markersize = 4,

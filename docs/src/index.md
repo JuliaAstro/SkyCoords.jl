@@ -32,7 +32,7 @@ Each type holds a longitude and latitude, and each is a subtype of
 [`AbstractSkyCoords`](@ref).
 
 ```jldoctest
-julia> c1 = ICRSCoords(0., 0.)  # inputs are ra, dec in radians
+julia> c1 = ICRSCoords(0.0, 0.0)  # inputs are ra, dec in radians
 ICRSCoords{Float64}(0.0, 0.0)
 
 julia> c1.ra # access ra, dec individually
@@ -47,6 +47,8 @@ julia> c2.l # Note that galactic coordinate fields are l, b
 julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
 FK5Coords{2000,Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
 
+julia> c3 = ICRSCoords("05:34:31.94", "+22:00:52.2") # construct with strings
+ICRSCoords{Float64}(1.4596726677614609, 0.38422550818029166)
 ```
 
 ### Angular Separation between Coordinates

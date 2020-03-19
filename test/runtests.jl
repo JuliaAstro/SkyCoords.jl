@@ -137,3 +137,30 @@ end
         @test C("12:0:0", "90:0:0") == C(π, π / 2)
     end
 end
+
+# Test separation between coordinates and conversion with mixed floating types.
+@testset "Position Angles" begin
+    c1 = ICRSCoords(0, 0)
+    c2 = ICRSCoords(deg2rad(1), 0)
+
+    # interface
+    @inferred position_angle(c1, c2)
+    @inferred position_angle(c1, c2 |> GalCoords)
+    @test position_angle(c1, c2) == position_angle(c1, c2 |> GalCoords)
+    
+    # accuracy
+    @test position_angle(c1, c2) ≈ π / 2
+
+    c3 = ICRSCoords(deg2rad(1), deg2rad(0.1))
+    @test position_angle(c1, c3) < π / 2
+
+    c4 = ICRSCoords(0, deg2rad(1))
+    @test position_angle(c1, c4) ≈ 0
+
+    # types
+    for T in [ICRSCoords, GalCoords, FK5Coords{2000}]
+        c1 = T(0, 0)
+        c2 = T(deg2rad(1), 0)
+        @test position_angle(c1, c2) ≈ π / 2
+    end
+end

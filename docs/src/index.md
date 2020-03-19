@@ -84,6 +84,17 @@ julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
 11.8097230039347
 ```
 
+with an angle
+
+```jldoctest sep
+julia> position_angle(mizar, alcor) # radians
+1.244602401241819
+
+julia> position_angle(mizar, alcor) |> rad2deg # degrees
+71.31046476300408
+
+```
+
 ## Accuracy
 
 All the supported conversions have been compared to the results of

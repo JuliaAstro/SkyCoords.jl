@@ -144,8 +144,7 @@ end
     c2 = ICRSCoords(deg2rad(1), 0)
 
     # interface
-    @inferred position_angle(c1, c2)
-    @inferred position_angle(c1, c2 |> GalCoords)
+    @test @inferred position_angle(c1, c2) ≈ @inferred position_angle(c1, c2 |> GalCoords)
     @test position_angle(c1, c2) == position_angle(c1, c2 |> GalCoords)
     
     # accuracy

@@ -37,6 +37,8 @@ FK5Coords{2000,Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
 julia> separation(c1, ICRSCoords(1., 0.)) # radians
 1.0
 
+julia> position_angle(c1, ICRSCoords(1, 0)) |> rad2deg
+90.0
 ```
 
 For more information, visit the [documentation](https://juliaastro.github.io/skycoords.jl/stable)

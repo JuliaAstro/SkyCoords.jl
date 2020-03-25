@@ -3,7 +3,12 @@ __precompile__()
 module SkyCoords
 using StaticArrays
 
-export AbstractSkyCoords, ICRSCoords, GalCoords, FK5Coords, separation
+export AbstractSkyCoords, 
+       ICRSCoords,
+       GalCoords,
+       FK5Coords,
+       separation,
+       position_angle
 
 include("types.jl")
 
@@ -223,5 +228,34 @@ separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
 
 separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
     separation(c1, convert(T1, c2))
+
+
+"""
+    position_angle(c1::AbstractSkyCoords, c2::AbstractSkyCoords) -> angle
+
+Return position angle between two sky coordinates, in positive radians.
+
+# Examples
+```jldoctest
+julia> c1 = ICRSCoords(0, 0); c2 = ICRSCoords(deg2rad(1), 0);
+
+julia> position_angle(c1, c2) |> rad2deg
+90.0
+```
+"""
+position_angle(c1::T, c2::T) where {T <: AbstractSkyCoords} = _position_angle(lon(c1), lat(c1), lon(c2), lat(c2))
+position_angle(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords,T2 <: AbstractSkyCoords} = position_angle(c1, convert(T1, c2))
+
+
+function _position_angle(λ1, ϕ1, λ2, ϕ2)
+    sin_Δλ, cos_Δλ = sincos(λ2 - λ1)
+    sin_ϕ1, cos_ϕ1 = sincos(ϕ1)
+    sin_ϕ2, cos_ϕ2 = sincos(ϕ2)
+
+    x = sin_ϕ2 * cos_ϕ1 - cos_ϕ2 * sin_ϕ1 * cos_Δλ
+    y = sin_Δλ * cos_ϕ2
+
+    return mod2pi(atan(y, x))
+end
 
 end # module

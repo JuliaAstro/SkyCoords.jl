@@ -8,7 +8,8 @@ export AbstractSkyCoords,
        GalCoords,
        FK5Coords,
        separation,
-       position_angle
+       position_angle,
+       offset
 
 include("types.jl")
 
@@ -267,7 +268,13 @@ Uses the sine and cosine rules in spherical coordinates with corrections for the
 
 # Examples
 ```jldoctest
-julia> c1 = 
+julia> c1 = ICRSCoords(0, 0);
+
+julia> c2 = offset(c1, deg2rad(1), deg2rad(90))
+ICRSCoords{Float64}(0.017453292519943295, 1.0686516840418957e-18)
+
+julia> offset(c1, c2) .|> rad2deg
+(1.0, 90.0)
 ```
 
 # See Also
@@ -275,12 +282,30 @@ julia> c1 =
 """
 offset(c::T, sep, pa) where T <: AbstractSkyCoords = T(_offset(lon(c), lat(c), sep, pa)...)
 
+"""
+    offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle
+
+Return the separation and position angle in radians between two sky coordinates.
+
+# Examples
+```jldoctest
+julia> c1 = ICRSCoords(0, 0); c2 = ICRSCoords(deg2rad(1), 0);
+
+julia> offset(c1, c2) .|> rad2deg
+(1.0, 90.0)
+```
+
+# See Also
+* [`separation`](@ref), [`position_angle`](@ref)
+"""
+offset(c1::AbstractSkyCoords, c2::AbstractSkyCoords) = separation(c1, c2), position_angle(c1, c2)
+
 #= use the cosine rule in spherical geometry with three points, the north pole, the starting point, 
 and the final point.
 angles: (change in lon), (position angle), (-1/position angle)
 sides: (separation), (final co-latitude), (starting co-latitude)
 =#
-function _offset(λ, ϕ, seperation, pa)
+function _offset(λ, ϕ, separation, pa)
     sin_a, cos_a = sincos(separation)
     cos_c, sin_c = sincos(ϕ)
     sin_B, cos_B = sincos(pa)

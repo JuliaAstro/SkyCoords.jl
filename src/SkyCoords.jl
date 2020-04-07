@@ -258,4 +258,44 @@ function _position_angle(λ1, ϕ1, λ2, ϕ2)
     return mod2pi(atan(y, x))
 end
 
+"""
+    offset(::AbstractSkyCoords, separation, pa) -> coordinate
+
+Offset a coordinate by a given angular separation, `separation`, in radians and position angle, `pa`, in radians.
+
+Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes. Returns a sky coordinate of the same type as input.
+
+# Examples
+```jldoctest
+julia> c1 = 
+```
+
+# See Also
+* [`separation`](@ref), [`positiona_angle`](@ref)
+"""
+offset(c::T, sep, pa) where T <: AbstractSkyCoords = T(_offset(lon(c), lat(c), sep, pa)...)
+
+#= use the cosine rule in spherical geometry with three points, the north pole, the starting point, 
+and the final point.
+angles: (change in lon), (position angle), (-1/position angle)
+sides: (separation), (final co-latitude), (starting co-latitude)
+=#
+function _offset(λ, ϕ, seperation, pa)
+    sin_a, cos_a = sincos(separation)
+    cos_c, sin_c = sincos(ϕ)
+    sin_B, cos_B = sincos(pa)
+
+    # solving cosine rule
+    cos_b = cos_c * cos_a + sin_c * sin_a * cos_B
+    
+    # solving sine rule
+    xsin_A = sin_a * sin_B * sin_c
+    xcos_A = cos_a - cos_b * cos_c
+
+    # correction for antipodes, otherwise atan2
+    ang = sin_c < 1e-12 ? π/2 + cos_c * (π/2 - pa) : atan(xsin_A, xcos_A)
+
+    return mod2pi(λ + ang), asin(cos_b)
+end
+
 end # module

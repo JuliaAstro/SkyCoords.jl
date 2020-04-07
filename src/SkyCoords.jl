@@ -278,7 +278,7 @@ julia> offset(c1, c2) .|> rad2deg
 ```
 
 # See Also
-* [`separation`](@ref), [`positiona_angle`](@ref)
+* [`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c::T, sep, pa) where T <: AbstractSkyCoords = T(_offset(lon(c), lat(c), sep, pa)...)
 

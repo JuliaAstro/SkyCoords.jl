@@ -177,7 +177,9 @@ end
 
     for c1 in c1s
         sep, pa = @inferred offset(c1, c2)
-        test_c2 = @inferred(offset(c1, sep, pa)) |> T2
+        test_c2 = @inferred offset(c1, sep, pa)
+        @test test_c2 isa T1
+        test_c2 = T2(test_c2) 
         @test lon(test_c2) ≈ lon(c2)
         @test lat(test_c2) ≈ lat(c2)
     end

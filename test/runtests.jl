@@ -196,10 +196,20 @@ end
         @test lat(c2) |> rad2deg ≈ 87
     end
 
-    # # verify antipode
-    # c1 = T1(deg2rad(10), deg2rad(47))
-    # for pa in range(0, 377, 10)
-    #     c2 = offset(c1)
+    # verify antipode
+    c1 = T1(deg2rad(10), deg2rad(47))
+    for pa in range(0, 377, length=10)
+        c2 = offset(c1, deg2rad(180), deg2rad(pa))
+        @test lon(c2) |> rad2deg ≈ 190
+        @test lat(c2) |> rad2deg ≈ -47
 
-    # # end
+        c2 = offset(c1, deg2rad(360), deg2rad(pa))
+        @test lon(c2) |> rad2deg ≈ 10
+        @test lat(c2) |> rad2deg ≈ 47
+    end
+
+    c1 = T1(deg2rad(10), deg2rad(60))
+    c2 = offset(c1, deg2rad(1), deg2rad(90))
+    @test 11.9 < lon(c2) |> rad2deg < 12.0
+    @test 59.9 < lat(c2) |> rad2deg < 60.0
 end

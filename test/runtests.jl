@@ -163,3 +163,43 @@ end
         @test position_angle(c1, c2) ≈ π / 2
     end
 end
+
+
+
+@testset "Offset ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}]
+    # simple integration tests, depend that separation and position_angle are accurate
+    c1s = [
+        T1(0, -π/2), # south pole
+        T1(0, π/2), # north pole
+        T1(deg2rad(1), deg2rad(2))
+    ]
+    c2 = T2(deg2rad(5), deg2rad(10))
+
+    for c1 in c1s
+        sep, pa = @inferred offset(c1, c2)
+        test_c2 = @inferred(offset(c1, sep, pa)) |> T2
+        @test lon(test_c2) ≈ lon(c2)
+        @test lat(test_c2) ≈ lat(c2)
+    end
+
+    # specific cases to cover special cases.
+    c1 = T1(0, deg2rad(89))
+    for (pa, sep) in [(0, 2), (180, 358)]
+        sep = deg2rad(sep)
+        pa = deg2rad(pa)
+        c2 = offset(c1, sep, pa)
+        @test lon(c2) |> rad2deg ≈ 180
+        @test lat(c2) |> rad2deg ≈ 89
+
+        c2 = offset(c1, 2sep, pa)
+        @test lon(c2) |> rad2deg ≈ 180
+        @test lat(c2) |> rad2deg ≈ 87
+    end
+
+    # # verify antipode
+    # c1 = T1(deg2rad(10), deg2rad(47))
+    # for pa in range(0, 377, 10)
+    #     c2 = offset(c1)
+
+    # # end
+end

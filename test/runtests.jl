@@ -200,7 +200,7 @@ end
 
     # verify antipode
     c1 = T1(deg2rad(10), deg2rad(47))
-    for pa in range(0, 377, length=10)
+    for pa in range(0, stop=377, length=10)
         c2 = offset(c1, deg2rad(180), deg2rad(pa))
         @test lon(c2) |> rad2deg ≈ 190
         @test lat(c2) |> rad2deg ≈ -47

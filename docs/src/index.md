@@ -78,10 +78,10 @@ Their angular separation is given by
 
 ```jldoctest sep
 julia> separation(mizar, alcor) # Radians
-0.0034353091694529292
+0.0034353091694529297
 
 julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
-11.8097230039347
+11.809723003934701
 ```
 
 with an angle

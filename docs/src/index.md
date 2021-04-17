@@ -1,8 +1,9 @@
 # SkyCoords.jl
 
-[![Build Status](https://img.shields.io/travis/JuliaAstro/SkyCoords.jl.svg)](https://travis-ci.org/JuliaAstro/SkyCoords.jl)
-[![Build status](https://img.shields.io/appveyor/ci/kbarbary/skycoords-jl.svg?label=windows)](https://ci.appveyor.com/project/kbarbary/skycoords-jl/branch/master)
-[![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
+[![GitHub](https://img.shields.io/badge/Code-GitHub-black.svg)](https://github.com/JuliaAstro/SkyCoords.jl)
+[![Build Status](https://github.com/JuliaAstro/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions)
+[![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
+[![Coverage](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
 SkyCoords.jl provides a type system for astronomical coordinate systems with appropriate conversions between them.
 

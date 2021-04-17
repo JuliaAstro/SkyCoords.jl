@@ -1,8 +1,9 @@
 # SkyCoords.jl
 
-[![Build Status](https://img.shields.io/travis/JuliaAstro/SkyCoords.jl.svg)](https://travis-ci.org/JuliaAstro/SkyCoords.jl)
-[![Build status](https://img.shields.io/appveyor/ci/kbarbary/skycoords-jl.svg?label=windows)](https://ci.appveyor.com/project/kbarbary/skycoords-jl/branch/master)
-[![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
+[![GitHub](https://img.shields.io/badge/Code-GitHub-black.svg)](https://github.com/JuliaAstro/SkyCoords.jl)
+[![Build Status](https://github.com/JuliaAstro/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions)
+[![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
+[![Coverage](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
 SkyCoords.jl provides a type system for astronomical coordinate systems with appropriate conversions between them.
 
@@ -45,7 +46,7 @@ julia> c2.l # Note that galactic coordinate fields are l, b
 1.6814027872278692
 
 julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
-FK5Coords{2000,Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
+FK5Coords{2000, Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
 ```
 
 ### Parsing from strings
@@ -92,8 +93,7 @@ of [Mizar](http://simbad.u-strasbg.fr/simbad/sim-id?Ident=MIZAR) are
 
 ```jldoctest sep
 julia> mizar = FK5Coords{2000}(3.507787, 0.958628)
-FK5Coords{2000,Float64}(3.507787, 0.958628)
-
+FK5Coords{2000, Float64}(3.507787, 0.958628)
 ```
 
 while the `GalCoords` coordinates of Alcor are
@@ -101,27 +101,26 @@ while the `GalCoords` coordinates of Alcor are
 ```jldoctest sep
 julia> alcor = GalCoords(1.968189, 1.072829)
 GalCoords{Float64}(1.968189, 1.072829)
-
 ```
 
 Their angular separation is given by
 
 ```jldoctest sep
 julia> separation(mizar, alcor) # Radians
-0.0034353091694529297
+0.003435309169452965
 
 julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
-11.809723003934701
+11.809723003934822
 ```
 
 with an angle
 
 ```jldoctest sep
 julia> position_angle(mizar, alcor) # radians
-1.244602401241819
+1.2446024012417884
 
 julia> position_angle(mizar, alcor) |> rad2deg # degrees
-71.31046476300408
+71.31046476300233
 
 ```
 

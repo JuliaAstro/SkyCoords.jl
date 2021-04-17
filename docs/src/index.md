@@ -46,9 +46,39 @@ julia> c2.l # Note that galactic coordinate fields are l, b
 
 julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
 FK5Coords{2000,Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
+```
 
-julia> c3 = ICRSCoords("05:34:31.94", "+22:00:52.2") # construct with strings
+### Parsing from strings
+
+The [AstroAngles.jl](https://github.com/JuliaAstro/AstroAngles.jl) package provides convenient string parsing utilities
+
+```jldoctest astroangles
+julia> using AstroAngles
+
+julia> c3 = ICRSCoords(hms"05:34:31.94", dms"+22:00:52.2")
 ICRSCoords{Float64}(1.4596726677614609, 0.38422550818029166)
+```
+
+for example, to load coordinates from a target list
+
+```julia
+julia> using CSV, DataFrames
+
+julia> table = CSV.File("target_list.csv") |> DataFrame;
+
+julia> [table.ra table.dec]
+203×2 Matrix{String}:
+ "00 05 01.42"  "40 03 35.82"
+ "00 05 07.52"  "73 13 11.34"
+ "00 36 01.40"  "-11 12 13.00"
+[...]
+
+julia> coords = @. ICRSCoords(hms2rad(table.ra), dms2rad(table.dec))
+203-element Vector{ICRSCoords{Float64}}:
+ ICRSCoords{Float64}(0.021919880964005448, 0.6991780256843024)
+ ICRSCoords{Float64}(0.022363485482220672, 1.277926878539953)
+ ICRSCoords{Float64}(0.15718144355252264, -0.19553990200190915)
+[...]
 ```
 
 ### Angular Separation between Coordinates

@@ -2,11 +2,14 @@
 
 # Tests against astropy.
 
+using AstroAngles
+using DelimitedFiles
+using Printf
 using SkyCoords
+using Statistics
+using Test
 
-using Test, DelimitedFiles, Printf, Statistics
-
-import SkyCoords: lat, lon, hr2rad, str2rad
+import SkyCoords: lat, lon
 
 datapath = joinpath(dirname(@__FILE__), "data")
 
@@ -87,55 +90,16 @@ end
     end
 end
 
-@testset "hr2rad" begin
-    @test hr2rad(0) == 0
-    @test hr2rad(24) ≈ 2π
-    @test hr2rad(12.0) ≈ π
-    # https://github.com/JuliaAstro/SkyCoords.jl/pull/29#discussion_r354602964
-    @test hr2rad(big(12)) ≈ π
- 
-end
-
-@testset "str2rad" begin
-    # trivial
-    @test str2rad("0h0m0") == 0
-    @test str2rad("24h0m0") == 2π
-    @test str2rad("0d0m0") == 0
-    @test str2rad("360d0m0") == 2π
-
-    # hour angles
-    @test str2rad("12h0m0s") ≈ π
-    @test str2rad("12h0:0") ≈ π
-    @test str2rad("12h0′0″") ≈ π
-    @test str2rad("12.0 h 0.00 ' 00.000 \"") ≈ π
-
-    # declination
-    @test str2rad("180d0m0s") ≈ π
-    @test str2rad("180°0'0\"") ≈ π
-    @test str2rad("180:0:0") ≈ π
-    @test str2rad("180.0 ° 0.0 ′ 0.0    ″") ≈ π
-
-    # bad
-    @test_throws ErrorException str2rad("180 0 0")
-    @test_throws ErrorException str2rad("elephant")
-    @test_throws ErrorException str2rad("180d0m0s", true)
-
-end
-
 @testset "string construction" for C in [
     ICRSCoords,
     GalCoords,
     FK5Coords{2000},
     FK5Coords{1970},
 ]
-    @test C("0h0m0", "0d0m0") == C(0.0, 0.0)
-    @test C("12h 0.0m 0.0s", "90:0:0") == C(π, π / 2)
-    @test C("18h0:0", "90:0:0") == C(3π / 2, π / 2)
-    if C == GalCoords
-        @test C("12:0:0", "90:0:0") == C(0.20943951023931956, π / 2)
-    else
-        @test C("12:0:0", "90:0:0") == C(π, π / 2)
-    end
+    @test C(hms"0h0m0", dms"0d0m0") == C(0.0, 0.0)
+    @test C(hms"12h0.0m0.0s", dms"90:0:0") == C(π, π / 2)
+    @test C(hms"18h0:0", dms"90:0:0") == C(3π / 2, π / 2)
+    @test C(hms"12:0:0", dms"90:0:0") == C(π, π / 2)
 end
 
 # Test separation between coordinates and conversion with mixed floating types.

@@ -47,7 +47,6 @@ GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
 ## Functions
 
 ```@docs
-SkyCoords.str2rad
 separation
 position_angle
 offset

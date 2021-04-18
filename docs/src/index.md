@@ -46,7 +46,7 @@ julia> c2.l # Note that galactic coordinate fields are l, b
 1.6814027872278692
 
 julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
-FK5Coords{2000, Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
+FK5Coords{2000, Float64}(1.1102233723050001e-7, 4.411803426976326e-8)
 ```
 
 ### Parsing from strings
@@ -57,7 +57,7 @@ The [AstroAngles.jl](https://github.com/JuliaAstro/AstroAngles.jl) package provi
 julia> using AstroAngles
 
 julia> c3 = ICRSCoords(hms"05:34:31.94", dms"+22:00:52.2")
-ICRSCoords{Float64}(1.4596726677614609, 0.38422550818029166)
+ICRSCoords{Float64}(1.4596726677614607, 0.3842255081802917)
 ```
 
 for example, to load coordinates from a target list

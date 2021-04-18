@@ -145,7 +145,7 @@ end
 
     # interface
     @test @inferred position_angle(c1, c2) ≈ @inferred position_angle(c1, c2 |> GalCoords)
-    @test position_angle(c1, c2) == position_angle(c1, c2 |> GalCoords)
+    @test position_angle(c1, c2) ≈ position_angle(c1, c2 |> GalCoords)
     
     # accuracy
     @test position_angle(c1, c2) ≈ π / 2

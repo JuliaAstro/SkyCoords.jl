@@ -1,13 +1,13 @@
-SkyCoords.jl
-============
+# SkyCoords.jl
 
-Basic astronomical coordinate systems in Julia
+[![Build Status](https://github.com/turinglang/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
+[![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
+[![Coverage](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliaastro.github.io/SkyCoords.jl/stable)
-[![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliaastro.github.io/SkyCoords.jl/latest)
-[![Build Status](https://img.shields.io/travis/JuliaAstro/SkyCoords.jl.svg)](https://travis-ci.org/JuliaAstro/SkyCoords.jl)
-[![Build status](https://img.shields.io/appveyor/ci/kbarbary/skycoords-jl.svg?label=windows)](https://ci.appveyor.com/project/kbarbary/skycoords-jl/branch/master)
-[![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliaastro.github.io/SkyCoords.jl/dev)
+
+Basic astronomical coordinate systems in Julia.
 
 ## Installation
 
@@ -25,7 +25,7 @@ immutable types are used to represent coordinates in each system:
 - `FK5Coords`: FK5 coordinates system (with arbitrary equninox)
 
 ```julia
-julia> c1 = ICRSCoords(0., 0.)  # inputs are ra, dec in radians
+julia> c1 = ICRSCoords(0, 0)  # inputs are ra, dec in radians
 ICRSCoords{Float64}(0.0, 0.0)
 
 julia> c2 = convert(GalCoords, c1) # convert to a different system
@@ -41,7 +41,7 @@ julia> position_angle(c1, ICRSCoords(1, 0)) |> rad2deg
 90.0
 ```
 
-For more information, visit the [documentation](https://juliaastro.github.io/skycoords.jl/stable)
+For more information, visit the [documentation](https://juliaastro.github.io/SkyCoords.jl/dev)
 
 ## License and Credits
 

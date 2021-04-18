@@ -1,6 +1,6 @@
 # SkyCoords.jl
 
-[![Build Status](https://github.com/turinglang/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions)
+[![Build Status](https://github.com/turinglang/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
 [![Coverage](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 

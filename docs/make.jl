@@ -11,4 +11,4 @@ makedocs(
     strict = true,
 )
 
-deploydocs(repo = "github.com/JuliaAstro/SkyCoords.jl.git", push_preview=true)
+deploydocs(repo = "github.com/JuliaAstro/SkyCoords.jl", push_preview=true)

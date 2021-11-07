@@ -5,6 +5,7 @@ version = "1.0.0"
 
 [deps]
 AstroAngles = "5c4adb95-c1fc-4c53-b4ea-2a94080c53d2"
+AstroLib = "c7932e45-9af1-51e7-9da9-f004cd3a462b"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]

@@ -70,6 +70,23 @@ FK5Coords{e}(ra::Real, dec::Real) where {e} =
 FK5Coords{e}(c::T) where {e,T<:AbstractSkyCoords} = convert(FK5Coords{e}, c)
 FK5Coords{e,F}(c::T) where {e,F,T<:AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
 
+"""
+    AltAzCoords(alt, az)
+
+[Horizontal Coordinate System](https://en.wikipedia.org/wiki/Horizontal_coordinate_system)
+
+This coordinate system uses the observer's local horizon as the fundamental plane to define an object in the local sky. The mapping to non-local coordinates requires a location and time. This is useful for planning observations with azimuthal mount telescopes.
+
+# Coordinates
+- `alt` - Angle between object and the observer's local horizon in radians (0, π/2)
+- `az` - Angle of objectaround horizon, increasing eastward from true north (0, 2π)
+"""
+struct AltAzCoords{T<:AbstractFloat} <: AbstractSkyCoords
+    alt::T
+    az::T
+end
+AltAzCoords(alt::Real, az::Real) = AltAzCoords(promote(float(alt), float(az))...)
+# FIXME constructor from other coordinates
 
 # Scalar coordinate conversions
 Base.convert(::Type{T}, c::T) where {T<:AbstractSkyCoords} = c

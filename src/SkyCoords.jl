@@ -7,6 +7,7 @@ export AbstractSkyCoords,
        ICRSCoords,
        GalCoords,
        FK5Coords,
+       AltAzCoords,
        separation,
        position_angle,
        offset
@@ -93,6 +94,53 @@ function precess_from_j2000(equinox)
     z = deg2rad(z / 3600.0)
     theta = deg2rad(theta / 3600.0)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
+end
+
+# AltAz --> ICRS
+
+# Constants
+MEAN_SOLAR_DAYS = 365.24217
+DEGREES_PER_MSD = (1+MEAN_SOLAR_DAYS)/MEAN_SOLAR_DAYS * 360 % 360
+DEGREES_PER_HOUR = 360/24
+
+# Perhaps this should go in AstroTime
+function local_sidereal_time(location,time)
+	d = j2000(time) |> value
+	ut = 24*(time |> fractionofday)
+	lst = 100.46 + DEGREES_PER_MSD*d + location.lon + DEGREES_PER_HOUR*ut
+	if lst < 0
+		lst = (lst+360) % 360
+	end
+	return lst
+end
+
+# Conversion functions
+# FIXME these should be matrix operations?
+function AltAzCoords(ircs::ICRSCoords,time,location)
+	hour_angle = local_sidereal_time(location,time) - rad2deg(ircs.ra)
+	if hour_angle < 0
+		hour_angle = (hour_angle + 360) % 360
+	end
+	alt = asin(sin(ircs.dec)*sind(location.lat) + 
+		  cos(ircs.dec)*cosd(location.lat)*cosd(hour_angle))
+	a = acos((sin(ircs.dec) - sin(alt)*sind(location.lat)) /
+			  (cos(alt)*cosd(location.lat)))
+	if sind(hour_angle) <= 0
+		az = a
+	else
+		az = 2π - a
+	end
+	return AltAzCoords(alt,az)
+end
+
+# This isn't working yet
+function ICRSCoords(altaz::AltAzCoords,time,location)
+	dec = asind(sin(altaz.alt)*sind(location.lat) + 
+				cos(altaz.alt)*cosd(location.lat)*cos(altaz.az))
+	hour_angle = acosd((sin(altaz.alt)-sind(location.lat)*sind(dec)) /
+	                   (cosd(location.lat)*cos(dec)))
+	ra = local_sidereal_time(location,time) - hour_angle
+	return ICRSCoords(dec |> deg2rad,ra |> deg2rad)
 end
 
 # -----------------------------------------------------------------------------

@@ -2,6 +2,7 @@ __precompile__()
 
 module SkyCoords
 using StaticArrays
+import ConstructionBase: constructorof
 
 export AbstractSkyCoords, 
        ICRSCoords,

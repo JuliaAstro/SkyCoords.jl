@@ -69,6 +69,7 @@ FK5Coords{e}(ra::Real, dec::Real) where {e} =
     FK5Coords{e}(promote(float(ra), float(dec))...)
 FK5Coords{e}(c::T) where {e,T<:AbstractSkyCoords} = convert(FK5Coords{e}, c)
 FK5Coords{e,F}(c::T) where {e,F,T<:AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
+constructorof(::Type{<:FK5Coords{e}}) where {e} = FK5Coords{e}
 
 
 # Scalar coordinate conversions

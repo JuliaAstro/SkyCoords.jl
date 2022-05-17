@@ -8,6 +8,7 @@ using Printf
 using SkyCoords
 using Statistics
 using Test
+using ConstructionBase: setproperties
 
 import SkyCoords: lat, lon
 
@@ -178,4 +179,10 @@ end
     c2 = offset(c1, deg2rad(1), deg2rad(90))
     @test 11.9 < lon(c2) |> rad2deg < 12.0
     @test 59.9 < lat(c2) |> rad2deg < 60.0
+end
+
+@testset "constructionbase" begin
+    @test setproperties(ICRSCoords(1, 2), ra=3) == ICRSCoords(3, 2)
+    @test setproperties(GalCoords(1, 2), l=3) == GalCoords(3, 2)
+    @test setproperties(FK5Coords{2000}(1, 2), ra=3) == FK5Coords{2000}(3, 2)
 end

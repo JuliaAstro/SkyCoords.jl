@@ -82,10 +82,8 @@ end
         @test typeof(c2) === T{Float32}
         @test typeof(c3) === T{Float64}
         @test typeof(c4) === T{BigFloat}
-        @test isapprox(lat(c2), lat(c3), rtol = sqrt(eps(Float32)))
-        @test isapprox(lat(c3), lat(c4), rtol = sqrt(eps(Float64)))
-        @test isapprox(lon(c2), lon(c3), rtol = sqrt(eps(Float32)))
-        @test isapprox(lon(c3), lon(c4), rtol = sqrt(eps(Float64)))
+        @test isapprox(c2, c3, rtol = sqrt(eps(Float32)))
+        @test isapprox(c3, c4, rtol = sqrt(eps(Float64)))
         c6 = convert(T, c5)
         @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
     end
@@ -145,8 +143,7 @@ end
         test_c2 = @inferred offset(c1, sep, pa)
         @test test_c2 isa T1
         test_c2 = T2(test_c2) 
-        @test lon(test_c2) ≈ lon(c2)
-        @test lat(test_c2) ≈ lat(c2)
+        @test test_c2 ≈ c2
     end
 
     # specific cases to cover special cases.
@@ -185,4 +182,24 @@ end
     @test setproperties(ICRSCoords(1, 2), ra=3) == ICRSCoords(3, 2)
     @test setproperties(GalCoords(1, 2), l=3) == GalCoords(3, 2)
     @test setproperties(FK5Coords{2000}(1, 2), ra=3) == FK5Coords{2000}(3, 2)
+end
+
+@testset "equality" begin
+    @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}]
+        c1 = T(1., 2.)
+        c2 = T(1., 2.001)
+        c3 = T{Float32}(1., 2.)
+        c4 = T{Float32}(1., 2.001)
+        @test c1 == c1
+        @test_broken c1 == c3
+        @test c1 ≈ c1
+        @test c1 ≈ c3
+        @test !(c1 ≈ c2)
+        @test !(c1 ≈ c4)
+        @test c1 ≈ c2  rtol=1e-3
+        @test c1 ≈ c4  rtol=1e-3
+    end
+ 
+    @test_broken (!(ICRSCoords(1, 2) ≈ FK5Coords{2000}(1, 2)); true)
+    @test_broken (!(FK5Coords{2000}(1, 2) ≈ FK5Coords{1950}(1, 2)); true)
 end

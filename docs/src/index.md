@@ -27,7 +27,7 @@ immutable types are used to represent coordinates in each system:
 
 - [`ICRSCoords`](@ref): ICRS coordinates system
 - [`GalCoords`](@ref): Galactic coordinates system
-- [`FK5Coords`](@ref): FK5 coordinates system (with arbitrary equninox)
+- [`FK5Coords`](@ref): FK5 coordinates system (with arbitrary equinox)
 
 Each type holds a longitude and latitude, and each is a subtype of
 [`AbstractSkyCoords`](@ref).

@@ -22,7 +22,7 @@ immutable types are used to represent coordinates in each system:
 
 - `ICRSCoords`: ICRS coordinates system
 - `GalCoords`: Galactic coordinates system
-- `FK5Coords`: FK5 coordinates system (with arbitrary equninox)
+- `FK5Coords`: FK5 coordinates system (with arbitrary equinox)
 
 ```julia
 julia> c1 = ICRSCoords(0, 0)  # inputs are ra, dec in radians

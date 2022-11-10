@@ -3,6 +3,7 @@ using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
 using SkyCoords
+using SkyCoords: project, origin
 using StableRNGs
 using Statistics
 using Test
@@ -14,6 +15,19 @@ rad2arcsec(r) = 3600 * rad2deg(r)
 
 # tests against astropy.coordinates
 include("astropy.jl")
+
+@testset "projected coords" begin
+    c0 = ICRSCoords(0.1, -0.2)
+    c1 = ICRSCoords(0.1 + 1e-5, -0.2 + 3e-5)
+    cp = project(c0, c1)::ProjectedCoords
+    @test origin(cp) == c0
+    @test cp.offset[1] ≈ 0.98 * 1e-5  rtol=1e-4
+    @test cp.offset[2] ≈ 3e-5
+    @test convert(ICRSCoords, cp) ≈ c1
+    @test convert(GalCoords, cp) ≈ convert(GalCoords, c1)
+    @test cp == cp
+    @test cp ≈ cp
+end
 
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin

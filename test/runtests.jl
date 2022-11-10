@@ -177,6 +177,9 @@ end
         @test !(c1 ≈ c4)
         @test c1 ≈ c2  rtol=1e-3
         @test c1 ≈ c4  rtol=1e-3
+
+        @test ICRSCoords(eps(), 1) ≈ ICRSCoords(0, 1)
+        @test ICRSCoords(eps(), 1) ≈ ICRSCoords(-eps(), 1)
     end
  
     @test_broken (!(ICRSCoords(1, 2) ≈ FK5Coords{2000}(1, 2)); true)

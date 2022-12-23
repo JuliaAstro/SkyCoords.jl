@@ -101,11 +101,15 @@ function precess_from_j2000(equinox)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
 end
 
+ecliptic_obliquity(y) = deg2rad(23.439291 - 0.0130042 * (y - 2000.0))
+
 # -----------------------------------------------------------------------------
 # Type-dependent methods
 
 lon(c::GalCoords) = c.l
 lat(c::GalCoords) = c.b
+lat(c::EclipticCoords) = c.lat
+lon(c::EclipticCoords) = c.lon
 lon(c::AbstractSkyCoords) = c.ra
 lat(c::AbstractSkyCoords) = c.dec
 
@@ -120,6 +124,9 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
 rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
 rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
 rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
+
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:ICRSCoords}) where {e} = xrotmat(ecliptic_obliquity(e))
+@generated rotmat(::Type{<:ICRSCoords}, ::Type{<:EclipticCoords{e}}) where {e} = xrotmat(-ecliptic_obliquity(e))
 
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000

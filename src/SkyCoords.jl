@@ -110,31 +110,18 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords,T2<:ICRSCoords} = ICRS_TO_GAL
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords,T2<:GalCoords} = GAL_TO_ICRS
+rotmat(::Type{<:GalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_GAL
+rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
 
-# Define both these so that `convert(FK5Coords{e}, ...)` and
-# `convert(FK5Coords{e,T}, ...)` both work. Similar with other
-# FK5Coords rotmat methods below.
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:ICRSCoords} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:ICRSCoords} =
-    precess_from_j2000(e1) * ICRS_TO_FK5J2000
-
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:GalCoords} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:GalCoords}) where {e1} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:GalCoords} =
-    precess_from_j2000(e1) * GAL_TO_FK5J2000
-
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords,e2,T2} =
+@generated rotmat(::Type{<:ICRSCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
-
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords,e2,T2} =
+@generated rotmat(::Type{<:GalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
-
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1,e2,T2} =
-    precess_from_j2000(e1) * precess_from_j2000(e2)'
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1,T1,e2,T2} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1,e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # ------------------------------------------------------------------------------

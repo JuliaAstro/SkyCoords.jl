@@ -5,6 +5,7 @@
 using AstroAngles
 using DelimitedFiles
 using Printf
+using LinearAlgebra: normalize
 using SkyCoords
 using Statistics
 using Test
@@ -178,10 +179,43 @@ end
     @test 59.9 < lat(c2) |> rad2deg < 60.0
 end
 
+@testset "cartesian" begin
+    for CT in [ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, GalCoords]
+        @test cartesian(CT(0, 0)) |> vec ≈ [1, 0, 0]
+        @test cartesian(CT(0, π/2)) |> vec ≈ [0, 0, 1]
+        @test cartesian(CT(π/2, 0)) |> vec ≈ [0, 1, 0]
+        @test spherical(CartesianCoords{CT}(1, 0, 0)) ≈ CT(0, 0)
+        @test spherical(CartesianCoords{CT}(normalize([1, 2, 3]))) ≈ CT(atan(2, 1), atan(3, sqrt(5)))
+
+        c = CT(2, 1)
+        c3 = cartesian(c)
+        @test c === spherical(c)
+        @test c3 === cartesian(c3)
+        c_conv = convert(ICRSCoords, c)
+        c3_conv = convert(CartesianCoords{ICRSCoords}, c3)
+        @test c3_conv == CartesianCoords{ICRSCoords}(c3)
+        @test cartesian(c_conv) ≈ c3_conv
+        @test c_conv ≈ spherical(c3_conv)
+
+        c_conv3 = convert(CartesianCoords{GalCoords}, c_conv)
+        c3_conv = convert(CartesianCoords{GalCoords}, c3_conv)
+        @test c_conv3 == CartesianCoords{GalCoords}(c_conv)
+        @test c3_conv == CartesianCoords{GalCoords}(c3_conv)
+        @test c_conv3 ≈ c3_conv
+    end
+
+    a = ICRSCoords(1, 2)
+    b = GalCoords(1, 2)
+    a3 = cartesian(a)
+    b3 = cartesian(b)
+    @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
+end
+
 @testset "constructionbase" begin
     @test setproperties(ICRSCoords(1, 2), ra=3) == ICRSCoords(3, 2)
     @test setproperties(GalCoords(1, 2), l=3) == GalCoords(3, 2)
     @test setproperties(FK5Coords{2000}(1, 2), ra=3) == FK5Coords{2000}(3, 2)
+    @test setproperties(cartesian(ICRSCoords(1, 2)), vec=[1., 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 @testset "equality" begin

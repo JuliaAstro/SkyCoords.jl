@@ -2,17 +2,22 @@ __precompile__()
 
 module SkyCoords
 using StaticArrays
+using LinearAlgebra: I, norm
 import ConstructionBase: constructorof
 
 export AbstractSkyCoords, 
        ICRSCoords,
        GalCoords,
        FK5Coords,
+       CartesianCoords,
        separation,
        position_angle,
-       offset
+       offset,
+       cartesian,
+       spherical
 
 include("types.jl")
+include("cartesian.jl")
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
@@ -112,6 +117,9 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # element type of input coordinates.
 rotmat(::Type{<:GalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_GAL
 rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
+rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
+rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
+rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
 
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
@@ -149,6 +157,9 @@ at all distances, including the poles and antipodes.
 """
 separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
+
+separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T<:AbstractSkyCoords} =
+    2 * asin(norm(vec(c1) - vec(c2)) / 2)
 
 separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
     separation(c1, convert(T1, c2))

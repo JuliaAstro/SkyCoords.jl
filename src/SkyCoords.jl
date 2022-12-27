@@ -2,17 +2,22 @@ __precompile__()
 
 module SkyCoords
 using StaticArrays
+using LinearAlgebra: I, norm
 import ConstructionBase: constructorof
 
 export AbstractSkyCoords, 
        ICRSCoords,
        GalCoords,
        FK5Coords,
+       CartesianCoords,
        separation,
        position_angle,
-       offset
+       offset,
+       cartesian,
+       spherical
 
 include("types.jl")
+include("cartesian.jl")
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
@@ -110,31 +115,21 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords,T2<:ICRSCoords} = ICRS_TO_GAL
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords,T2<:GalCoords} = GAL_TO_ICRS
+rotmat(::Type{<:GalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_GAL
+rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
+rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
+rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
+rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
 
-# Define both these so that `convert(FK5Coords{e}, ...)` and
-# `convert(FK5Coords{e,T}, ...)` both work. Similar with other
-# FK5Coords rotmat methods below.
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:ICRSCoords} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:ICRSCoords} =
-    precess_from_j2000(e1) * ICRS_TO_FK5J2000
-
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:GalCoords} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:GalCoords}) where {e1} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:GalCoords} =
-    precess_from_j2000(e1) * GAL_TO_FK5J2000
-
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords,e2,T2} =
+@generated rotmat(::Type{<:ICRSCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
-
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords,e2,T2} =
+@generated rotmat(::Type{<:GalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
-
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1,e2,T2} =
-    precess_from_j2000(e1) * precess_from_j2000(e2)'
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1,T1,e2,T2} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1,e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # ------------------------------------------------------------------------------
@@ -162,6 +157,9 @@ at all distances, including the poles and antipodes.
 """
 separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
+
+separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T<:AbstractSkyCoords} =
+    2 * asin(norm(vec(c1) - vec(c2)) / 2)
 
 separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
     separation(c1, convert(T1, c2))

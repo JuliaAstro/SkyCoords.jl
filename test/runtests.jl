@@ -7,20 +7,24 @@ using DelimitedFiles
 using Printf
 using LinearAlgebra: normalize
 using SkyCoords
+using StableRNGs
 using Statistics
 using Test
 using ConstructionBase: setproperties
 
 import SkyCoords: lat, lon
 
-datapath = joinpath(dirname(@__FILE__), "data")
+const datapath = joinpath(dirname(@__FILE__), "data")
+const coords_path = joinpath(datapath, "input_coords.csv")
+const rng = StableRNG(2000)
+
+include("data/generate_data.jl")
 
 rad2arcsec(r) = 3600 * rad2deg(r)
 
 # input coordinates
-fname = joinpath(datapath, "input_coords.csv")
-indata, inhdr = readdlm(fname, ','; header = true)
-
+indata = readdlm(coords_path, ',')
+@show indata
 # Float32 has a large tolerance compared to Float64 and BigFloat, but here we
 # are more interested in making sure that the infrastructure works for different
 # floating types.
@@ -56,7 +60,7 @@ indata, inhdr = readdlm(fname, ','; header = true)
 
             # Read in reference answers.
             ref_fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
-            refdata, hdr = readdlm(ref_fname, ','; header = true)
+            refdata = readdlm(ref_fname, ',')
             c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i = 1:size(refdata, 1)]
 
             # compare

@@ -1,2 +1,2 @@
 [deps]
-astropy = ""
+astropy = ">=4,<6" # 4, 5

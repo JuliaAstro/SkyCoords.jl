@@ -1,16 +1,11 @@
-#!/usr/bin/env julia
-
-# Tests against astropy.
-
 using AstroAngles
+using ConstructionBase: setproperties
 using DelimitedFiles
-using Printf
 using LinearAlgebra: normalize
 using SkyCoords
 using StableRNGs
 using Statistics
 using Test
-using ConstructionBase: setproperties
 
 import SkyCoords: lat, lon
 

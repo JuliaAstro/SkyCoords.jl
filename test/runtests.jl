@@ -14,65 +14,11 @@ using ConstructionBase: setproperties
 
 import SkyCoords: lat, lon
 
-const datapath = joinpath(dirname(@__FILE__), "data")
-const coords_path = joinpath(datapath, "input_coords.csv")
 const rng = StableRNG(2000)
-
-include("data/generate_data.jl")
-
 rad2arcsec(r) = 3600 * rad2deg(r)
 
-# input coordinates
-indata = readdlm(coords_path, ',')
-@show indata
-# Float32 has a large tolerance compared to Float64 and BigFloat, but here we
-# are more interested in making sure that the infrastructure works for different
-# floating types.
-@testset "Testing $F" for (F, TOL) in (
-    (Float32, 0.2),
-    (Float64, 0.0001),
-    (BigFloat, 0.0001),
-)
-    for (insys, T) in (
-        ("icrs", ICRSCoords{F}),
-        ("fk5j2000", FK5Coords{2000,F}),
-        ("fk5j1975", FK5Coords{1975,F}),
-        ("gal", GalCoords{F}),
-    )
-        c_in = T[T(indata[i, 1], indata[i, 2]) for i = 1:size(indata, 1)]
-        for c in c_in
-            @test convert(T, c) == c
-        end
-
-        for (outsys, S) in (
-            ("icrs", ICRSCoords{F}),
-            ("fk5j2000", FK5Coords{2000,F}),
-            ("fk5j1975", FK5Coords{1975,F}),
-            ("gal", GalCoords{F}),
-        )
-            (outsys == insys) && continue
-
-            c_out = S[convert(S, c) for c in c_in]
-
-            # Test pipe and constructor conversion
-            @test c_out == S[S(c) for c in c_in]
-            @test c_out == S[c |> S for c in c_in]
-
-            # Read in reference answers.
-            ref_fname = joinpath(datapath, "$(insys)_to_$(outsys).csv")
-            refdata = readdlm(ref_fname, ',')
-            c_ref = S[S(refdata[i, 1], refdata[i, 2]) for i = 1:size(refdata, 1)]
-
-            # compare
-            sep = separation.(c_out, c_ref)
-            maxsep = rad2arcsec(maximum(sep))
-            meansep = rad2arcsec(mean(sep))
-            minsep = rad2arcsec(minimum(sep))
-            @printf "%8s --> %8s : max=%6.4f\"  mean=%6.4f\"   min=%6.4f\"\n" insys outsys maxsep meansep minsep
-            @test maxsep < TOL
-        end
-    end
-end
+# tests against astropy.coordinates
+include("astropy.jl")
 
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin
@@ -240,4 +186,15 @@ end
  
     @test_broken (!(ICRSCoords(1, 2) ≈ FK5Coords{2000}(1, 2)); true)
     @test_broken (!(FK5Coords{2000}(1, 2) ≈ FK5Coords{1950}(1, 2)); true)
+end
+
+@testset "conversion" begin
+    systems = (ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, GalCoords)
+    for IN_SYS in systems, OUT_SYS in systems
+        coord_in = IN_SYS(rand(rng), rand(rng))
+        coord_out = convert(OUT_SYS, coord_in)
+        # Test pipe and constructor conversion
+        @test coord_out == OUT_SYS(coord_in)
+        @test coord_out == coord_in |> OUT_SYS
+    end
 end

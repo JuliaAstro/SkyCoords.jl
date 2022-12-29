@@ -1,16 +1,18 @@
 name = "SkyCoords"
 uuid = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 authors = "Kyle Barbary, Mosé Giordano, and contributors"
-version = "1.1.0"
+version = "1.1.1"
 
 [deps]
 AstroAngles = "5c4adb95-c1fc-4c53-b4ea-2a94080c53d2"
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 AstroAngles = "0.1"
 ConstructionBase = "1"
+Rotations = "1"
 StaticArrays = "0.8, 0.9, 1"
 julia = "1.3"

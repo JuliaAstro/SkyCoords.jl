@@ -9,6 +9,7 @@ export AbstractSkyCoords,
        ICRSCoords,
        GalCoords,
        FK5Coords,
+       EclipticCoords,
        CartesianCoords,
        separation,
        position_angle,
@@ -101,7 +102,12 @@ function precess_from_j2000(equinox)
     zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
 end
 
-ecliptic_obliquity(y) = deg2rad(23.439291 - 0.0130042 * (y - 2000.0))
+function ecliptic_obliquity(y)
+    # https://github.com/JuliaAstro/AstroBase.jl/blob/master/src/EarthAttitude/obliquity.jl
+    T = (y - 2000.0) / 100
+    obl = @evalpoly(T, 84381.406, -46.836769, -0.0001831, 0.00200340, -0.000000576, -0.0000000434)
+    return deg2rad(obl / 3600)
+end
 
 # -----------------------------------------------------------------------------
 # Type-dependent methods
@@ -125,8 +131,12 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
 rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
 rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
 
-@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:ICRSCoords}) where {e} = xrotmat(ecliptic_obliquity(e))
-@generated rotmat(::Type{<:ICRSCoords}, ::Type{<:EclipticCoords{e}}) where {e} = xrotmat(-ecliptic_obliquity(e))
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = xrotmat(ecliptic_obliquity(e))
+@generated rotmat(::Type{<:FK5Coords{e}}, ::Type{<:EclipticCoords{e}}) where {e} = xrotmat(-ecliptic_obliquity(e))
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{T}) where {e,T<:AbstractSkyCoords} = rotmat(EclipticCoords{e}, FK5Coords{e}) * rotmat(FK5Coords{e}, T)
+@generated rotmat(::Type{T}, ::Type{<:EclipticCoords{e}}) where {e,T<:AbstractSkyCoords} = rotmat(T, FK5Coords{e}) * rotmat(FK5Coords{e}, EclipticCoords{e})
+# disambiguation:
+@generated rotmat(::Type{<:EclipticCoords{e_to}}, ::Type{<:EclipticCoords{e_from}}) where {e_to,e_from} = rotmat(EclipticCoords{e_to}, FK5Coords{e_to}) * rotmat(FK5Coords{e_to}, EclipticCoords{e_from})
 
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000

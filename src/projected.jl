@@ -23,7 +23,7 @@ Base.isapprox(a::ProjectedCoords, b::ProjectedCoords; kwargs...) = isapprox(orig
 
 function project(origin::AbstractSkyCoords, c::AbstractSkyCoords)
     cc = convert(typeof(origin), c)
-    Δlon = _center_angle(lon(cc) - lon(origin))
+    Δlon = rem2pi(lon(cc) - lon(origin), RoundNearest)
     offset = SVector(Δlon * cos(lat(origin)), lat(cc) - lat(origin))
     ProjectedCoords(origin, offset)
 end

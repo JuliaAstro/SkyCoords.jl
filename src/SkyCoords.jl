@@ -116,8 +116,8 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
 rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
 rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
 
-@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = xrotmat(ecliptic_obliquity(e))
-@generated rotmat(::Type{<:FK5Coords{e}}, ::Type{<:EclipticCoords{e}}) where {e} = xrotmat(-ecliptic_obliquity(e))
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = RotX(-ecliptic_obliquity(e))
+@generated rotmat(::Type{<:FK5Coords{e}}, ::Type{<:EclipticCoords{e}}) where {e} = RotX(ecliptic_obliquity(e))
 @generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{T}) where {e,T<:AbstractSkyCoords} = rotmat(EclipticCoords{e}, FK5Coords{e}) * rotmat(FK5Coords{e}, T)
 @generated rotmat(::Type{T}, ::Type{<:EclipticCoords{e}}) where {e,T<:AbstractSkyCoords} = rotmat(T, FK5Coords{e}) * rotmat(FK5Coords{e}, EclipticCoords{e})
 # disambiguation:

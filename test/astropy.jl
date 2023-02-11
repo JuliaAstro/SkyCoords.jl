@@ -12,8 +12,9 @@ const lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
 astropy_conversion(::Type{<:ICRSCoords}) = apc.ICRS
 astropy_conversion(::Type{<:FK5Coords{F}}) where {F} = apc.FK5(equinox="J$F")
 astropy_conversion(::Type{<:GalCoords}) = apc.Galactic
+astropy_conversion(::Type{<:EclipticCoords{F}}) where {F} = apc.GeocentricMeanEcliptic(equinox="J$F")
 
-function test_against_astropy(intype, outtype)
+function test_against_astropy(intype, outtype; atol=0)
     ## get julia values
     output_coords = map((lon, lat) -> convert(outtype, intype(lon, lat)), lons, lats)
     output_lons = map(lon, output_coords)
@@ -28,8 +29,8 @@ function test_against_astropy(intype, outtype)
     ap_output_lons = pyconvert(Vector, output_coord_list.spherical.lon.rad)
     ap_output_lats = pyconvert(Vector, output_coord_list.spherical.lat.rad)
 
-    @test output_lons ≈ ap_output_lons
-    @test output_lats ≈ ap_output_lats
+    @test output_lons ≈ ap_output_lons  atol=atol*√N
+    @test output_lats ≈ ap_output_lats  atol=atol*√N
     
 end
 
@@ -47,10 +48,11 @@ end
         FK5Coords{2000,F},
         FK5Coords{1975,F},
         GalCoords{F},
+        EclipticCoords{2000,F},
+        EclipticCoords{1975,F},
     )
-
-    @testset "$IN_SYS --> $OUT_SYS"for IN_SYS in systems, OUT_SYS in systems
-        test_against_astropy(IN_SYS, OUT_SYS)
-
+    @testset "$IN_SYS --> $OUT_SYS" for IN_SYS in systems, OUT_SYS in systems
+        atol = IN_SYS <: EclipticCoords || OUT_SYS <: EclipticCoords ? 1e-3 : 0
+        test_against_astropy(IN_SYS, OUT_SYS; atol)
     end
 end

@@ -72,6 +72,18 @@ FK5Coords{e,F}(c::T) where {e,F,T<:AbstractSkyCoords} = convert(FK5Coords{e,F}, 
 constructorof(::Type{<:FK5Coords{e}}) where {e} = FK5Coords{e}
 
 
+struct EclipticCoords{e,T<:AbstractFloat} <: AbstractSkyCoords
+    lon::T
+    lat::T
+    EclipticCoords{e,T}(lon, lat) where {e,T<:AbstractFloat} = new(mod2pi(lon), lat)
+end
+EclipticCoords{e}(lon::T, lat::T) where {e,T<:AbstractFloat} = EclipticCoords{e,T}(lon, lat)
+EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords(promote(float(lon), float(lat))...)
+EclipticCoords{e}(c::AbstractSkyCoords) where {e} = convert(EclipticCoords{e}, c)
+EclipticCoords{e,F}(c::AbstractSkyCoords) where {e,F} = convert(EclipticCoords{e,F}, c)
+constructorof(::Type{<:EclipticCoords{e}}) where {e} = EclipticCoords{e}
+
+
 # Scalar coordinate conversions
 Base.convert(::Type{T}, c::T) where {T<:AbstractSkyCoords} = c
 
@@ -85,3 +97,4 @@ Base.:(==)(a::T, b::T) where {T<:AbstractSkyCoords} = lon(a) == lon(b) && lat(a)
 Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)

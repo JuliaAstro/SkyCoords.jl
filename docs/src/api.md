@@ -17,6 +17,7 @@ AbstractSkyCoords
 ICRSCoords
 GalCoords
 FK5Coords
+EclipticCoords
 ```
 
 ## Conversion

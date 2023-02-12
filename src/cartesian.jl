@@ -4,7 +4,7 @@ end
 
 CartesianCoords{TC}(args::Real...) where {TC} = CartesianCoords{TC}(SVector(float.(args)...))
 CartesianCoords{TC}(vec::AbstractVector{TF}) where {TC, TF} = CartesianCoords{TC, TF}(vec)
-CartesianCoords(c::AbstractSkyCoords) where {TC} = convert(CartesianCoords, c)
+CartesianCoords(c::AbstractSkyCoords) = convert(CartesianCoords, c)
 CartesianCoords{TC}(c::AbstractSkyCoords) where {TC} = convert(CartesianCoords{TC}, c)
 CartesianCoords{TC,TF}(c::AbstractSkyCoords) where {TC<:AbstractSkyCoords,TF} = convert(CartesianCoords{TC,TF}, c)
 constructorof(::Type{<:CartesianCoords{TC}}) where {TC} = CartesianCoords{TC}

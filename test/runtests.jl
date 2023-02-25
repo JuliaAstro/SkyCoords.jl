@@ -21,7 +21,7 @@ include("astropy.jl")
     c5 = ICRSCoords(ℯ, 1 + pi / 2)
     @test separation(c1, c5) ≈ separation(c5, c1) ≈ separation(c1, convert(GalCoords, c5)) ≈
           separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
-    for T in (GalCoords, FK5Coords{2000})
+    for T in (GalCoords, FK5Coords{2000}, EclipticCoords{2000})
         c2 = convert(T{Float32}, c1)
         c3 = convert(T{Float64}, c1)
         c4 = convert(T{BigFloat}, c1)
@@ -40,6 +40,8 @@ end
     GalCoords,
     FK5Coords{2000},
     FK5Coords{1970},
+    EclipticCoords{2000},
+    EclipticCoords{1970},
 ]
     @test C(hms"0h0m0", dms"0d0m0") == C(0.0, 0.0)
     @test C(hms"12h0.0m0.0s", dms"90:0:0") == C(π, π / 2)
@@ -66,7 +68,7 @@ end
     @test position_angle(c1, c4) ≈ 0
 
     # types
-    for T in [ICRSCoords, GalCoords, FK5Coords{2000}]
+    for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
         c1 = T(0, 0)
         c2 = T(deg2rad(1), 0)
         @test position_angle(c1, c2) ≈ π / 2
@@ -75,7 +77,7 @@ end
 
 
 
-@testset "Offset ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}]
+@testset "Offset ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
     # simple integration tests, depend that separation and position_angle are accurate
     c1s = [
         T1(0, -π/2), # south pole
@@ -125,7 +127,7 @@ end
 end
 
 @testset "cartesian" begin
-    for CT in [ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, GalCoords]
+    for CT in [ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, EclipticCoords{2000}, EclipticCoords{1975}, GalCoords]
         @test cartesian(CT(0, 0)) |> vec ≈ [1, 0, 0]
         @test cartesian(CT(0, π/2)) |> vec ≈ [0, 0, 1]
         @test cartesian(CT(π/2, 0)) |> vec ≈ [0, 1, 0]
@@ -160,11 +162,12 @@ end
     @test setproperties(ICRSCoords(1, 2), ra=3) == ICRSCoords(3, 2)
     @test setproperties(GalCoords(1, 2), l=3) == GalCoords(3, 2)
     @test setproperties(FK5Coords{2000}(1, 2), ra=3) == FK5Coords{2000}(3, 2)
+    @test setproperties(EclipticCoords{2000}(1, 2), lon=3) == EclipticCoords{2000}(3, 2)
     @test setproperties(cartesian(ICRSCoords(1, 2)), vec=[1., 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 @testset "equality" begin
-    @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}]
+    @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
         c1 = T(1., 2.)
         c2 = T(1., 2.001)
         c3 = T{Float32}(1., 2.)
@@ -184,7 +187,7 @@ end
 end
 
 @testset "conversion" begin
-    systems = (ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, GalCoords)
+    systems = (ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, EclipticCoords{2000}, EclipticCoords{1975}, GalCoords)
     for IN_SYS in systems, OUT_SYS in systems
         coord_in = IN_SYS(rand(rng), rand(rng))
         coord_out = convert(OUT_SYS, coord_in)

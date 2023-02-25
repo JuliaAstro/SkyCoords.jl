@@ -1,4 +1,5 @@
 using AstroAngles
+using Accessors
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
@@ -164,6 +165,28 @@ end
     @test setproperties(FK5Coords{2000}(1, 2), ra=3) == FK5Coords{2000}(3, 2)
     @test setproperties(EclipticCoords{2000}(1, 2), lon=3) == EclipticCoords{2000}(3, 2)
     @test setproperties(cartesian(ICRSCoords(1, 2)), vec=[1., 0, 0]) == cartesian(ICRSCoords(0, 0))
+end
+
+VERSION > v"1.9-DEV" && @testset "Accessors" begin
+    @testset for c in (ICRSCoords(1, 0.5), FK5Coords{2000}(1, 0.5), GalCoords(1, 0.5), EclipticCoords{2000}(1, 0.5))
+        Accessors.test_getset_laws(lon, c, 1.5, 0.123)
+        Accessors.test_getset_laws(lat, c, 1.5, 0.123)
+
+        cart = cartesian(c)
+        cart1 = @set lat(spherical(cart)) = 0.123
+        @test typeof(cart1) == typeof(cart)
+        @test lat(spherical(cart1)) ≈ 0.123
+
+        c1 = @set vec(cartesian(c)) = [1., 0, 0]
+        @test typeof(c1) == typeof(c)
+        @test lat(c1) == 0
+        @test lon(c1) == 0
+
+        Accessors.test_getset_laws(spherical, c, c1, c; cmp = ≈)
+        Accessors.test_getset_laws(cartesian, c, cart1, cart; cmp = ≈)
+        Accessors.test_getset_laws(spherical, cart, c1, c; cmp = ≈)
+        Accessors.test_getset_laws(cartesian, cart, cart1, cart; cmp = ≈)
+    end
 end
 
 @testset "equality" begin

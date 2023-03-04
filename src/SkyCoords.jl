@@ -43,10 +43,12 @@ end
 # Constant rotation matricies and precession matrix function
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
-eta0 = deg2rad(-19.9 / 3600000)
-xi0 = deg2rad(9.1 / 3600000)
-da0 = deg2rad(-22.9 / 3600000)
-const ICRS_TO_FK5J2000 = RotXYZ(eta0, -xi0, -da0)
+const ICRS_TO_FK5J2000 = let
+    eta0 = deg2rad(-19.9 / 3600000)
+    xi0 = deg2rad(9.1 / 3600000)
+    da0 = deg2rad(-22.9 / 3600000)
+    RotXYZ(eta0, -xi0, -da0)
+end
 const FK5J2000_TO_ICRS = ICRS_TO_FK5J2000'
 
 # FK5J2000 --> Gal
@@ -57,10 +59,12 @@ const FK5J2000_TO_ICRS = ICRS_TO_FK5J2000'
 # |  from Reid & Brunthaler 2004 and the best self-consistency between FK5
 # |  -> Galactic and FK5 -> FK4 -> Galactic. The lon0 angle was found by
 # |  optimizing the self-consistency."
-ngp_fk5j2000_ra = deg2rad(192.8594812065348)
-ngp_fk5j2000_dec = deg2rad(27.12825118085622)
-lon0_fk5j2000 = deg2rad(122.9319185680026)
-const FK5J2000_TO_GAL = RotZYZ(lon0_fk5j2000 - π, ngp_fk5j2000_dec - π/2, -ngp_fk5j2000_ra)
+const FK5J2000_TO_GAL = let
+    ngp_fk5j2000_ra = deg2rad(192.8594812065348)
+    ngp_fk5j2000_dec = deg2rad(27.12825118085622)
+    lon0_fk5j2000 = deg2rad(122.9319185680026)
+    RotZYZ(lon0_fk5j2000 - π, ngp_fk5j2000_dec - π/2, -ngp_fk5j2000_ra)
+end
 const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 
 # Gal --> ICRS: simply chain through FK5J2000

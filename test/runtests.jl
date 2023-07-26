@@ -1,5 +1,6 @@
 using AstroAngles
 using Accessors
+using Unitful
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
@@ -187,6 +188,28 @@ VERSION > v"1.9-DEV" && @testset "Accessors" begin
         Accessors.test_getset_laws(spherical, cart, c1, c; cmp = ≈)
         Accessors.test_getset_laws(cartesian, cart, cart1, cart; cmp = ≈)
     end
+end
+
+VERSION > v"1.9-DEV" && @testset "Unitful" begin
+    @test ICRSCoords(1u"rad", 0.5) === ICRSCoords(1, 0.5)
+    @test GalCoords(1u"rad", 0.5u"rad") === GalCoords(1, 0.5)
+    @test FK5Coords{2000}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
+    @test EclipticCoords{2000}(1u"°", 0.5u"°") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+
+    @test SkyCoords.lat(u"rad", ICRSCoords(1, 0.5)) === 0.5u"rad"
+    @test SkyCoords.lon(u"°", ICRSCoords(1, 0.5)) === rad2deg(1)u"°"
+
+    @test separation(u"rad", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) === 0.7u"rad"
+    @test separation(u"°", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) === rad2deg(0.7)u"°"
+
+    @test position_angle(u"rad", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) === Float64(π)*u"rad"
+    @test position_angle(u"°", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) === 180.0u"°"
+
+    # offset() works without special Unitful support
+    @test offset(ICRSCoords(1, 0.5), 0.1u"rad", 2) === offset(ICRSCoords(1, 0.5), 0.1, 2)
+    @test offset(ICRSCoords(1, 0.5), 0.1u"rad", 2u"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
+    @test offset(ICRSCoords(1, 0.5), 0.1, 100u"°") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
+    @test offset(ICRSCoords(1, 0.5), 0.1u"°", 100u"°") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
 end
 
 @testset "equality" begin

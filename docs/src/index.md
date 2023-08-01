@@ -11,7 +11,7 @@ SkyCoords.jl provides a type system for astronomical coordinate systems with app
 From the Julia REPL
 
 ```julia-repl
-(v1.2) pkg> add SkyCoords
+(v1.6) pkg> add SkyCoords
 
 julia> using SkyCoords
 ```
@@ -49,6 +49,22 @@ julia> c2.l # Note that galactic coordinate fields are l, b
 
 julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
 FK5Coords{2000, Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
+```
+### Units
+
+There is built-in support for units via [Unitful.jl](https://github.com/PainterQubits/Unitful.jl)
+
+```jldoctest unitangles
+julia> using Unitful
+
+julia> c = ICRSCoords(0.11255u"°", 0.00091u"rad")
+ICRSCoords{Float64}(0.0019643680731196178, 0.00091)
+
+julia> c2 = FK5Coords{2000}(0.1u"rad", 0.5)
+FK5Coords{2000, Float64}(0.1, 0.5)
+
+julia> SkyCoords.lat(u"μrad", c)
+910.0 μrad
 ```
 
 ### Parsing from strings

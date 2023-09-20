@@ -16,6 +16,7 @@ pages = ["api.md"]
 AbstractSkyCoords
 ICRSCoords
 GalCoords
+SuperGalCoords
 FK5Coords
 EclipticCoords
 ```

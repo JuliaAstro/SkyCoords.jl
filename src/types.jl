@@ -49,6 +49,29 @@ GalCoords(c::T) where {T<:AbstractSkyCoords} = convert(GalCoords, c)
 GalCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(GalCoords{F}, c)
 
 """
+    SuperGalCoords(l, b)
+
+[Supergalactic Coordinate System](https://en.wikipedia.org/wiki/Supergalactic_coordinate_system)
+
+The supergalactic plane is part of a reference frame for the supercluster of galaxies that contains the Milky Way galaxy.
+The supergalactic plane as so-far observed is more or less perpendicular to the plane of the Milky Way, the angle is 84.5 degrees. Viewed from the Earth, the plane traces a great circle across the sky through the constellations 
+
+# Coordinates
+- `l` - SuperGalCoords longitude in radians (-π, π)
+- `b` - SuperGalCoords latitude in radians (-π/2, π/2)
+"""
+struct SuperGalCoords{T<:AbstractFloat} <: AbstractSkyCoords
+    l::T
+    b::T
+    SuperGalCoords{T}(l, b) where {T<:AbstractFloat} = new(mod2pi(l), b)
+end
+SuperGalCoords(l::T, b::T) where {T<:AbstractFloat} = SuperGalCoords{T}(l, b)
+SuperGalCoords(l::Real, b::Real) = SuperGalCoords(promote(float(l), float(b))...)
+SuperGalCoords(c::T) where {T<:AbstractSkyCoords} = convert(SuperGalCoords, c)
+SuperGalCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(SuperGalCoords{F}, c)
+
+
+"""
     FK5Coords{equinox}(ra, dec)
 
 [Equatorial Coordinate System](https://en.wikipedia.org/wiki/Equatorial_coordinate_system)
@@ -107,5 +130,6 @@ end
 Base.:(==)(a::T, b::T) where {T<:AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)
 Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)

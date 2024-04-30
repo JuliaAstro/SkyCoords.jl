@@ -30,20 +30,20 @@ ICRSCoords{Float64}(0.0, 0.0)
 ```
 
 - using `convert`
-```jldoctest convsetup
-julia> convert(GalCoords, c1)
-GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
-```
+  ```jldoctest convsetup
+  julia> convert(GalCoords, c1)
+  GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
+  ```
 - using constructors
-```jldoctest convsetup
-julia> GalCoords(c1)
-GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
-```
+  ```jldoctest convsetup
+  julia> GalCoords(c1)
+  GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
+  ```
 - using `|>`
-```jldoctest convsetup
-julia> c1 |> GalCoords
-GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
-```
+  ```jldoctest convsetup
+  julia> c1 |> GalCoords
+  GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
+  ```
 
 ## Functions
 

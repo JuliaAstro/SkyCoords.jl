@@ -7,7 +7,7 @@ DocTestSetup = :(using SkyCoords)
 ## Index
 
 ```@index
-pages = ["api.md"]
+Pages = ["api.md"]
 ```
 
 ## Types

@@ -12,6 +12,7 @@ const lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
 astropy_conversion(::Type{<:ICRSCoords}) = apc.ICRS
 astropy_conversion(::Type{<:FK5Coords{F}}) where {F} = apc.FK5(equinox="J$F")
 astropy_conversion(::Type{<:GalCoords}) = apc.Galactic
+astropy_conversion(::Type{<:SuperGalCoords}) = apc.Supergalactic
 astropy_conversion(::Type{<:EclipticCoords{F}}) where {F} = apc.GeocentricMeanEcliptic(equinox="J$F")
 
 function test_against_astropy(intype, outtype; atol=0)
@@ -48,6 +49,7 @@ end
         FK5Coords{2000,F},
         FK5Coords{1975,F},
         GalCoords{F},
+        SuperGalCoords{F},
         EclipticCoords{2000,F},
         EclipticCoords{1975,F},
     )

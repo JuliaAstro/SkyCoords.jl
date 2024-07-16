@@ -20,7 +20,7 @@ UnitfulExt = "Unitful"
 
 [compat]
 Accessors = "0.1"
-AstroAngles = "0.1"
+AstroAngles = "0.2"
 ConstructionBase = "1"
 Rotations = "1"
 StaticArrays = "0.8, 0.9, 1"

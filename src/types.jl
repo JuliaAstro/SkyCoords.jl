@@ -112,7 +112,7 @@ struct EclipticCoords{e,T<:AbstractFloat} <: AbstractSkyCoords
     EclipticCoords{e,T}(lon, lat) where {e,T<:AbstractFloat} = new(mod2pi(lon), lat)
 end
 EclipticCoords{e}(lon::T, lat::T) where {e,T<:AbstractFloat} = EclipticCoords{e,T}(lon, lat)
-EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords(promote(float(lon), float(lat))...)
+EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords{e}(promote(float(lon), float(lat))...)
 EclipticCoords{e}(c::AbstractSkyCoords) where {e} = convert(EclipticCoords{e}, c)
 EclipticCoords{e,F}(c::AbstractSkyCoords) where {e,F} = convert(EclipticCoords{e,F}, c)
 constructorof(::Type{<:EclipticCoords{e}}) where {e} = EclipticCoords{e}

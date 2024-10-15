@@ -18,11 +18,12 @@ julia> Pkg.add("SkyCoords")
 ## Usage
 
 
-There are currently three supported coordinate systems. The following
+There are currently five supported coordinate systems. The following
 immutable types are used to represent coordinates in each system:
 
 - `ICRSCoords`: ICRS coordinates system
 - `GalCoords`: Galactic coordinates system
+- `SuperGalCoords`: Super-Galactic coordinate system
 - `FK5Coords`: FK5 coordinates system (with arbitrary equinox)
 - `EclipticCoords`: Ecliptic coordinates system
 

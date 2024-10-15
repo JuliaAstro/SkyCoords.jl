@@ -151,13 +151,13 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:GalCoords}) where {e1} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:SuperGalCoords}) where {e1} =
-    precess_from_j2000(e1) * SuperGal_TO_FK5J2000
+    precess_from_j2000(e1) * SUPERGAL_TO_FK5J2000
 @generated rotmat(::Type{<:ICRSCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:GalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:SuperGalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
-    FK5J2000_TO_SuperGAL * precess_from_j2000(e2)'
+    FK5J2000_TO_SUPERGAL * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1,e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 

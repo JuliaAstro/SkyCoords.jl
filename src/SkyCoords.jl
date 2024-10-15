@@ -132,11 +132,11 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
 rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
 rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
 rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
-rotmat(::Type{<:GalCoords}, ::Type{<:SuperGalCoords}) = GAL_TO_SUPERGAL
-rotmat(::Type{<:SuperGalCoords}, ::Type{<:GalCoords}) = SUPERGAL_TO_GAL
 rotmat(::Type{<:SuperGalCoords}, ::Type{<:SuperGalCoords}) = I
-rotmat(::Type{<:SuperGalCoords}, ::Type{<:ICRSCoords}) = SuperGal_TO_ICRS
-rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = ICRS_TO_SuperGAL
+rotmat(::Type{<:GalCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_GAL
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:GalCoords}) = GAL_TO_SUPERGAL
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_SUPERGAL
+rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
 
 
 @generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = RotX(-ecliptic_obliquity(e))

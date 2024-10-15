@@ -73,16 +73,14 @@ const ICRS_TO_GAL = GAL_TO_ICRS'
 sgp_l = deg2rad(47.37)
 sgp_b = deg2rad(6.32)
 # rotation matrix compared to astropy
-const GAL_TO_SUPERGAL = RotZYZ(-π / 2, sgp_b - π / 2, -sgp_l)'
+const GAL_TO_SUPERGAL = RotZYZ(π/2, π/2 - sgp_b, π - sgp_l)
 const SUPERGAL_TO_GAL = GAL_TO_SUPERGAL'
 # SuperGal --> ICRS: chain through GAL
-const SuperGal_TO_ICRS = GAL_TO_ICRS * SUPERGAL_TO_GAL
-const ICRS_TO_SuperGAL = SuperGal_TO_ICRS'
+const SUPERGAL_TO_ICRS = GAL_TO_ICRS * SUPERGAL_TO_GAL
+const ICRS_TO_SUPERGAL = SUPERGAL_TO_ICRS'
 # SuperGal --> FK5J2000: chain through GAL
-const SuperGal_TO_FK5J2000 = GAL_TO_FK5J2000 * SUPERGAL_TO_GAL
-const FK5J2000_TO_SuperGAL = SuperGal_TO_FK5J2000'
-
-
+const SUPERGAL_TO_FK5J2000 = GAL_TO_FK5J2000 * SUPERGAL_TO_GAL
+const FK5J2000_TO_SUPERGAL = SUPERGAL_TO_FK5J2000'
 # FK5J2000 --> FK5{epoch}
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO

@@ -8,6 +8,7 @@ using StaticArrays
 export AbstractSkyCoords, 
        ICRSCoords,
        GalCoords,
+       SuperGalCoords,
        FK5Coords,
        EclipticCoords,
        CartesianCoords,
@@ -66,6 +67,20 @@ const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 const GAL_TO_ICRS = FK5J2000_TO_ICRS * GAL_TO_FK5J2000
 const ICRS_TO_GAL = GAL_TO_ICRS'
 
+
+# Gal --> SuperGal
+# we use the same parameters as in astropy
+sgp_l = deg2rad(47.37)
+sgp_b = deg2rad(6.32)
+# rotation matrix compared to astropy
+const GAL_TO_SUPERGAL = RotZYZ(π/2, π/2 - sgp_b, π - sgp_l)
+const SUPERGAL_TO_GAL = GAL_TO_SUPERGAL'
+# SuperGal --> ICRS: chain through GAL
+const SUPERGAL_TO_ICRS = GAL_TO_ICRS * SUPERGAL_TO_GAL
+const ICRS_TO_SUPERGAL = SUPERGAL_TO_ICRS'
+# SuperGal --> FK5J2000: chain through GAL
+const SUPERGAL_TO_FK5J2000 = GAL_TO_FK5J2000 * SUPERGAL_TO_GAL
+const FK5J2000_TO_SUPERGAL = SUPERGAL_TO_FK5J2000'
 # FK5J2000 --> FK5{epoch}
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
@@ -99,6 +114,8 @@ end
 
 lon(c::GalCoords) = c.l
 lat(c::GalCoords) = c.b
+lon(c::SuperGalCoords) = c.l
+lat(c::SuperGalCoords) = c.b
 lat(c::EclipticCoords) = c.lat
 lon(c::EclipticCoords) = c.lon
 lon(c::AbstractSkyCoords) = c.ra
@@ -115,6 +132,12 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
 rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
 rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
 rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:SuperGalCoords}) = I
+rotmat(::Type{<:GalCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_GAL
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:GalCoords}) = GAL_TO_SUPERGAL
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_SUPERGAL
+rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
+
 
 @generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = RotX(-ecliptic_obliquity(e))
 @generated rotmat(::Type{<:FK5Coords{e}}, ::Type{<:EclipticCoords{e}}) where {e} = RotX(ecliptic_obliquity(e))
@@ -127,10 +150,14 @@ rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:GalCoords}) where {e1} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:SuperGalCoords}) where {e1} =
+    precess_from_j2000(e1) * SUPERGAL_TO_FK5J2000
 @generated rotmat(::Type{<:ICRSCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:GalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
+@generated rotmat(::Type{<:SuperGalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
+    FK5J2000_TO_SUPERGAL * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1,e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 

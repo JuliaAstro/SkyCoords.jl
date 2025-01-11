@@ -244,7 +244,7 @@ end
     end
 end
 
-@testset "plotting with Makie" begin
+VERSION >= v"1.9" && @testset "plotting with Makie" begin
     coo = ICRSCoords(1, 2)
     
     @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 2)],)

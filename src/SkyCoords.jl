@@ -121,6 +121,8 @@ lon(c::EclipticCoords) = c.lon
 lon(c::AbstractSkyCoords) = c.ra
 lat(c::AbstractSkyCoords) = c.dec
 
+lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
+
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 

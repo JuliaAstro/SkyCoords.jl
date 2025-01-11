@@ -16,7 +16,7 @@ const rng = StableRNG(2000)
 rad2arcsec(r) = 3600 * rad2deg(r)
 
 # tests against astropy.coordinates
-# include("astropy.jl")
+include("astropy.jl")
 
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin

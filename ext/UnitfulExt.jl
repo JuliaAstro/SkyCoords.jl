@@ -11,6 +11,7 @@ _COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK5Coords, EclipticCoords}
 
 SkyCoords.lon(u::Unitful.Units, c) = SkyCoords.lon(c) * u"rad" |> u
 SkyCoords.lat(u::Unitful.Units, c) = SkyCoords.lat(c) * u"rad" |> u
+SkyCoords.lonlat(u::Unitful.Units, c) = SkyCoords.lonlat(c) .* u"rad" .|> u
 
 SkyCoords.separation(u::Unitful.Units, c1, c2) = SkyCoords.separation(c1, c2) * u"rad" |> u
 SkyCoords.position_angle(u::Unitful.Units, c1, c2) = SkyCoords.position_angle(c1, c2) * u"rad" |> u

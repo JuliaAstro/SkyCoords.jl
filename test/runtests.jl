@@ -8,6 +8,7 @@ using SkyCoords
 using StableRNGs
 using Statistics
 using Test
+import Makie
 
 import SkyCoords: lat, lon
 
@@ -241,4 +242,13 @@ end
         @test coord_out == OUT_SYS(coord_in)
         @test coord_out == coord_in |> OUT_SYS
     end
+end
+
+VERSION >= v"1.9" && @testset "plotting with Makie" begin
+    coo = ICRSCoords(1, 2)
+    
+    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 2)],)
+    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 2)],)
+    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 2), Makie.Point(1, 2)],)
+    @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
 end

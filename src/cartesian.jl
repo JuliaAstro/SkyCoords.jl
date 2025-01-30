@@ -1,4 +1,4 @@
-struct CartesianCoords{TC<:AbstractSkyCoords, TF<:AbstractFloat} <: AbstractSkyCoords
+struct CartesianCoords{TC<:AbstractSkyCoords, TF<:Real} <: AbstractSkyCoords
     vec::SVector{3,TF}
 end
 

@@ -80,7 +80,7 @@ ICRSCoords{Float64}(1.4596726677614607, 0.3842255081802917)
 
 for example, to load coordinates from a target list
 
-```julia
+```julia-repl
 julia> using CSV, DataFrames
 
 julia> table = CSV.File("target_list.csv") |> DataFrame;

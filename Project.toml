@@ -22,7 +22,7 @@ UnitfulExt = "Unitful"
 
 [compat]
 Accessors = "0.1"
-AstroAngles = "0.2"
+AstroAngles = "0.1,0.2"
 ConstructionBase = "1"
 Makie = "0.21, 0.22"
 Rotations = "1"

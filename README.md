@@ -1,11 +1,11 @@
 # SkyCoords.jl
 
-[![Build Status](https://github.com/JuliaAstro/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
-[![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
-[![Coverage](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliaastro.org/SkyCoords/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliaastro.org/SkyCoords.jl/dev)
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliaastro.github.io/SkyCoords.jl/stable)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliaastro.github.io/SkyCoords.jl/dev)
+[![CI](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
+[![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
+[![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/graph/badge.svg?token=0WIe7bWYFj)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
 Basic astronomical coordinate systems in Julia.
 

@@ -261,6 +261,8 @@ end
     lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
     refcat = T1.(lons, lats)
     tree = CoordsKDTree(refcat)
+    # Test mixed coordinate input to CoordsKDTree
+    @test CoordsKDTree([refcat[1], refcat[2]]).tree.data ≈ CoordsKDTree([refcat[1], convert(T2, refcat[2])]).tree.data
     @test_throws ArgumentError CoordsKDTree(T1[]) # empty data throws
     @test_throws ArgumentError nn(tree, T1[]) # emtpy coords throws
     for n in (1, 10, N)

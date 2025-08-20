@@ -46,6 +46,13 @@ ICRSCoords{Float64}(0.0, 0.0)
   GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
   ```
 
+## Matching
+
+```@docs
+match_coords
+CoordsKDTree
+```
+
 ## Functions
 
 ```@docs

@@ -18,6 +18,9 @@ function CoordsKDTree(data::AbstractArray{AbstractSkyCoords}; kws...)
 end
 # For uniform, concrete `eltype(data)`
 function CoordsKDTree(data::AbstractArray{TC}; kws...) where {TC <: AbstractSkyCoords}
+    if isempty(data)
+        throw(ArgumentError("`data` provided to `CoordsKDTree` cannot be empty."))
+    end
     data_array = vec([coords2cart(lon(data[i]), lat(data[i])) for i in eachindex(data)])
     tree = KDTree(data_array, Euclidean(); kws...)
     return CoordsKDTree{TC}(tree)
@@ -38,6 +41,9 @@ function nn(tree::CoordsKDTree{T}, coord::T) where {T <: AbstractSkyCoords}
 end
 nn(tree::CoordsKDTree{TC}, coords::AbstractArray{T}) where {TC, T <: AbstractSkyCoords} = nn(tree, [convert(TC, coord) for coord in coords])
 function nn(tree::CoordsKDTree{T}, coords::AbstractArray{T}) where {T <: AbstractSkyCoords}
+    if isempty(coords)
+        throw(ArgumentError("`coords` provided to `nn` cannot be empty."))
+    end
     id, sep = nn(tree.tree, vec([coords2cart(lon(coord), lat(coord)) for coord in coords]))
     sep = @. 2 * asin(sep / 2) # Convert from cartesian separation to radians
     return reshape(id, size(coords)), reshape(sep, size(coords))
@@ -60,6 +66,9 @@ function knn(tree::CoordsKDTree{T}, coord::T, k::Int) where {T <: AbstractSkyCoo
 end
 knn(tree::CoordsKDTree{TC}, coords::AbstractArray{T}, k::Int) where {TC, T <: AbstractSkyCoords} = knn(tree, [convert(TC, coord) for coord in coords], k)
 function knn(tree::CoordsKDTree{T}, coords::AbstractArray{T}, k::Int) where {T <: AbstractSkyCoords}
+    if isempty(coords)
+        throw(ArgumentError("`coords` provided to `knn` cannot be empty."))
+    end
     id, sep = knn(tree.tree, vec([coords2cart(lon(coord), lat(coord)) for coord in coords]), k)
     for i in eachindex(sep)
         @. sep[i] = 2 * asin(sep[i] / 2) # Convert from cartesian separation to radians
@@ -85,6 +94,9 @@ As above, but uses a pre-constructed `tree::CoordsKDTree` rather than creating o
 """
 function match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
                       nthneighbor::Int = 1)
+    if isempty(matchcoords)
+        throw(ArgumentError("`matchcoords` provided to `match_coords` cannot be empty."))
+    end
     if nthneighbor == 1
         nn(tree, matchcoords)
     else
@@ -101,5 +113,8 @@ function match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractS
     end
 end
 function match_coords(refcoords::AbstractArray{<:AbstractSkyCoords}, matchcoords::AbstractArray{<:AbstractSkyCoords}; kws...)
+    if isempty(refcoords)
+        throw(ArgumentError("`refcoords` provided to `match_coords` cannot be empty."))
+    end
     return match_coords(CoordsKDTree(refcoords), matchcoords; kws...)
 end

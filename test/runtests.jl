@@ -261,6 +261,8 @@ end
     lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
     refcat = T1.(lons, lats)
     tree = CoordsKDTree(refcat)
+    @test_throws ArgumentError CoordsKDTree(T1[]) # empty data throws
+    @test_throws ArgumentError nn(tree, T1[]) # emtpy coords throws
     for n in (1, 10, N)
         # Test single coord
         @test nn(tree, convert(T2, refcat[n]))[1] == n
@@ -310,6 +312,8 @@ end
     # Test non-vector input, match_coords
     rr = randperm(rng, 1000)
     matchcat = refcat[rr]
+    @test_throws ArgumentError match_coords(refcat, ICRSCoords[])
+    @test_throws ArgumentError match_coords(ICRSCoords[], matchcat)
     id1, sep1 = match_coords(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)))
     id2, sep2 = match_coords(refcat, matchcat)
     @test size(id1) == size(sep1) == (100, 10)

@@ -20,7 +20,9 @@ export AbstractSkyCoords,
        cartesian,
        spherical,
        match_coords,
-       CoordsKDTree
+       CoordsKDTree,
+       nn,
+       knn
 
 include("types.jl")
 include("cartesian.jl")

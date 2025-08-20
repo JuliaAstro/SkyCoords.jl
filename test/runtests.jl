@@ -260,11 +260,61 @@ end
     lons = 2pi .* rand(rng, N) # (0, 2π)
     lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
     refcat = T1.(lons, lats)
+    tree = CoordsKDTree(refcat)
     for n in (1, 10, N)
-        rr = randperm(n)
+        # Test single coord
+        @test nn(tree, convert(T2, refcat[n]))[1] == n
+        # Test mulitple coords
+        @test nn(tree, convert.(Ref(T2), [refcat[n], refcat[2]]))[1] == [n, 2]
+        # Test knn, single coord
+        id, sep = knn(tree, convert(T2, refcat[n]), 2)
+        @test length(id) == length(sep) == 2
+        @test n in id
+        # Test knn with multiple coords which returns a vector of vectors
+        # First dimension is number of points=3, second is arg k=2
+        id, sep = knn(tree, convert.(Ref(T2), [refcat[n], refcat[2], refcat[3]]), 2)
+        @test length(id) == length(sep) == 3
+        @test all(length(id[i]) .== length(sep[i]) .== 2 for i in eachindex(id, sep))
+        @test all((n in id[1], 2 in id[2], 3 in id[3]))
+        # Test match_coords
+        rr = randperm(rng, n)
         matchcat = convert.(Ref(T2), refcat)[rr]
         id, sep = match_coords(refcat, matchcat)
         @test id == rr
         @test all(isapprox.(sep, 0; atol=1e-12))
+        id2, sep2 = match_coords(tree, matchcat)
+        @test id2 == id
+        @test sep == sep2
+        # Test with nthneighbor != 1
+        id3, sep3 = match_coords(refcat, matchcat; nthneighbor=2)
+        @test all(id3 .!= id2)
+        @test all(sep3 .> sep2)
+        kid, ksep = knn(tree, matchcat[n], 2)
+        # knn does not guarantee order;
+        # the second neighbor is whichever one has greater separation
+        a = argmax(ksep) 
+        @test id3[n] == kid[a]
+        @test sep3[n] == ksep[a]
     end
+    @test_nowarn CoordsKDTree(reshape(refcat, (100, 10)))
+    # Test non-vector input, nn
+    id1, sep1 = nn(tree, reshape(refcat[1:4], (2,2)))
+    @test size(id1) == size(sep1) == (2,2)
+    id2, sep2 = nn(tree, refcat[1:4])
+    @test (vec(id1) == id2) & (vec(sep1) == sep2)
+    # Test non-vector input, knn
+    id1, sep1 = knn(tree, reshape(refcat[1:4], (2,2)), 3)
+    @test size(id1) == size(sep1) == (2,2)
+    id2, sep2 = knn(tree, refcat[1:4], 3)
+    @test (vec(id1) == id2) & (vec(sep1) == sep2)
+    # Test non-vector input, match_coords
+    rr = randperm(rng, 1000)
+    matchcat = refcat[rr]
+    id1, sep1 = match_coords(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)))
+    id2, sep2 = match_coords(refcat, matchcat)
+    @test size(id1) == size(sep1) == (100, 10)
+    @test size(id2) == size(sep2) == (1000,)
+    @test (vec(id1) == id2 == rr) & (vec(sep1) == sep2)
+    id1, sep1 = match_coords(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)); nthneighbor=2)
+    id2, sep2 = match_coords(refcat, matchcat)
 end

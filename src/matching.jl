@@ -51,11 +51,9 @@ end
 
 """
     knn(tree::CoordsKDTree, coord::AbstractSkyCoords, k::Int)
-
 Queries the `tree` for the `k` nearest entries to the provided `coord`. Returns vectors `(id, sep)`, which, respectively, contain the indices into the tree of the `k` nearest entries, and the angular separations between `coord` and the `k` nearest entries, in radians.
 
     knn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords}, k::Int)
-
 Returns arrays `(id, sep)` containing vectors of indices and angular separations (in radians) of the `k` closest entries in `tree` for each coordinate in `coords`.
 """
 knn(tree::CoordsKDTree{TC}, coord::T, k::Int) where {TC, T <: AbstractSkyCoords} = knn(tree, convert(TC, coord), k)

@@ -2,6 +2,8 @@ module SkyCoords
 
 import ConstructionBase: constructorof
 using LinearAlgebra: I, norm
+using NearestNeighbors: Euclidean
+import NearestNeighbors: KDTree, nn, knn
 using Rotations
 using StaticArrays
 
@@ -20,6 +22,7 @@ export AbstractSkyCoords,
 
 include("types.jl")
 include("cartesian.jl")
+include("matching.jl")
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)

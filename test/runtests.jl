@@ -265,6 +265,7 @@ end
     @test CoordsKDTree([refcat[1], refcat[2]]).tree.data ≈ CoordsKDTree([refcat[1], convert(T2, refcat[2])]).tree.data
     @test_throws ArgumentError CoordsKDTree(T1[]) # empty data throws
     @test_throws ArgumentError nn(tree, T1[]) # emtpy coords throws
+    @test_throws ArgumentError knn(tree, T1[], 2) # emtpy coords throws
     for n in (1, 10, N)
         # Test single coord
         @test nn(tree, convert(T2, refcat[n]))[1] == n

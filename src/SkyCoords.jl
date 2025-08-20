@@ -18,7 +18,9 @@ export AbstractSkyCoords,
        position_angle,
        offset,
        cartesian,
-       spherical
+       spherical,
+       match_coords,
+       CoordsKDTree
 
 include("types.jl")
 include("cartesian.jl")

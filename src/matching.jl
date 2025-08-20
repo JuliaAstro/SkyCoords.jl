@@ -96,7 +96,7 @@ function match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractS
         throw(ArgumentError("`matchcoords` provided to `match_coords` cannot be empty."))
     end
     if nthneighbor == 1
-        nn(tree, matchcoords)
+        return nn(tree, matchcoords)
     else
         # Get all neighbors out to nthneighbor and return the one with largest separation
         id, sep = knn(tree, matchcoords, nthneighbor)

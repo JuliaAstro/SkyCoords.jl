@@ -11,7 +11,7 @@ makedocs(
         canonical = "https://juliaastro.org/SkyCoords/stable/",
     ),
     pages = pages,
-    )
+)
 
 deploydocs(
     repo = "github.com/JuliaAstro/SkyCoords.jl",

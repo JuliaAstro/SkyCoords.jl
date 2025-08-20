@@ -4,6 +4,7 @@ using Unitful
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
+using Random: randperm
 using SkyCoords
 using StableRNGs
 using Statistics
@@ -251,4 +252,19 @@ VERSION >= v"1.9" && @testset "plotting with Makie" begin
     @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 2), Makie.Point(1, 2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
+end
+
+@testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+    ## data generation
+    N = 1000
+    lons = 2pi .* rand(rng, N) # (0, 2π)
+    lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
+    refcat = T1.(lons, lats)
+    for n in (1, 10, N)
+        rr = randperm(n)
+        matchcat = convert.(Ref(T2), refcat)[rr]
+        id, sep = match_coords(refcat, matchcat)
+        @test id == rr
+        @test all(isapprox.(sep, 0; atol=1e-12))
+    end
 end

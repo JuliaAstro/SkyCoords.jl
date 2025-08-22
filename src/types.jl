@@ -17,13 +17,13 @@ This is the current standard adopted by the International Astronomical Union not
 - `ra` - Right ascension in radians (0, 2π)
 - `dec` - Declination in radians (-π/2, π/2)
 """
-struct ICRSCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct ICRSCoords{T<:Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T<:AbstractFloat} = new(mod2pi(ra), dec)
+    ICRSCoords{T}(ra, dec) where {T<:Real} = new(mod2pi(ra), dec)
 end
-ICRSCoords(ra::T, dec::T) where {T<:AbstractFloat} = ICRSCoords{T}(ra, dec)
-ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(float(ra), float(dec))...)
+ICRSCoords(ra::T, dec::T) where {T<:Real} = ICRSCoords{float(T)}(ra, dec)
+ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(ra, dec)...)
 ICRSCoords(c::T) where {T<:AbstractSkyCoords} = convert(ICRSCoords, c)
 ICRSCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(ICRSCoords{F}, c)
 
@@ -38,15 +38,38 @@ This coordinate system is defined based on the projection of the Milky Way galax
 - `l` - Galactic longitude in radians (-π, π)
 - `b` - Galactic latitude in radians (-π/2, π/2)
 """
-struct GalCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct GalCoords{T<:Real} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T<:AbstractFloat} = new(mod2pi(l), b)
+    GalCoords{T}(l, b) where {T<:Real} = new(mod2pi(l), b)
 end
-GalCoords(l::T, b::T) where {T<:AbstractFloat} = GalCoords{T}(l, b)
-GalCoords(l::Real, b::Real) = GalCoords(promote(float(l), float(b))...)
+GalCoords(l::T, b::T) where {T<:Real} = GalCoords{float(T)}(l, b)
+GalCoords(l::Real, b::Real) = GalCoords(promote(l, b)...)
 GalCoords(c::T) where {T<:AbstractSkyCoords} = convert(GalCoords, c)
 GalCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(GalCoords{F}, c)
+
+"""
+    SuperGalCoords(l, b)
+
+[Supergalactic Coordinate System](https://en.wikipedia.org/wiki/Supergalactic_coordinate_system)
+
+The supergalactic plane is part of a reference frame for the supercluster of galaxies that contains the Milky Way galaxy.
+The supergalactic plane as so-far observed is more or less perpendicular to the plane of the Milky Way, the angle is 84.5 degrees. Viewed from the Earth, the plane traces a great circle across the sky through the constellations 
+
+# Coordinates
+- `l` - SuperGalCoords longitude in radians (-π, π)
+- `b` - SuperGalCoords latitude in radians (-π/2, π/2)
+"""
+struct SuperGalCoords{T<:Real} <: AbstractSkyCoords
+    l::T
+    b::T
+    SuperGalCoords{T}(l, b) where {T<:Real} = new(mod2pi(l), b)
+end
+SuperGalCoords(l::T, b::T) where {T<:Real} = SuperGalCoords{float(T)}(l, b)
+SuperGalCoords(l::Real, b::Real) = SuperGalCoords(promote(l, b)...)
+SuperGalCoords(c::T) where {T<:AbstractSkyCoords} = convert(SuperGalCoords, c)
+SuperGalCoords{F}(c::T) where {F,T<:AbstractSkyCoords} = convert(SuperGalCoords{F}, c)
+
 
 """
     FK5Coords{equinox}(ra, dec)
@@ -59,14 +82,13 @@ This coordinate system maps the celestial sphere based on a geocentric observer.
 - `ra` - Right ascension in radians (0, 2π)
 - `dec` - Declination in radians (-π/2, π/2)
 """
-struct FK5Coords{e,T<:AbstractFloat} <: AbstractSkyCoords
+struct FK5Coords{e,T<:Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e,T}(ra, dec) where {T<:AbstractFloat,e} = new(mod2pi(ra), dec)
+    FK5Coords{e,T}(ra, dec) where {T<:Real,e} = new(mod2pi(ra), dec)
 end
-FK5Coords{e}(ra::T, dec::T) where {e,T<:AbstractFloat} = FK5Coords{e,T}(ra, dec)
-FK5Coords{e}(ra::Real, dec::Real) where {e} =
-    FK5Coords{e}(promote(float(ra), float(dec))...)
+FK5Coords{e}(ra::T, dec::T) where {e,T<:Real} = FK5Coords{e,float(T)}(ra, dec)
+FK5Coords{e}(ra::Real, dec::Real) where {e} = FK5Coords{e}(promote(ra, dec)...)
 FK5Coords{e}(c::T) where {e,T<:AbstractSkyCoords} = convert(FK5Coords{e}, c)
 FK5Coords{e,F}(c::T) where {e,F,T<:AbstractSkyCoords} = convert(FK5Coords{e,F}, c)
 constructorof(::Type{<:FK5Coords{e}}) where {e} = FK5Coords{e}
@@ -83,13 +105,13 @@ This coordinate system is geocentric with the ecliptic plane as the xy-plane wit
 - `lon` - Longitude in radians (0, 2π)
 - `lat` - Latitude in radians (-π/2, π/2)
 """
-struct EclipticCoords{e,T<:AbstractFloat} <: AbstractSkyCoords
+struct EclipticCoords{e,T<:Real} <: AbstractSkyCoords
     lon::T
     lat::T
-    EclipticCoords{e,T}(lon, lat) where {e,T<:AbstractFloat} = new(mod2pi(lon), lat)
+    EclipticCoords{e,T}(lon, lat) where {e,T<:Real} = new(mod2pi(lon), lat)
 end
-EclipticCoords{e}(lon::T, lat::T) where {e,T<:AbstractFloat} = EclipticCoords{e,T}(lon, lat)
-EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords(promote(float(lon), float(lat))...)
+EclipticCoords{e}(lon::T, lat::T) where {e,T<:Real} = EclipticCoords{e,float(T)}(lon, lat)
+EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords{e}(promote(lon, lat)...)
 EclipticCoords{e}(c::AbstractSkyCoords) where {e} = convert(EclipticCoords{e}, c)
 EclipticCoords{e,F}(c::AbstractSkyCoords) where {e,F} = convert(EclipticCoords{e,F}, c)
 constructorof(::Type{<:EclipticCoords{e}}) where {e} = EclipticCoords{e}
@@ -107,5 +129,6 @@ end
 Base.:(==)(a::T, b::T) where {T<:AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)
 Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)

@@ -34,7 +34,7 @@ end
 # [x, y, z] unit vector -> (lon, lat)
 function cart2coords(v)
     lon = atan(v[begin + 1], v[begin])
-    xy_norm = sqrt(v[begin]^2 + v[begin + 1]^2)
+    xy_norm = hypot(v[begin], v[begin + 1])
     lat = atan(v[begin + 2], xy_norm)
     return lon, lat
 end

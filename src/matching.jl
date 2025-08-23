@@ -50,26 +50,26 @@ function nn(tree::CoordsKDTree{T}, coords::AbstractArray{T}) where {T <: Abstrac
 end
 
 """
-    knn(tree::CoordsKDTree, coord::AbstractSkyCoords, k::Int)
-Queries the `tree` for the `k` nearest entries to the provided `coord`. Returns vectors `(id, sep)`, which, respectively, contain the indices into the tree of the `k` nearest entries, and the angular separations between `coord` and the `k` nearest entries, in radians.
+    knn(tree::CoordsKDTree, coord::AbstractSkyCoords, k::Int, sortres::Bool = false)
+Queries the `tree` for the `k` nearest entries to the provided `coord`. Returns vectors `(id, sep)`, which, respectively, contain the indices into the tree of the `k` nearest entries, and the angular separations between `coord` and the `k` nearest entries, in radians. If `sortres` is `true`, the returned neighbors are sorted by separation.
 
-    knn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords}, k::Int)
-Returns arrays `(id, sep)` containing vectors of indices and angular separations (in radians) of the `k` closest entries in `tree` for each coordinate in `coords`.
+    knn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords}, k::Int, sortres::Bool = false)
+Returns arrays `(id, sep)` containing vectors of indices and angular separations (in radians) of the `k` closest entries in `tree` for each coordinate in `coords`. If `sortres` is `true`, the returned neighbors are sorted by separation.
 """
-knn(tree::CoordsKDTree{TC}, coord::T, k::Int) where {TC, T <: AbstractSkyCoords} = knn(tree, convert(TC, coord), k)
-function knn(tree::CoordsKDTree{T}, coord::T, k::Int) where {T <: AbstractSkyCoords}
-    id, sep = knn(tree.tree, coords2cart(coord), k)
+knn(tree::CoordsKDTree{TC}, coord::T, k::Int, sortres::Bool = false) where {TC, T <: AbstractSkyCoords} = knn(tree, convert(TC, coord), k, sortres)
+function knn(tree::CoordsKDTree{T}, coord::T, k::Int, sortres::Bool = false) where {T <: AbstractSkyCoords}
+    id, sep = knn(tree.tree, coords2cart(coord), k, sortres)
     @. sep = 2 * asin(sep / 2) # Convert from cartesian separation to radians
     return id, sep
 end
-function knn(tree::CoordsKDTree{TC}, coords::AbstractArray{T}, k::Int) where {TC, T <: AbstractSkyCoords}
-    return knn(tree, convert.(TC, coords), k)
+function knn(tree::CoordsKDTree{TC}, coords::AbstractArray{T}, k::Int, sortres::Bool = false) where {TC, T <: AbstractSkyCoords}
+    return knn(tree, convert.(TC, coords), k, sortres)
 end
-function knn(tree::CoordsKDTree{T}, coords::AbstractArray{T}, k::Int) where {T <: AbstractSkyCoords}
+function knn(tree::CoordsKDTree{T}, coords::AbstractArray{T}, k::Int, sortres::Bool = false) where {T <: AbstractSkyCoords}
     if isempty(coords)
         throw(ArgumentError("`coords` provided to `knn` cannot be empty."))
     end
-    id, sep = knn(tree.tree, vec(coords2cart.(coords)), k)
+    id, sep = knn(tree.tree, vec(coords2cart.(coords)), k, sortres)
     for i in eachindex(sep)
         @. sep[i] = 2 * asin(sep[i] / 2) # Convert from cartesian separation to radians
     end
@@ -100,16 +100,8 @@ function match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractS
     if nthneighbor == 1
         return nn(tree, matchcoords)
     else
-        # Get all neighbors out to nthneighbor and return the one with largest separation
-        id, sep = knn(tree, matchcoords, nthneighbor)
-        id_result = Array{eltype(first(id))}(undef, size(matchcoords))
-        sep_result = Array{eltype(first(sep))}(undef, size(matchcoords))
-        for i in eachindex(id, sep)
-            sval, a = findmax(sep[i])
-            id_result[i] = id[i][a]
-            sep_result[i] = sval
-        end
-        return id_result, sep_result
+        id, sep = knn(tree, matchcoords, nthneighbor, true)
+        return getindex.(id, nthneighbor), getindex.(sep, nthneighbor)
     end
 end
 function match_coords(refcoords::AbstractArray{<:AbstractSkyCoords}, matchcoords::AbstractArray{<:AbstractSkyCoords}; kws...)

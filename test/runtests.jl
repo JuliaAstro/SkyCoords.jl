@@ -281,6 +281,8 @@ end
         @test length(id) == length(sep) == 3
         @test all(length(id[i]) .== length(sep[i]) .== 2 for i in eachindex(id, sep))
         @test all((n in id[1], 2 in id[2], 3 in id[3]))
+        id, sep = knn(tree, convert.(Ref(T2), [refcat[n], refcat[2], refcat[3]]), 2, true)
+        @test (id[1][1] == n) & (id[2][1] == 2) & (id[3][1] == 3) # Order guaranteed by sortres = true
         # Test match_coords
         rr = randperm(rng, n)
         matchcat = convert.(Ref(T2), refcat)[rr]
@@ -294,12 +296,15 @@ end
         id3, sep3 = match_coords(refcat, matchcat; nthneighbor=2)
         @test all(id3 .!= id2)
         @test all(sep3 .> sep2)
-        kid, ksep = knn(tree, matchcat[n], 2)
-        # knn does not guarantee order;
+        kid, ksep = knn(tree, matchcat[n], 2, false)
+        # sortres = false does not guarantee order;
         # the second neighbor is whichever one has greater separation
         a = argmax(ksep) 
         @test id3[n] == kid[a]
         @test sep3[n] == ksep[a]
+        kid, ksep = knn(tree, matchcat[n], 2, true)
+        @test id3[n] == kid[2]
+        @test sep3[n] == ksep[2]
     end
     @test_nowarn CoordsKDTree(reshape(refcat, (100, 10)))
     # Test non-vector input, nn

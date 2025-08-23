@@ -14,14 +14,14 @@ CoordsKDTree{TC}(tree::K) where {TC, K} = CoordsKDTree{TC, K}(tree)
 # coordinates that need to be converted to be uniform
 function CoordsKDTree(data::AbstractArray{AbstractSkyCoords}; kws...)
     TC = typeof(first(data))
-    return CoordsKDTree([convert(TC, d) for d in data]; kws...)
+    return CoordsKDTree(convert.(TC, data); kws...)
 end
-# For uniform, concrete `eltype(data)`
+# For uniform, concrete TC
 function CoordsKDTree(data::AbstractArray{TC}; kws...) where {TC <: AbstractSkyCoords}
     if isempty(data)
         throw(ArgumentError("`data` provided to `CoordsKDTree` cannot be empty."))
     end
-    data_array = vec([coords2cart(lon(data[i]), lat(data[i])) for i in eachindex(data)])
+    data_array = coords2cart.(vec(data))
     tree = KDTree(data_array, Euclidean(); kws...)
     return CoordsKDTree{TC}(tree)
 end
@@ -35,7 +35,7 @@ Returns arrays `(id, sep)` containing the indices and angular separations (in ra
 """
 nn(tree::CoordsKDTree{TC}, coord::T) where {TC, T <: AbstractSkyCoords} = nn(tree, convert(TC, coord))
 function nn(tree::CoordsKDTree{T}, coord::T) where {T <: AbstractSkyCoords}
-    id, sep = nn(tree.tree, coords2cart(lon(coord), lat(coord)))
+    id, sep = nn(tree.tree, coords2cart(coord))
     sep = 2 * asin(sep / 2) # Convert from cartesian separation to radians
     return id, sep
 end
@@ -44,7 +44,7 @@ function nn(tree::CoordsKDTree{T}, coords::AbstractArray{T}) where {T <: Abstrac
     if isempty(coords)
         throw(ArgumentError("`coords` provided to `nn` cannot be empty."))
     end
-    id, sep = nn(tree.tree, vec([coords2cart(lon(coord), lat(coord)) for coord in coords]))
+    id, sep = nn(tree.tree, vec(coords2cart.(coords)))
     sep = @. 2 * asin(sep / 2) # Convert from cartesian separation to radians
     return reshape(id, size(coords)), reshape(sep, size(coords))
 end
@@ -58,16 +58,18 @@ Returns arrays `(id, sep)` containing vectors of indices and angular separations
 """
 knn(tree::CoordsKDTree{TC}, coord::T, k::Int) where {TC, T <: AbstractSkyCoords} = knn(tree, convert(TC, coord), k)
 function knn(tree::CoordsKDTree{T}, coord::T, k::Int) where {T <: AbstractSkyCoords}
-    id, sep = knn(tree.tree, coords2cart(lon(coord), lat(coord)), k)
+    id, sep = knn(tree.tree, coords2cart(coord), k)
     @. sep = 2 * asin(sep / 2) # Convert from cartesian separation to radians
     return id, sep
 end
-knn(tree::CoordsKDTree{TC}, coords::AbstractArray{T}, k::Int) where {TC, T <: AbstractSkyCoords} = knn(tree, [convert(TC, coord) for coord in coords], k)
+function knn(tree::CoordsKDTree{TC}, coords::AbstractArray{T}, k::Int) where {TC, T <: AbstractSkyCoords}
+    return knn(tree, convert.(TC, coords), k)
+end
 function knn(tree::CoordsKDTree{T}, coords::AbstractArray{T}, k::Int) where {T <: AbstractSkyCoords}
     if isempty(coords)
         throw(ArgumentError("`coords` provided to `knn` cannot be empty."))
     end
-    id, sep = knn(tree.tree, vec([coords2cart(lon(coord), lat(coord)) for coord in coords]), k)
+    id, sep = knn(tree.tree, vec(coords2cart.(coords)), k)
     for i in eachindex(sep)
         @. sep[i] = 2 * asin(sep[i] / 2) # Convert from cartesian separation to radians
     end

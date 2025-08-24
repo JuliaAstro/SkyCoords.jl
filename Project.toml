@@ -4,7 +4,6 @@ authors = "Kyle Barbary, Mosé Giordano, and contributors"
 version = "1.5.3"
 
 [deps]
-AstroAngles = "5c4adb95-c1fc-4c53-b4ea-2a94080c53d2"
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
@@ -22,7 +21,6 @@ UnitfulExt = "Unitful"
 
 [compat]
 Accessors = "0.1"
-AstroAngles = "0.1,0.2"
 ConstructionBase = "1"
 Makie = "0.21, 0.22, 0.23, 0.24"
 Rotations = "1"

@@ -12,11 +12,10 @@ constructorof(::Type{<:CartesianCoords{TC}}) where {TC} = CartesianCoords{TC}
 Base.vec(c::CartesianCoords) = c.vec
 
 coords2cart(c::CartesianCoords) = vec(c)
-cart2coords(c::CartesianCoords) = cart2coords(vec(c))
 cartesian(c::CartesianCoords) = c
 spherical(c::AbstractSkyCoords) = c
 cartesian(c::T) where {T <: AbstractSkyCoords} = CartesianCoords{T}(coords2cart(lon(c), lat(c)))
-spherical(c::CartesianCoords{T}) where {T <: AbstractSkyCoords} = T(cart2coords(c)...)
+spherical(c::CartesianCoords{T}) where {T <: AbstractSkyCoords} = T(cart2coords(vec(c))...)
 
 Base.convert(::Type{<:T}, c::CartesianCoords{S}) where {T<:AbstractSkyCoords,S<:AbstractSkyCoords} =
     spherical(convert(CartesianCoords{T}, c))

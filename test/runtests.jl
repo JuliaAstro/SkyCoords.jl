@@ -305,6 +305,9 @@ end
         kid, ksep = knn(tree, matchcat[n], 2, true)
         @test id3[n] == kid[2]
         @test sep3[n] == ksep[2]
+        # Test with CartesianCoords
+        @test match_coords(refcat, convert.(Ref(CartesianCoords{T2}), refcat)[rr])[1] == rr
+        @test match_coords(convert.(Ref(CartesianCoords{T1}), refcat), convert.(Ref(T2), refcat)[rr])[1] == rr
     end
     @test_nowarn CoordsKDTree(reshape(refcat, (100, 10)))
     # Test non-vector input, nn

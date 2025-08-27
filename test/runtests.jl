@@ -4,6 +4,7 @@ using Unitful
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
+using NearestNeighbors
 using Random: randperm
 using SkyCoords
 using StableRNGs

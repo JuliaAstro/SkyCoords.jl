@@ -1,14 +1,13 @@
-"""
-    CoordsKDTree{TC <: AbstractSkyCoords, K <: NearestNeighbors.KDTree}
-A wrapper for a NearestNeighbors.jl `KDTree` that also includes the type of coordinate that it was constructed from as the parameter `TC <: AbstractSkyCoords`. The only field is `tree`, which provides access to the underlying `KDTree`. An internal Cartesian coordinate representation is used, so nearest neighbor queries on the `KDTree` must first be converted into the coordinate `TC`, then to Cartesian coordinates. This conversion is applied automatically in the following methods, which extend those from `NearestNeighbors.jl`.
- - `nn(tree::CoordsKDTree, coord::AbstractSkyCoords)` queries the `tree` for the entry nearest the provided `coord`.
- - `nn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords})` queries the `tree` for the entry nearest each coordinate in `coords`.
- - `knn(tree::CoordsKDTree, coord::AbstractSkyCoords, k::Int)` queries the `tree` for the `k` coordinates nearest the provided `coord`.
- - `knn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords}, k::Int)` queries the `tree` for the `k` coordinates nearest each coordinate in `coords`.
-"""
-struct CoordsKDTree{TC <: AbstractSkyCoords, K <: KDTree}
-    tree::K
-end
+module NearestNeighborsExt
+
+using NearestNeighbors: Euclidean
+import NearestNeighbors: KDTree, nn, knn
+
+using SkyCoords: AbstractSkyCoords, coords2cart
+import SkyCoords: match_coords, CoordsKDTree
+
+export match_coords, CoordsKDTree, nn, knn
+
 CoordsKDTree{TC}(tree::K) where {TC, K} = CoordsKDTree{TC, K}(tree)
 # If the element type of `data` is AbstractSkyCoords, then it contains mixed
 # coordinates that need to be converted to be uniform
@@ -76,22 +75,6 @@ function knn(tree::CoordsKDTree{T}, coords::AbstractArray{T}, k::Int, sortres::B
     return reshape(id, size(coords)), reshape(sep, size(coords))
 end
 
-"""
-    match_coords(refcoords::AbstractArray{<:AbstractSkyCoords}, 
-                 matchcoords::AbstractArray{<:AbstractSkyCoords};
-                 nthneighbor::Int = 1)
-Finds the nearest entries in `refcoords` to the coordinates contained in `matchcoords`. The keyword argument `nthneighbor` determines *which* nearest neighbor to search for; typically this should be `1` when matching one set of coordinates to another. Another common use case is setting `nthneighbor = 2` when matching a catalog against itself to find the nearest neighbor of each coordinate in the same catalog. 
-
-Returns `(id, sep)`, where
- - `id` is an array containing indices of the coordinates in `refcoords` that matched with the elements of `matchcoords`, and 
- - `sep` is an array giving the angular separation between the elements of `matchcoords` and the above matches.
-
-Note that this method creates a [`CoordsKDTree`](@ref) from `refcoords` and then calls the method below. If you plan to use the same `refcoords` to match to many different `matchcoords`, then you should directly construct `CoordsKDTree(refcoords)` and call the method below.
-
-    match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
-                 nthneighbor::Int = 1)
-As above, but uses a pre-constructed `tree::CoordsKDTree` rather than creating one from a reference catalog of coordinates.
-"""
 function match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
                       nthneighbor::Int = 1)
     if isempty(matchcoords)
@@ -104,9 +87,12 @@ function match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractS
         return getindex.(id, nthneighbor), getindex.(sep, nthneighbor)
     end
 end
+
 function match_coords(refcoords::AbstractArray{<:AbstractSkyCoords}, matchcoords::AbstractArray{<:AbstractSkyCoords}; kws...)
     if isempty(refcoords)
         throw(ArgumentError("`refcoords` provided to `match_coords` cannot be empty."))
     end
     return match_coords(CoordsKDTree(refcoords), matchcoords; kws...)
 end
+
+end # module

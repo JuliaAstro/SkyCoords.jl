@@ -51,8 +51,6 @@ ICRSCoords{Float64}(0.0, 0.0)
 ```@docs
 match_coords
 CoordsKDTree
-nn(tree::CoordsKDTree{TC}, coord::T) where {TC, T <: SkyCoords.AbstractSkyCoords}
-knn(::CoordsKDTree{TC}, coord::T, k::Int) where {TC, T <: SkyCoords.AbstractSkyCoords}
 ```
 
 ## Functions

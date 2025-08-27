@@ -165,7 +165,7 @@ ids == [1,5,10] # Indices for which `refcat[id]` match to `matchcat`
 true
 ```
 
-More complicated catalog joins are supported by the [FlexiJoins.jl](https://github.com/JuliaAPlavin/FlexiJoins.jl) package. For example, if `L` and `R` are two catalogs with coordinate keys `:coordsL` and `:coordsR` respectively, the two catalogs can be joined based on angular separation with `FlexiJoins.innerjoin((L, R), by_distance(:coordsL, :coordsR, SkyCoords.separation, <=(0.1)))` where the final condition indicates you only want to keep matches that have separations less than 0.1 rad.
+More complicated catalog joins are supported by the [FlexiJoins.jl](https://github.com/JuliaAPlavin/FlexiJoins.jl) package. For example, if `L` and `R` are two catalogs with coordinate keys `:coordsL` and `:coordsR` respectively, the two catalogs can be joined based on angular separation with `FlexiJoins.innerjoin((L, R), FlexiJoins.by_distance(:coordsL, :coordsR, SkyCoords.separation, <=(0.1)))` where the final condition indicates you only want to keep matches that have separations less than or equal to 0.1 rad.
 
 ## Accuracy
 

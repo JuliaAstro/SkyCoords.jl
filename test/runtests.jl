@@ -255,7 +255,7 @@ VERSION >= v"1.9" && @testset "plotting with Makie" begin
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
 end
 
-@testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
     ## data generation
     N = 1000
     lons = 2pi .* rand(rng, N) # (0, 2π)

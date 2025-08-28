@@ -2,7 +2,7 @@ module NearestNeighborsExt
 
 using NearestNeighbors: Euclidean
 import NearestNeighbors: KDTree, nn, knn, inrange
-using SkyCoords: AbstractSkyCoords, ICRSCoords, CartesianCoords, coords2cart
+using SkyCoords: AbstractSkyCoords, ICRSCoords, CartesianCoords
 
 # Convert arbitrary coordinates into reference coordinate system
 # before being passed into KDTree

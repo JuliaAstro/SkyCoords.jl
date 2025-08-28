@@ -72,6 +72,8 @@ end
 
 """
     inrange(tree::KDTree, coord::AbstractSkyCoords, seplim::Number)
+*Requires Julia ≥ 1.9 and NearestNeighbors.jl to be loaded (e.g., `using NearestNeighbors`).*
+
 Searches for coordinates in the `tree` with angular separations from `coord` less than `seplim`, which must be given in radians. If `tree = KDTree(data)`, returns indices into `data`.
 
     inrange(tree::KDTree, coords::AbstractArray{<:AbstractSkyCoords}, seplim::Number)

@@ -27,6 +27,8 @@ end
 
 """
     nn(tree::CoordsKDTree, coord::AbstractSkyCoords)
+*Requires Julia ≥ 1.9 and NearestNeighbors.jl to be loaded (e.g., `using NearestNeighbors`).*
+
 Queries the `tree` for the nearest entry to the provided `coord`. Returns the index into the tree of the nearest entry and the angular separation between the two coordinates, in radians.
 
     nn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords})
@@ -49,7 +51,10 @@ function nn(tree::CoordsKDTree{T}, coords::AbstractArray{T}) where {T <: Abstrac
 end
 
 """
-    knn(tree::CoordsKDTree, coord::AbstractSkyCoords, k::Int, sortres::Bool = false)
+    knn(tree::CoordsKDTree, coord::AbstractSkyCoords, 
+        k::Int, sortres::Bool = false)
+*Requires Julia ≥ 1.9 and NearestNeighbors.jl to be loaded (e.g., `using NearestNeighbors`).*
+
 Queries the `tree` for the `k` nearest entries to the provided `coord`. Returns vectors `(id, sep)`, which, respectively, contain the indices into the tree of the `k` nearest entries, and the angular separations between `coord` and the `k` nearest entries, in radians. If `sortres` is `true`, the returned neighbors are sorted by separation.
 
     knn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords}, k::Int, sortres::Bool = false)

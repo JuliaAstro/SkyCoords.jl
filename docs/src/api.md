@@ -51,6 +51,8 @@ ICRSCoords{Float64}(0.0, 0.0)
 ```@docs
 match_coords
 CoordsKDTree
+nn(::CoordsKDTree, ::SkyCoords.AbstractSkyCoords)
+knn(::CoordsKDTree, coord::SkyCoords.AbstractSkyCoords, ::Int, ::Bool)
 ```
 
 ## Functions

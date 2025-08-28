@@ -16,9 +16,7 @@ export AbstractSkyCoords,
        position_angle,
        offset,
        cartesian,
-       spherical,
-       match_coords,
-       CoordsKDTree
+       spherical
 
 include("types.jl")
 include("cartesian.jl")
@@ -292,40 +290,6 @@ function _offset(λ, ϕ, separation, pa)
     ang = sin_c < 1e-12 ? π/2 + cos_c * (π/2 - pa) : atan(xsin_A, xcos_A)
 
     return mod2pi(λ + ang), asin(cos_b)
-end
-
-"""
-    match_coords(refcoords::AbstractArray{<:AbstractSkyCoords}, 
-                 matchcoords::AbstractArray{<:AbstractSkyCoords};
-                 nthneighbor::Int = 1)
-*Requires Julia ≥ 1.9 and NearestNeighbors.jl to be loaded (e.g., `using NearestNeighbors`).*
-
-Finds the nearest entries in `refcoords` to the coordinates contained in `matchcoords`. The keyword argument `nthneighbor` determines *which* nearest neighbor to search for; typically this should be `1` when matching one set of coordinates to another. Another common use case is setting `nthneighbor = 2` when matching a catalog against itself to find the nearest neighbor of each coordinate in the same catalog. 
-
-Returns `(id, sep)`, where
- - `id` is an array containing indices of the coordinates in `refcoords` that matched with the elements of `matchcoords`, and 
- - `sep` is an array giving the angular separation between the elements of `matchcoords` and the above matches.
-
-Note that this method creates a [`CoordsKDTree`](@ref) from `refcoords` and then calls the method below. If you plan to use the same `refcoords` to match to many different `matchcoords`, then you should directly construct `CoordsKDTree(refcoords)` and call the method below.
-
-    match_coords(tree::CoordsKDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
-                 nthneighbor::Int = 1)
-As above, but uses a pre-constructed `tree::CoordsKDTree` rather than creating one from a reference catalog of coordinates.
-"""
-function match_coords end
-
-"""
-    CoordsKDTree(data::AbstractArray{<:AbstractSkyCoords}; kws...)
-*Requires Julia ≥ 1.9 and NearestNeighbors.jl to be loaded (e.g., `using NearestNeighbors`).*
-
-A wrapper for a NearestNeighbors.jl `KDTree` that also includes the type of coordinate that it was constructed from as the parameter `TC <: AbstractSkyCoords`. The provided `data` are used to construct the tree, and the `kws...` are passed to `NearestNeighbors.KDTree`. The only field is `tree`, which provides access to the underlying `KDTree`. An internal Cartesian coordinate representation is used, so nearest neighbor queries on the `KDTree` must first be converted into the coordinate `TC`, then to Cartesian coordinates. This conversion is applied automatically in the following methods, which extend those from `NearestNeighbors.jl`.
- - `nn(tree::CoordsKDTree, coord::AbstractSkyCoords)` queries the `tree` for the entry nearest the provided `coord`.
- - `nn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords})` queries the `tree` for the entry nearest each coordinate in `coords`.
- - `knn(tree::CoordsKDTree, coord::AbstractSkyCoords, k::Int)` queries the `tree` for the `k` coordinates nearest the provided `coord`.
- - `knn(tree::CoordsKDTree, coords::AbstractArray{<:AbstractSkyCoords}, k::Int)` queries the `tree` for the `k` coordinates nearest each coordinate in `coords`.
-"""
-struct CoordsKDTree{TC <: AbstractSkyCoords, K}
-    tree::K
 end
 
 end # module

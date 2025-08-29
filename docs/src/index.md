@@ -151,6 +151,7 @@ The [`SkyCoords.match`](@ref) function can match two catalogs of coordinates wit
 
 ```jldoctest matching
 using NearestNeighbors # Required to use `match` method
+using SkyCoords
 # Generate random coordinates
 N = 1000
 lons = 2pi .* rand(N) # (0, 2π)
@@ -161,10 +162,12 @@ refcat = ICRSCoords.(lons, lats)
 matchcat = refcat[[1,5,10]]
 
 ids, sep = SkyCoords.match(refcat, matchcat)
-ids == [1,5,10] # Indices for which `refcat[id]` match to `matchcat`
+ids == [1,5,10] # Indices for which `refcat[ids]` match to `matchcat`
 # output
 true
 ```
+
+Note that [`SkyCoords.match`](@ref) is not exported (to avoid clashing with `Base.match`) and should be used via the qualified signature `SkyCoords.match` (as above) or explicitly imported (e.g., `using SkyCoords: match`).
 
 This extension additionally supports construction of [`NearestNeighbors.KDTree`](@ref KDTree)s from `AbstractArray{<:AbstractSkyCoords}` and extends methods for general nearest neighbors queries ([`nn`](@ref), [`knn`](@ref)) and queries for all neighbors within a given separation ([`inrange`](@ref), similar to Astropy's `search_around_sky`).
 

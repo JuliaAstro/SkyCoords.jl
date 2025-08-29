@@ -3,6 +3,7 @@ module NearestNeighborsExt
 using NearestNeighbors: Euclidean
 import NearestNeighbors: KDTree, nn, knn, inrange
 using SkyCoords: AbstractSkyCoords, ICRSCoords, CartesianCoords
+import SkyCoords: match
 
 # Convert arbitrary coordinates into reference coordinate system
 # before being passed into KDTree
@@ -108,8 +109,8 @@ Note that this method creates a [`KDTree`](@ref) from `refcoords` and then calls
           nthneighbor::Int = 1)
 As above, but uses a pre-constructed `tree::KDTree` rather than creating one from a reference catalog of coordinates.
 """
-function Base.match(tree::KDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
-                    nthneighbor::Int = 1)
+function match(tree::KDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
+               nthneighbor::Int = 1)
     if isempty(matchcoords)
         throw(ArgumentError("`matchcoords` provided to `match` cannot be empty."))
     end
@@ -121,8 +122,8 @@ function Base.match(tree::KDTree, matchcoords::AbstractArray{<:AbstractSkyCoords
     end
 end
 
-function Base.match(refcoords::AbstractArray{<:AbstractSkyCoords}, 
-                    matchcoords::AbstractArray{<:AbstractSkyCoords}; kws...)
+function match(refcoords::AbstractArray{<:AbstractSkyCoords}, 
+               matchcoords::AbstractArray{<:AbstractSkyCoords}; kws...)
     if isempty(refcoords)
         throw(ArgumentError("`refcoords` provided to `match` cannot be empty."))
     end

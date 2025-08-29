@@ -287,14 +287,14 @@ VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCo
         # Test match
         rr = randperm(rng, n)
         matchcat = convert.(Ref(T2), refcat)[rr]
-        id, sep = match(refcat, matchcat)
+        id, sep = SkyCoords.match(refcat, matchcat)
         @test id == rr
         @test all(isapprox.(sep, 0; atol=1e-12))
-        id2, sep2 = match(tree, matchcat)
+        id2, sep2 = SkyCoords.match(tree, matchcat)
         @test id2 == id
         @test sep == sep2
         # Test with nthneighbor != 1
-        id3, sep3 = match(refcat, matchcat; nthneighbor=2)
+        id3, sep3 = SkyCoords.match(refcat, matchcat; nthneighbor=2)
         @test all(id3 .!= id2)
         @test all(sep3 .> sep2)
         kid, ksep = knn(tree, matchcat[n], 2, false)
@@ -307,8 +307,8 @@ VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCo
         @test id3[n] == kid[2]
         @test sep3[n] == ksep[2]
         # Test with CartesianCoords
-        @test match(refcat, convert.(Ref(CartesianCoords{T2}), refcat)[rr])[1] == rr
-        @test match(convert.(Ref(CartesianCoords{T1}), refcat), convert.(Ref(T2), refcat)[rr])[1] == rr
+        @test SkyCoords.match(refcat, convert.(Ref(CartesianCoords{T2}), refcat)[rr])[1] == rr
+        @test SkyCoords.match(convert.(Ref(CartesianCoords{T1}), refcat), convert.(Ref(T2), refcat)[rr])[1] == rr
     end
     ir = inrange(tree, convert(T2, refcat[1]), 0.1)
     @test sort(ir) == sort(knn(tree, convert(T2, refcat[1]), length(ir))[1])
@@ -327,13 +327,13 @@ VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCo
     # Test non-vector input, match
     rr = randperm(rng, 1000)
     matchcat = refcat[rr]
-    @test_throws ArgumentError match(refcat, ICRSCoords[])
-    @test_throws ArgumentError match(ICRSCoords[], matchcat)
-    id1, sep1 = match(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)))
-    id2, sep2 = match(refcat, matchcat)
+    @test_throws ArgumentError SkyCoords.match(refcat, ICRSCoords[])
+    @test_throws ArgumentError SkyCoords.match(ICRSCoords[], matchcat)
+    id1, sep1 = SkyCoords.match(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)))
+    id2, sep2 = SkyCoords.match(refcat, matchcat)
     @test size(id1) == size(sep1) == (100, 10)
     @test size(id2) == size(sep2) == (1000,)
     @test (vec(id1) == id2 == rr) & (vec(sep1) == sep2)
-    id1, sep1 = match(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)); nthneighbor=2)
-    id2, sep2 = match(refcat, matchcat)
+    id1, sep1 = SkyCoords.match(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)); nthneighbor=2)
+    id2, sep2 = SkyCoords.match(refcat, matchcat)
 end

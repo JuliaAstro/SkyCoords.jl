@@ -49,7 +49,7 @@ ICRSCoords{Float64}(0.0, 0.0)
 ## Catalog Matching
 
 ```@docs
-Base.match(::KDTree, ::AbstractArray{<:AbstractSkyCoords})
+SkyCoords.match(::KDTree, ::AbstractArray{<:AbstractSkyCoords})
 KDTree(::AbstractArray{<:SkyCoords.AbstractSkyCoords})
 nn(::KDTree, ::SkyCoords.AbstractSkyCoords)
 knn(::KDTree, coord::SkyCoords.AbstractSkyCoords, ::Int, ::Bool)

@@ -4,6 +4,8 @@ using Unitful
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
+using NearestNeighbors
+using Random: randperm
 using SkyCoords
 using StableRNGs
 using Statistics
@@ -251,4 +253,87 @@ VERSION >= v"1.9" && @testset "plotting with Makie" begin
     @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 2), Makie.Point(1, 2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
+end
+
+VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+    ## data generation
+    N = 1000
+    lons = 2pi .* rand(rng, N) # (0, 2π)
+    lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
+    refcat = T1.(lons, lats)
+    tree = KDTree(refcat)
+    # Test mixed coordinate input to KDTree
+    @test KDTree([refcat[1], refcat[2]]).data ≈ KDTree([refcat[1], convert(T2, refcat[2])]).data
+    @test_throws ArgumentError KDTree(T1[]) # empty data throws
+    @test_throws ArgumentError nn(tree, T1[]) # emtpy coords throws
+    @test_throws ArgumentError knn(tree, T1[], 2) # emtpy coords throws
+    for n in (1, 10, N)
+        # Test single coord
+        @test nn(tree, convert(T2, refcat[n]))[1] == n
+        # Test mulitple coords
+        @test nn(tree, convert.(Ref(T2), [refcat[n], refcat[2]]))[1] == [n, 2]
+        # Test knn, single coord
+        id, sep = knn(tree, convert(T2, refcat[n]), 2)
+        @test length(id) == length(sep) == 2
+        @test n in id
+        # Test knn with multiple coords which returns a vector of vectors
+        # First dimension is number of points=3, second is arg k=2
+        id, sep = knn(tree, convert.(Ref(T2), [refcat[n], refcat[2], refcat[3]]), 2)
+        @test length(id) == length(sep) == 3
+        @test all(length(id[i]) .== length(sep[i]) .== 2 for i in eachindex(id, sep))
+        @test all((n in id[1], 2 in id[2], 3 in id[3]))
+        id, sep = knn(tree, convert.(Ref(T2), [refcat[n], refcat[2], refcat[3]]), 2, true)
+        @test (id[1][1] == n) & (id[2][1] == 2) & (id[3][1] == 3) # Order guaranteed by sortres = true
+        # Test match
+        rr = randperm(rng, n)
+        matchcat = convert.(Ref(T2), refcat)[rr]
+        id, sep = SkyCoords.match(refcat, matchcat)
+        @test id == rr
+        @test all(isapprox.(sep, 0; atol=1e-12))
+        id2, sep2 = SkyCoords.match(tree, matchcat)
+        @test id2 == id
+        @test sep == sep2
+        # Test with nthneighbor != 1
+        id3, sep3 = SkyCoords.match(refcat, matchcat; nthneighbor=2)
+        @test all(id3 .!= id2)
+        @test all(sep3 .> sep2)
+        kid, ksep = knn(tree, matchcat[n], 2, false)
+        # sortres = false does not guarantee order;
+        # the second neighbor is whichever one has greater separation
+        a = argmax(ksep) 
+        @test id3[n] == kid[a]
+        @test sep3[n] == ksep[a]
+        kid, ksep = knn(tree, matchcat[n], 2, true)
+        @test id3[n] == kid[2]
+        @test sep3[n] == ksep[2]
+        # Test with CartesianCoords
+        @test SkyCoords.match(refcat, convert.(Ref(CartesianCoords{T2}), refcat)[rr])[1] == rr
+        @test SkyCoords.match(convert.(Ref(CartesianCoords{T1}), refcat), convert.(Ref(T2), refcat)[rr])[1] == rr
+    end
+    ir = inrange(tree, convert(T2, refcat[1]), 0.1)
+    @test sort(ir) == sort(knn(tree, convert(T2, refcat[1]), length(ir))[1])
+    @test reduce(==, inrange(tree, convert.(Ref(T2), [refcat[1], refcat[1]]), 0.1))
+    @test_nowarn KDTree(reshape(refcat, (100, 10)))
+    # Test non-vector input, nn
+    id1, sep1 = nn(tree, reshape(refcat[1:4], (2,2)))
+    @test size(id1) == size(sep1) == (2,2)
+    id2, sep2 = nn(tree, refcat[1:4])
+    @test (vec(id1) == id2) & (vec(sep1) == sep2)
+    # Test non-vector input, knn
+    id1, sep1 = knn(tree, reshape(refcat[1:4], (2,2)), 3)
+    @test size(id1) == size(sep1) == (2,2)
+    id2, sep2 = knn(tree, refcat[1:4], 3)
+    @test (vec(id1) == id2) & (vec(sep1) == sep2)
+    # Test non-vector input, match
+    rr = randperm(rng, 1000)
+    matchcat = refcat[rr]
+    @test_throws ArgumentError SkyCoords.match(refcat, ICRSCoords[])
+    @test_throws ArgumentError SkyCoords.match(ICRSCoords[], matchcat)
+    id1, sep1 = SkyCoords.match(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)))
+    id2, sep2 = SkyCoords.match(refcat, matchcat)
+    @test size(id1) == size(sep1) == (100, 10)
+    @test size(id2) == size(sep2) == (1000,)
+    @test (vec(id1) == id2 == rr) & (vec(sep1) == sep2)
+    id1, sep1 = SkyCoords.match(reshape(refcat, (10, 100)), reshape(matchcat, (100, 10)); nthneighbor=2)
+    id2, sep2 = SkyCoords.match(refcat, matchcat)
 end

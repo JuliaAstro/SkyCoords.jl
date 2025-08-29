@@ -292,4 +292,7 @@ function _offset(λ, ϕ, separation, pa)
     return mod2pi(λ + ang), asin(cos_b)
 end
 
+# Stub to extend in NearestNeighbors extension
+function match end
+
 end # module

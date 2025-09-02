@@ -171,7 +171,7 @@ Note that [`SkyCoords.match`](@ref) is not exported (to avoid clashing with `Bas
 
 This extension additionally supports construction of [`NearestNeighbors.KDTree`](@ref KDTree)s from `AbstractArray{<:AbstractSkyCoords}` and extends methods for general nearest neighbors queries ([`nn`](@ref), [`knn`](@ref)) and queries for all neighbors within a given separation ([`inrange`](@ref), similar to Astropy's `search_around_sky`).
 
-More complicated catalog joins are supported by the [FlexiJoins.jl](https://github.com/JuliaAPlavin/FlexiJoins.jl) package. For example, if `L` and `R` are two catalogs with coordinate keys `:coordsL` and `:coordsR` respectively, the two catalogs can be joined based on angular separation with `FlexiJoins.innerjoin((L, R), FlexiJoins.by_distance(:coordsL, :coordsR, SkyCoords.separation, <=(0.1)))` where the final condition indicates you only want to keep matches that have separations less than or equal to 0.1 rad.
+More complicated catalog joins are supported by the [FlexiJoins.jl](https://github.com/JuliaAPlavin/FlexiJoins.jl) package. For example, if `L` and `R` are two catalogs with coordinate keys `:coordsL` and `:coordsR` respectively, the two catalogs can be joined based on angular separation with `FlexiJoins.innerjoin((L, R), FlexiJoins.by_distance(:coordsL, :coordsR, SkyCoords.separation, <=(0.1)))` where the final condition indicates you only want to keep matches that have separations less than or equal to 0.1 rad. See their documentation on astronomy-specific applications [here](https://aplavin.github.io/FlexiJoins.jl/notebooks/skycoords.html).
 
 ## Accuracy
 

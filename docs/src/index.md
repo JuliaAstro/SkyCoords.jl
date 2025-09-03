@@ -143,6 +143,36 @@ julia> position_angle(mizar, alcor) |> rad2deg # degrees
 
 ```
 
+## Catalog Matching
+
+SkyCoords.jl offers coordinate catalog matching functionality through an extension that depends on [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl). This functionality requires Julia ≥ v1.9 and `NearestNeighbors.jl` to be loaded (e.g., `using NearestNeighbors.jl`).
+
+The [`SkyCoords.match`](@ref) function can match two catalogs of coordinates with an interface similar to Astropy's `match_coordinates_sky`. This function operates on two arrays of coordinates, the first being the "reference" catalog that will be searched to find the closest coordinates to those in the second catalog. This function returns the indices into the reference catalog of the matches and the angular separation (in radians) between each coordinate and its match in the reference catalog.
+
+```jldoctest matching
+using NearestNeighbors # Required to use `match` method
+using SkyCoords
+# Generate random coordinates
+N = 1000
+lons = 2pi .* rand(N) # (0, 2π)
+lats = pi .* (rand(N) .- 0.5) # (-π, π)
+# The catalog to match against
+refcat = ICRSCoords.(lons, lats)
+# The catalog of coordinates for which you want to find neighbors in "refcat"
+matchcat = refcat[[1,5,10]]
+
+ids, sep = SkyCoords.match(refcat, matchcat)
+ids == [1,5,10] # Indices for which `refcat[ids]` match to `matchcat`
+# output
+true
+```
+
+Note that [`SkyCoords.match`](@ref) is not exported (to avoid clashing with `Base.match`) and should be used via the qualified signature `SkyCoords.match` (as above) or explicitly imported (e.g., `using SkyCoords: match`).
+
+This extension additionally supports construction of [`NearestNeighbors.KDTree`](@ref KDTree)s from `AbstractArray{<:AbstractSkyCoords}` and extends methods for general nearest neighbors queries ([`nn`](@ref), [`knn`](@ref)) and queries for all neighbors within a given separation ([`inrange`](@ref), similar to Astropy's `search_around_sky`).
+
+More complicated catalog joins are supported by the [FlexiJoins.jl](https://github.com/JuliaAPlavin/FlexiJoins.jl) package. For example, if `L` and `R` are two catalogs with coordinate keys `:coordsL` and `:coordsR` respectively, the two catalogs can be joined based on angular separation with `FlexiJoins.innerjoin((L, R), FlexiJoins.by_distance(:coordsL, :coordsR, SkyCoords.separation, <=(0.1)))` where the final condition indicates you only want to keep matches that have separations less than or equal to 0.1 rad. See their documentation on astronomy-specific applications [here](https://aplavin.github.io/FlexiJoins.jl/notebooks/skycoords.html).
+
 ## Accuracy
 
 All the supported conversions have been compared to the results of

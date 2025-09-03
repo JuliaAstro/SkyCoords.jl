@@ -11,6 +11,7 @@ constructorof(::Type{<:CartesianCoords{TC}}) where {TC} = CartesianCoords{TC}
 
 Base.vec(c::CartesianCoords) = c.vec
 
+coords2cart(c::CartesianCoords) = vec(c)
 cartesian(c::CartesianCoords) = c
 spherical(c::AbstractSkyCoords) = c
 cartesian(c::T) where {T <: AbstractSkyCoords} = CartesianCoords{T}(coords2cart(lon(c), lat(c)))

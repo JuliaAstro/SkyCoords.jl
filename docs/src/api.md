@@ -46,6 +46,16 @@ ICRSCoords{Float64}(0.0, 0.0)
   GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
   ```
 
+## Catalog Matching
+
+```@docs
+SkyCoords.match(::KDTree, ::AbstractArray{<:AbstractSkyCoords})
+KDTree(::AbstractArray{<:SkyCoords.AbstractSkyCoords})
+nn(::KDTree, ::SkyCoords.AbstractSkyCoords)
+knn(::KDTree, coord::SkyCoords.AbstractSkyCoords, ::Int, ::Bool)
+inrange(::KDTree, ::SkyCoords.AbstractSkyCoords, ::Number)
+```
+
 ## Functions
 
 ```@docs

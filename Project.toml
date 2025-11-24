@@ -29,7 +29,7 @@ NearestNeighbors = "0.4.9"
 Rotations = "1"
 StaticArrays = "0.8, 0.9, 1"
 Unitful = "1.15"
-julia = "1.6"
+julia = "1.10"
 
 [extras]
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"

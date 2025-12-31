@@ -11,7 +11,7 @@ SkyCoords.jl provides a type system for astronomical coordinate systems with app
 From the Julia REPL
 
 ```julia-repl
-(v1.6) pkg> add SkyCoords
+pkg> add SkyCoords
 
 julia> using SkyCoords
 ```

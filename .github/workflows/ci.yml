@@ -26,7 +26,6 @@ jobs:
           - 'nightly'
         os:
           - ubuntu-latest
-          - macos-13 # TODO: Remove this line when `macos-13` won't be available anymore
           - macos-latest
           - windows-latest
         exclude:

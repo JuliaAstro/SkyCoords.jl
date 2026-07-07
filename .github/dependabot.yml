@@ -5,3 +5,12 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+  - package-ecosystem: "julia"
+    directories: ["/", "/docs", "/test"] # Location of Julia projects
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "SkyCoords" # Ignore package itself
+    groups:
+      per-dependency:
+        group-by: dependency-name

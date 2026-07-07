@@ -233,7 +233,8 @@ end
 
 Offset a coordinate by a given angular separation, `separation`, in radians and position angle, `pa`, in radians.
 
-Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes. Returns a sky coordinate of the same type as input.
+Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes.
+Returns a sky coordinate of the same type as input.
 
 # Examples
 ```jldoctest

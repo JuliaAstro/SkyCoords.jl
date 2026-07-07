@@ -127,7 +127,8 @@ coordinate in the same catalog.
 Returns `(id, sep)`, where
  - `id` is an array containing indices of the coordinates in `refcoords` that
    matched with the elements of `matchcoords`, and
- - `sep` is an array giving the angular separation between the elements of `matchcoords` and the above matches.
+ - `sep` is an array giving the angular separation between the elements of
+   `matchcoords` and the above matches.
 
 Note that this method creates a [`KDTree`](@ref) from `refcoords` and then calls
 the method below. If you plan to use the same `refcoords` to match to many
@@ -136,7 +137,8 @@ and call the method below.
 
     match(tree::KDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};
           nthneighbor::Int = 1)
-As above, but uses a pre-constructed `tree::KDTree` rather than creating one from a reference catalog of coordinates.
+As above, but uses a pre-constructed `tree::KDTree` rather than creating one
+from a reference catalog of coordinates.
 """
 function match(
         tree::KDTree, matchcoords::AbstractArray{<:AbstractSkyCoords};

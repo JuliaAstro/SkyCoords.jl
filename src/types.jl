@@ -2,11 +2,14 @@
 # Types
 
 """
+    abstract type AbstractSkyCoords
+
 The supertype for all sky coordinate systems.
 """
 abstract type AbstractSkyCoords end
 
 """
+    ICRSCoords <: AbstractSkyCoords
     ICRSCoords(ra, dec)
 
 [International Celestial Reference System](https://en.wikipedia.org/wiki/International_Celestial_Reference_System)
@@ -28,6 +31,7 @@ ICRSCoords(c::T) where {T <: AbstractSkyCoords} = convert(ICRSCoords, c)
 ICRSCoords{F}(c::T) where {F, T <: AbstractSkyCoords} = convert(ICRSCoords{F}, c)
 
 """
+    GalCoords <: AbstractSkyCoords
     GalCoords(l, b)
 
 [Galactic Coordinate System](https://en.wikipedia.org/wiki/Galactic_coordinate_system)
@@ -72,11 +76,17 @@ SuperGalCoords{F}(c::T) where {F, T <: AbstractSkyCoords} = convert(SuperGalCoor
 
 
 """
+    FK5Coords{e, T <: Real} <: AbstractSkyCoords
     FK5Coords{equinox}(ra, dec)
 
 [Equatorial Coordinate System](https://en.wikipedia.org/wiki/Equatorial_coordinate_system)
 
-This coordinate system maps the celestial sphere based on a geocentric observer. Historically the oldest, this coordinate system has been shown to be inaccurate due to its definitions based on the Earth, which has long-scale precession causing the reference frame to change. Because of this, an equinox must be provided (typically 2000, commonly known as J2000) which defines the reference frame.
+This coordinate system maps the celestial sphere based on a geocentric observer.
+Historically the oldest, this coordinate system has been shown to be inaccurate
+due to its definitions based on the Earth, which has long-scale precession
+causing the reference frame to change. Because of this, an equinox must be
+provided (typically 2000, commonly known as J2000) which defines the reference
+frame.
 
 # Coordinates
 - `ra` - Right ascension in radians (0, 2π)

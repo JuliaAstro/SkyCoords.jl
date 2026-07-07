@@ -1,36 +1,29 @@
-__precompile__()
-
 module SkyCoords
-using StaticArrays, AstroLib
+using AstroLib
+import ConstructionBase: constructorof
+using LinearAlgebra: I, norm
+using Rotations
+using StaticArrays
 
 export AbstractSkyCoords, 
        ICRSCoords,
        GalCoords,
+       SuperGalCoords,
        FK5Coords,
        AltAzCoords,
+       EclipticCoords,
+       CartesianCoords,
        separation,
        position_angle,
-       offset
+       offset,
+       cartesian,
+       spherical
 
 include("types.jl")
+include("cartesian.jl")
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)
-
-function xrotmat(angle)
-    s, c = sincos(angle)
-    SMatrix{3,3}(1, 0, 0, 0, c, -s, 0, s, c)
-end
-
-function yrotmat(angle)
-    s, c = sincos(angle)
-    SMatrix{3,3}(c, 0, s, 0, 1, 0, -s, 0, c)
-end
-
-function zrotmat(angle)
-    s, c = sincos(angle)
-    SMatrix{3,3}(c, -s, 0, s, c, 0, 0, 0, 1)
-end
 
 # (lon, lat) -> [x, y, z] unit vector
 function coords2cart(lon, lat)
@@ -40,16 +33,23 @@ function coords2cart(lon, lat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
-cart2coords(v) = atan(v[2], v[1]), atan(v[3], sqrt(v[1] * v[1] + v[2] * v[2]))
+function cart2coords(v)
+    lon = atan(v[begin + 1], v[begin])
+    xy_norm = hypot(v[begin], v[begin + 1])
+    lat = atan(v[begin + 2], xy_norm)
+    return lon, lat
+end
 
 # -----------------------------------------------------------------------------
 # Constant rotation matricies and precession matrix function
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
-eta0 = deg2rad(-19.9 / 3600000.0)
-xi0 = deg2rad(9.1 / 3600000.0)
-da0 = deg2rad(-22.9 / 3600000.0)
-const ICRS_TO_FK5J2000 = xrotmat(-eta0) * yrotmat(xi0) * zrotmat(da0)
+const ICRS_TO_FK5J2000 = let
+    eta0 = deg2rad(-19.9 / 3600000)
+    xi0 = deg2rad(9.1 / 3600000)
+    da0 = deg2rad(-22.9 / 3600000)
+    RotXYZ(eta0, -xi0, -da0)
+end
 const FK5J2000_TO_ICRS = ICRS_TO_FK5J2000'
 
 # FK5J2000 --> Gal
@@ -60,40 +60,58 @@ const FK5J2000_TO_ICRS = ICRS_TO_FK5J2000'
 # |  from Reid & Brunthaler 2004 and the best self-consistency between FK5
 # |  -> Galactic and FK5 -> FK4 -> Galactic. The lon0 angle was found by
 # |  optimizing the self-consistency."
-ngp_fk5j2000_ra = deg2rad(192.8594812065348)
-ngp_fk5j2000_dec = deg2rad(27.12825118085622)
-lon0_fk5j2000 = deg2rad(122.9319185680026)
-const FK5J2000_TO_GAL = (zrotmat(pi - lon0_fk5j2000) *
-                         yrotmat(pi / 2.0 - ngp_fk5j2000_dec) * zrotmat(ngp_fk5j2000_ra))
+const FK5J2000_TO_GAL = let
+    ngp_fk5j2000_ra = deg2rad(192.8594812065348)
+    ngp_fk5j2000_dec = deg2rad(27.12825118085622)
+    lon0_fk5j2000 = deg2rad(122.9319185680026)
+    RotZYZ(lon0_fk5j2000 - π, ngp_fk5j2000_dec - π/2, -ngp_fk5j2000_ra)
+end
 const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 
 # Gal --> ICRS: simply chain through FK5J2000
 const GAL_TO_ICRS = FK5J2000_TO_ICRS * GAL_TO_FK5J2000
 const ICRS_TO_GAL = GAL_TO_ICRS'
 
+
+# Gal --> SuperGal
+# we use the same parameters as in astropy
+sgp_l = deg2rad(47.37)
+sgp_b = deg2rad(6.32)
+# rotation matrix compared to astropy
+const GAL_TO_SUPERGAL = RotZYZ(π/2, π/2 - sgp_b, π - sgp_l)
+const SUPERGAL_TO_GAL = GAL_TO_SUPERGAL'
+# SuperGal --> ICRS: chain through GAL
+const SUPERGAL_TO_ICRS = GAL_TO_ICRS * SUPERGAL_TO_GAL
+const ICRS_TO_SUPERGAL = SUPERGAL_TO_ICRS'
+# SuperGal --> FK5J2000: chain through GAL
+const SUPERGAL_TO_FK5J2000 = GAL_TO_FK5J2000 * SUPERGAL_TO_GAL
+const FK5J2000_TO_SUPERGAL = SUPERGAL_TO_FK5J2000'
 # FK5J2000 --> FK5{epoch}
 # Computes the precession matrix from J2000 to the given Julian equinox.
 # Expression from from Capitaine et al. 2003 as expressed in the USNO
 # Circular 179.  This should match the IAU 2006 standard from SOFA.
-const pzeta = [2.650545, 2306.083227, 0.2988499, 0.01801828, -0.000005971, -0.0000003173]
-const pz = [-2.650545, 2306.077181, 1.0927348, 0.01826837, -0.000028596, -0.0000002904]
-const ptheta = [0.0, 2004.191903, -0.4294934, -0.04182264, -0.000007089, -0.0000001274]
+const pzeta = SA[2.650545, 2306.083227, 0.2988499, 0.01801828, -0.000005971, -0.0000003173]
+const pz = SA[-2.650545, 2306.077181, 1.0927348, 0.01826837, -0.000028596, -0.0000002904]
+const ptheta = SA[0.0, 2004.191903, -0.4294934, -0.04182264, -0.000007089, -0.0000001274]
+
 function precess_from_j2000(equinox)
-    t = (equinox - 2000.0) / 100.0
+    t = (equinox - 2000) / 100
     tn = 1.0
-    zeta = pzeta[1]
-    z = pz[1]
-    theta = ptheta[1]
-    for i = 2:6
-        tn *= t
+    zeta = z = theta = 0.0
+    for i in eachindex(pzeta, pz, ptheta)
         zeta += pzeta[i] * tn
         z += pz[i] * tn
         theta += ptheta[i] * tn
+        tn *= t
     end
-    zeta = deg2rad(zeta / 3600.0)
-    z = deg2rad(z / 3600.0)
-    theta = deg2rad(theta / 3600.0)
-    zrotmat(-z) * yrotmat(theta) * zrotmat(-zeta)
+    return RotZYZ(deg2rad(z / 3600), -deg2rad(theta / 3600), deg2rad(zeta / 3600))
+end
+
+function ecliptic_obliquity(y)
+    # https://github.com/JuliaAstro/AstroBase.jl/blob/master/src/EarthAttitude/obliquity.jl
+    T = (y - 2000.0) / 100
+    obl = @evalpoly(T, 84381.406, -46.836769, -0.0001831, 0.00200340, -0.000000576, -0.0000000434)
+    return deg2rad(obl / 3600)
 end
 
 # AltAz --> ICRS
@@ -134,8 +152,14 @@ end
 
 lon(c::GalCoords) = c.l
 lat(c::GalCoords) = c.b
+lon(c::SuperGalCoords) = c.l
+lat(c::SuperGalCoords) = c.b
+lat(c::EclipticCoords) = c.lat
+lon(c::EclipticCoords) = c.lon
 lon(c::AbstractSkyCoords) = c.ra
 lat(c::AbstractSkyCoords) = c.dec
+
+lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
@@ -143,31 +167,38 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:GalCoords,T2<:ICRSCoords} = ICRS_TO_GAL
-rotmat(::Type{T1}, ::Type{T2}) where {T1<:ICRSCoords,T2<:GalCoords} = GAL_TO_ICRS
+rotmat(::Type{<:GalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_GAL
+rotmat(::Type{<:ICRSCoords}, ::Type{<:GalCoords}) = GAL_TO_ICRS
+rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
+rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
+rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:SuperGalCoords}) = I
+rotmat(::Type{<:GalCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_GAL
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:GalCoords}) = GAL_TO_SUPERGAL
+rotmat(::Type{<:SuperGalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_SUPERGAL
+rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
 
-# Define both these so that `convert(FK5Coords{e}, ...)` and
-# `convert(FK5Coords{e,T}, ...)` both work. Similar with other
-# FK5Coords rotmat methods below.
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:ICRSCoords} =
+
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = RotX(-ecliptic_obliquity(e))
+@generated rotmat(::Type{<:FK5Coords{e}}, ::Type{<:EclipticCoords{e}}) where {e} = RotX(ecliptic_obliquity(e))
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{T}) where {e,T<:AbstractSkyCoords} = rotmat(EclipticCoords{e}, FK5Coords{e}) * rotmat(FK5Coords{e}, T)
+@generated rotmat(::Type{T}, ::Type{<:EclipticCoords{e}}) where {e,T<:AbstractSkyCoords} = rotmat(T, FK5Coords{e}) * rotmat(FK5Coords{e}, EclipticCoords{e})
+# disambiguation:
+@generated rotmat(::Type{<:EclipticCoords{e_to}}, ::Type{<:EclipticCoords{e_from}}) where {e_to,e_from} = rotmat(EclipticCoords{e_to}, FK5Coords{e_to}) * rotmat(FK5Coords{e_to}, EclipticCoords{e_from})
+
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:ICRSCoords} =
-    precess_from_j2000(e1) * ICRS_TO_FK5J2000
-
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{T2}) where {e1,T2<:GalCoords} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:GalCoords}) where {e1} =
     precess_from_j2000(e1) * GAL_TO_FK5J2000
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{T2}) where {e1,T1,T2<:GalCoords} =
-    precess_from_j2000(e1) * GAL_TO_FK5J2000
-
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:ICRSCoords,e2,T2} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:SuperGalCoords}) where {e1} =
+    precess_from_j2000(e1) * SUPERGAL_TO_FK5J2000
+@generated rotmat(::Type{<:ICRSCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_ICRS * precess_from_j2000(e2)'
-
-@generated rotmat(::Type{T1}, ::Type{FK5Coords{e2,T2}}) where {T1<:GalCoords,e2,T2} =
+@generated rotmat(::Type{<:GalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
-
-@generated rotmat(::Type{FK5Coords{e1}}, ::Type{FK5Coords{e2,T2}}) where {e1,e2,T2} =
-    precess_from_j2000(e1) * precess_from_j2000(e2)'
-@generated rotmat(::Type{FK5Coords{e1,T1}}, ::Type{FK5Coords{e2,T2}}) where {e1,T1,e2,T2} =
+@generated rotmat(::Type{<:SuperGalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
+    FK5J2000_TO_SUPERGAL * precess_from_j2000(e2)'
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1,e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # ------------------------------------------------------------------------------
@@ -195,6 +226,9 @@ at all distances, including the poles and antipodes.
 """
 separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
+
+separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T<:AbstractSkyCoords} =
+    2 * asin(norm(vec(c1) - vec(c2)) / 2)
 
 separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
     separation(c1, convert(T1, c2))
@@ -291,5 +325,8 @@ function _offset(λ, ϕ, separation, pa)
 
     return mod2pi(λ + ang), asin(cos_b)
 end
+
+# Stub to extend in NearestNeighbors extension
+function match end
 
 end # module

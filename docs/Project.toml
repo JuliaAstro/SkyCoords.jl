@@ -6,7 +6,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 SkyCoords = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 
 [compat]
-AstroAngles = "0.1"
+AstroAngles = "0.1, 0.2"
 Documenter = "1"
 NearestNeighbors = "0.4.9"
 Unitful = "1.15"

@@ -24,6 +24,7 @@ UnitfulExt = "Unitful"
 [compat]
 Accessors = "0.1"
 ConstructionBase = "1"
+LinearAlgebra = "1"
 Makie = "0.21, 0.22, 0.23, 0.24"
 NearestNeighbors = "0.4.9"
 Rotations = "1"

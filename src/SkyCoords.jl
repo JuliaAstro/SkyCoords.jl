@@ -5,18 +5,18 @@ using LinearAlgebra: I, norm
 using Rotations
 using StaticArrays
 
-export AbstractSkyCoords, 
-       ICRSCoords,
-       GalCoords,
-       SuperGalCoords,
-       FK5Coords,
-       EclipticCoords,
-       CartesianCoords,
-       separation,
-       position_angle,
-       offset,
-       cartesian,
-       spherical
+export AbstractSkyCoords,
+    ICRSCoords,
+    GalCoords,
+    SuperGalCoords,
+    FK5Coords,
+    EclipticCoords,
+    CartesianCoords,
+    separation,
+    position_angle,
+    offset,
+    cartesian,
+    spherical
 
 include("types.jl")
 include("cartesian.jl")
@@ -28,7 +28,7 @@ include("cartesian.jl")
 function coords2cart(lon, lat)
     sinlon, coslon = sincos(lon)
     sinlat, coslat = sincos(lat)
-    SVector{3}(coslat * coslon, coslat * sinlon, sinlat)
+    return SVector{3}(coslat * coslon, coslat * sinlon, sinlat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
@@ -63,7 +63,7 @@ const FK5J2000_TO_GAL = let
     ngp_fk5j2000_ra = deg2rad(192.8594812065348)
     ngp_fk5j2000_dec = deg2rad(27.12825118085622)
     lon0_fk5j2000 = deg2rad(122.9319185680026)
-    RotZYZ(lon0_fk5j2000 - π, ngp_fk5j2000_dec - π/2, -ngp_fk5j2000_ra)
+    RotZYZ(lon0_fk5j2000 - π, ngp_fk5j2000_dec - π / 2, -ngp_fk5j2000_ra)
 end
 const GAL_TO_FK5J2000 = FK5J2000_TO_GAL'
 
@@ -77,7 +77,7 @@ const ICRS_TO_GAL = GAL_TO_ICRS'
 sgp_l = deg2rad(47.37)
 sgp_b = deg2rad(6.32)
 # rotation matrix compared to astropy
-const GAL_TO_SUPERGAL = RotZYZ(π/2, π/2 - sgp_b, π - sgp_l)
+const GAL_TO_SUPERGAL = RotZYZ(π / 2, π / 2 - sgp_b, π - sgp_l)
 const SUPERGAL_TO_GAL = GAL_TO_SUPERGAL'
 # SuperGal --> ICRS: chain through GAL
 const SUPERGAL_TO_ICRS = GAL_TO_ICRS * SUPERGAL_TO_GAL
@@ -109,7 +109,7 @@ end
 function ecliptic_obliquity(y)
     # https://github.com/JuliaAstro/AstroBase.jl/blob/master/src/EarthAttitude/obliquity.jl
     T = (y - 2000.0) / 100
-    obl = @evalpoly(T, 84381.406, -46.836769, -0.0001831, 0.00200340, -0.000000576, -0.0000000434)
+    obl = @evalpoly(T, 84381.406, -46.836769, -0.0001831, 0.0020034, -0.000000576, -0.0000000434)
     return deg2rad(obl / 3600)
 end
 
@@ -147,10 +147,10 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
 
 @generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:FK5Coords{e}}) where {e} = RotX(-ecliptic_obliquity(e))
 @generated rotmat(::Type{<:FK5Coords{e}}, ::Type{<:EclipticCoords{e}}) where {e} = RotX(ecliptic_obliquity(e))
-@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{T}) where {e,T<:AbstractSkyCoords} = rotmat(EclipticCoords{e}, FK5Coords{e}) * rotmat(FK5Coords{e}, T)
-@generated rotmat(::Type{T}, ::Type{<:EclipticCoords{e}}) where {e,T<:AbstractSkyCoords} = rotmat(T, FK5Coords{e}) * rotmat(FK5Coords{e}, EclipticCoords{e})
+@generated rotmat(::Type{<:EclipticCoords{e}}, ::Type{T}) where {e, T <: AbstractSkyCoords} = rotmat(EclipticCoords{e}, FK5Coords{e}) * rotmat(FK5Coords{e}, T)
+@generated rotmat(::Type{T}, ::Type{<:EclipticCoords{e}}) where {e, T <: AbstractSkyCoords} = rotmat(T, FK5Coords{e}) * rotmat(FK5Coords{e}, EclipticCoords{e})
 # disambiguation:
-@generated rotmat(::Type{<:EclipticCoords{e_to}}, ::Type{<:EclipticCoords{e_from}}) where {e_to,e_from} = rotmat(EclipticCoords{e_to}, FK5Coords{e_to}) * rotmat(FK5Coords{e_to}, EclipticCoords{e_from})
+@generated rotmat(::Type{<:EclipticCoords{e_to}}, ::Type{<:EclipticCoords{e_from}}) where {e_to, e_from} = rotmat(EclipticCoords{e_to}, FK5Coords{e_to}) * rotmat(FK5Coords{e_to}, EclipticCoords{e_from})
 
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
@@ -164,7 +164,7 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
     FK5J2000_TO_GAL * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:SuperGalCoords}, ::Type{<:FK5Coords{e2}}) where {e2} =
     FK5J2000_TO_SUPERGAL * precess_from_j2000(e2)'
-@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1,e2} =
+@generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1, e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
 
 # ------------------------------------------------------------------------------
@@ -190,13 +190,13 @@ The angular separation is calculated using the [Vincenty formula](http://en.wiki
 complex and computationally expensive than some alternatives, but is stable at
 at all distances, including the poles and antipodes.
 """
-separation(c1::T, c2::T) where {T<:AbstractSkyCoords} =
+separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
 
-separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T<:AbstractSkyCoords} =
+separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T <: AbstractSkyCoords} =
     2 * asin(norm(vec(c1) - vec(c2)) / 2)
 
-separation(c1::T1, c2::T2) where {T1<:AbstractSkyCoords,T2<:AbstractSkyCoords} =
+separation(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords} =
     separation(c1, convert(T1, c2))
 
 
@@ -214,7 +214,7 @@ julia> position_angle(c1, c2) |> rad2deg
 ```
 """
 position_angle(c1::T, c2::T) where {T <: AbstractSkyCoords} = _position_angle(lon(c1), lat(c1), lon(c2), lat(c2))
-position_angle(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords,T2 <: AbstractSkyCoords} = position_angle(c1, convert(T1, c2))
+position_angle(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords} = position_angle(c1, convert(T1, c2))
 
 
 function _position_angle(λ1, ϕ1, λ2, ϕ2)
@@ -249,7 +249,7 @@ julia> offset(c1, c2) .|> rad2deg
 # See Also
 * [`separation`](@ref), [`position_angle`](@ref)
 """
-offset(c::T, sep, pa) where T <: AbstractSkyCoords = T(_offset(lon(c), lat(c), sep, pa)...)
+offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = T(_offset(lon(c), lat(c), sep, pa)...)
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle
@@ -269,7 +269,7 @@ julia> offset(c1, c2) .|> rad2deg
 """
 offset(c1::AbstractSkyCoords, c2::AbstractSkyCoords) = separation(c1, c2), position_angle(c1, c2)
 
-#= use the cosine rule in spherical geometry with three points, the north pole, the starting point, 
+#= use the cosine rule in spherical geometry with three points, the north pole, the starting point,
 and the final point.
 angles: (change in lon), (position angle), (-1/position angle)
 sides: (separation), (final co-latitude), (starting co-latitude)
@@ -281,13 +281,13 @@ function _offset(λ, ϕ, separation, pa)
 
     # solving cosine rule
     cos_b = cos_c * cos_a + sin_c * sin_a * cos_B
-    
+
     # solving sine rule
     xsin_A = sin_a * sin_B * sin_c
     xcos_A = cos_a - cos_b * cos_c
 
     # correction for antipodes, otherwise atan2
-    ang = sin_c < 1e-12 ? π/2 + cos_c * (π/2 - pa) : atan(xsin_A, xcos_A)
+    ang = sin_c < 1.0e-12 ? π / 2 + cos_c * (π / 2 - pa) : atan(xsin_A, xcos_A)
 
     return mod2pi(λ + ang), asin(cos_b)
 end

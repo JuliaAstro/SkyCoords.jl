@@ -12,7 +12,7 @@ makedocs(
         canonical = "https://juliaastro.org/SkyCoords/stable/",
     ),
     pages = pages,
-    warnonly=[:missing_docs, :linkcheck],
+    warnonly = [:missing_docs, :linkcheck],
 )
 
 deploydocs(

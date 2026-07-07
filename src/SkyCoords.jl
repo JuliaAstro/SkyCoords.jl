@@ -33,9 +33,10 @@ end
 
 # [x, y, z] unit vector -> (lon, lat)
 function cart2coords(v)
-    lon = atan(v[begin + 1], v[begin])
-    xy_norm = hypot(v[begin], v[begin + 1])
-    lat = atan(v[begin + 2], xy_norm)
+    x, y, z = v[begin], v[begin + 1], v[begin + 2]
+    lon = atan(y, x)
+    xy_norm = hypot(x, y)
+    lat = atan(z, xy_norm)
     return lon, lat
 end
 
@@ -44,9 +45,9 @@ end
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
 const ICRS_TO_FK5J2000 = let
-    eta0 = deg2rad(-19.9 / 3600000)
-    xi0 = deg2rad(9.1 / 3600000)
-    da0 = deg2rad(-22.9 / 3600000)
+    eta0 = deg2rad(-19.9 / 3600_000)
+    xi0 = deg2rad(9.1 / 3600_000)
+    da0 = deg2rad(-22.9 / 3600_000)
     RotXYZ(eta0, -xi0, -da0)
 end
 const FK5J2000_TO_ICRS = ICRS_TO_FK5J2000'

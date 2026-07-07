@@ -264,12 +264,12 @@ VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCo
     # Test mixed coordinate input to KDTree
     @test KDTree([refcat[1], refcat[2]]).data ≈ KDTree([refcat[1], convert(T2, refcat[2])]).data
     @test_throws ArgumentError KDTree(T1[]) # empty data throws
-    @test_throws ArgumentError nn(tree, T1[]) # emtpy coords throws
-    @test_throws ArgumentError knn(tree, T1[], 2) # emtpy coords throws
+    @test_throws ArgumentError nn(tree, T1[]) # empty coords throws
+    @test_throws ArgumentError knn(tree, T1[], 2) # empty coords throws
     for n in (1, 10, N)
         # Test single coord
         @test nn(tree, convert(T2, refcat[n]))[1] == n
-        # Test mulitple coords
+        # Test multiple coords
         @test nn(tree, convert.(Ref(T2), [refcat[n], refcat[2]]))[1] == [n, 2]
         # Test knn, single coord
         id, sep = knn(tree, convert(T2, refcat[n]), 2)

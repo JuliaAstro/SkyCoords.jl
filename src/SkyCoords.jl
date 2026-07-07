@@ -41,7 +41,7 @@ function cart2coords(v)
 end
 
 # -----------------------------------------------------------------------------
-# Constant rotation matricies and precession matrix function
+# Constant rotation matrices and precession matrix function
 
 # ICRS --> FK5 at J2000 (See USNO Circular 179, section 3.5)
 const ICRS_TO_FK5J2000 = let

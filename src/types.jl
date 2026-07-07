@@ -137,7 +137,7 @@ This coordinate system uses the observer's local horizon as the fundamental plan
 - `alt` - Angle between object and the observer's local horizon in radians (0, π/2)
 - `az` - Angle of objectaround horizon, increasing eastward from true north (0, 2π)
 """
-struct AltAzCoords{T<:AbstractFloat} <: AbstractSkyCoords
+struct AltAzCoords{T <: AbstractFloat} <: AbstractSkyCoords
     alt::T
     az::T
 end

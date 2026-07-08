@@ -2,8 +2,8 @@ module SkyCoords
 
 import ConstructionBase: constructorof
 using LinearAlgebra: I, norm
-using Rotations
-using StaticArrays
+using Rotations: RotX, RotXYZ, RotZYZ
+using StaticArrays: SA, SVector
 
 export AbstractSkyCoords,
     ICRSCoords,

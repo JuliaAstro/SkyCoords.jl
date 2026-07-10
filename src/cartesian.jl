@@ -1,3 +1,15 @@
+"""
+    CartesianCoords{TC <: AbstractSkyCoords, TF} <: AbstractSkyCoords
+    CartesianCoords{TC}(x, y, z)
+    CartesianCoords(c::AbstractSkyCoords)
+
+Cartesian representation of arbitrary coordinate systems.
+The type paramter `TC` identifies the coordinate scheme being encoded.
+Instances of this type should be created using the [`cartesian`](@ref) function.
+
+Note: since all sky coordinates are angle measures, the Cartesian coordinates
+are assumed to lie on the unit sphere.
+"""
 struct CartesianCoords{TC <: AbstractSkyCoords, TF <: Real} <: AbstractSkyCoords
     vec::SVector{3, TF}
 end

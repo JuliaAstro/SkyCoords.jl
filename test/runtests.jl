@@ -1,6 +1,7 @@
 using AstroAngles
 using Accessors
 using Unitful
+using DynamicQuantities: @us_str, uconvert
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
@@ -212,6 +213,32 @@ VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test offset(ICRSCoords(1, 0.5), 0.1u"rad", 2u"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
     @test offset(ICRSCoords(1, 0.5), 0.1, 100u"°") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1u"°", 100u"°") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
+end
+
+VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
+    # Construction from quantities strips to plain radians (=== holds for the underlying Float64 fields).
+    @test ICRSCoords(1us"rad", 0.5) === ICRSCoords(1, 0.5)
+    @test GalCoords(1us"rad", 0.5us"rad") === GalCoords(1, 0.5)
+    @test FK5Coords{2000}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
+    @test EclipticCoords{2000}(1us"deg", 0.5us"deg") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+
+    # Accessors return symbolic quantities in the requested units.
+    # Symbolic `Quantity`s compare equal with `==` (not `===`, which is struct identity).
+    @test SkyCoords.lat(us"rad", ICRSCoords(1, 0.5)) == 0.5us"rad"
+    @test SkyCoords.lon(us"deg", ICRSCoords(1, 0.5)) == rad2deg(1)us"deg"
+    @test SkyCoords.lonlat(us"rad", ICRSCoords(1, 0.5)) == (1us"rad", 0.5us"rad")
+
+    @test SkyCoords.separation(us"rad", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) == 0.7us"rad"
+    @test SkyCoords.separation(us"deg", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) == rad2deg(0.7)us"deg"
+
+    @test SkyCoords.position_angle(us"rad", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) == Float64(π) * us"rad"
+    @test SkyCoords.position_angle(us"deg", ICRSCoords(1, 0.5), ICRSCoords(1, -0.2)) == 180.0us"deg"
+
+    # offset() accepts angular quantities for the separation and position angle
+    @test offset(ICRSCoords(1, 0.5), 0.1us"rad", 2) === offset(ICRSCoords(1, 0.5), 0.1, 2)
+    @test offset(ICRSCoords(1, 0.5), 0.1us"rad", 2us"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
+    @test offset(ICRSCoords(1, 0.5), 0.1, 100us"deg") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
+    @test offset(ICRSCoords(1, 0.5), 0.1us"deg", 100us"deg") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
 end
 
 @testset "equality" begin

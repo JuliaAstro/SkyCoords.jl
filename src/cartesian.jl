@@ -12,9 +12,27 @@ constructorof(::Type{<:CartesianCoords{TC}}) where {TC} = CartesianCoords{TC}
 Base.vec(c::CartesianCoords) = c.vec
 
 coords2cart(c::CartesianCoords) = vec(c)
+
+"""
+    cartesian(c::AbstractSkyCoords)
+
+Returns an instance of `CartesianCoords`, where a 2-dimensional angle in the sky
+is projected onto the unit sphere.
+
+See also: [`spherical`](@ref)
+"""
 cartesian(c::CartesianCoords) = c
-spherical(c::AbstractSkyCoords) = c
 cartesian(c::T) where {T <: AbstractSkyCoords} = CartesianCoords{T}(coords2cart(lon(c), lat(c)))
+
+"""
+    spherical(c::AbstractSkyCoords)
+
+Returns the spherical representation of a coordinate set as two angles:
+the co-latitude and the azimuth.
+
+See also: [`cartesian`](@ref)
+"""
+spherical(c::AbstractSkyCoords) = c
 spherical(c::CartesianCoords{T}) where {T <: AbstractSkyCoords} = T(cart2coords(vec(c))...)
 
 Base.convert(::Type{<:T}, c::CartesianCoords{S}) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =

@@ -187,9 +187,9 @@ end
 
 Return angular separation between two sky coordinates, in radians.
 
-The angular separation is calculated using the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance), which is slightly more
-complex and computationally expensive than some alternatives, but is stable at
-at all distances, including the poles and antipodes.
+The angular separation is calculated using the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance),
+which is slightly more complex and computationally expensive than some alternatives,
+but is stable at at all distances, including the poles and antipodes.
 """
 separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
@@ -206,7 +206,7 @@ separation(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoor
 
 Return position angle between two sky coordinates, in positive radians.
 
-# Examples
+### Examples
 ```jldoctest
 julia> c1 = ICRSCoords(0, 0); c2 = ICRSCoords(deg2rad(1), 0);
 
@@ -237,7 +237,7 @@ Offset a coordinate by a given angular separation, `separation`, in radians and 
 Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes.
 Returns a sky coordinate of the same type as input.
 
-# Examples
+### Examples
 ```jldoctest
 julia> c1 = ICRSCoords(0, 0);
 
@@ -248,8 +248,8 @@ julia> offset(c1, c2) .|> rad2deg
 (1.0, 90.0)
 ```
 
-# See Also
-* [`separation`](@ref), [`position_angle`](@ref)
+### See Also
+[`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = T(_offset(lon(c), lat(c), sep, pa)...)
 
@@ -258,7 +258,7 @@ offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = T(_offset(lon(c), lat(c),
 
 Return the separation and position angle in radians between two sky coordinates.
 
-# Examples
+### Examples
 ```jldoctest
 julia> c1 = ICRSCoords(0, 0); c2 = ICRSCoords(deg2rad(1), 0);
 
@@ -266,8 +266,8 @@ julia> offset(c1, c2) .|> rad2deg
 (1.0, 90.0)
 ```
 
-# See Also
-* [`separation`](@ref), [`position_angle`](@ref)
+### See Also
+[`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c1::AbstractSkyCoords, c2::AbstractSkyCoords) = separation(c1, c2), position_angle(c1, c2)
 

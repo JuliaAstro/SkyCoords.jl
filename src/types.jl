@@ -16,7 +16,7 @@ abstract type AbstractSkyCoords end
 
 This is the current standard adopted by the International Astronomical Union notably due to its high level of accuracy compared to standard equatorial coordinate systems. What sets this apart from [`FK5Coords`](@ref) is that it is completely defined using extragalactic radio sources rather than a geocentric frame, which means the reference frame will not change due to Earth's motion.
 
-# Coordinates
+### Coordinates
 - `ra` - Right ascension in radians (0, 2π)
 - `dec` - Declination in radians (-π/2, π/2)
 """
@@ -38,7 +38,7 @@ ICRSCoords{F}(c::T) where {F, T <: AbstractSkyCoords} = convert(ICRSCoords{F}, c
 
 This coordinate system is defined based on the projection of the Milky Way galaxy onto our celestial sphere, with (0, 0) being approximately the center of our galaxy.
 
-# Coordinates
+### Coordinates
 - `l` - Galactic longitude in radians (-π, π)
 - `b` - Galactic latitude in radians (-π/2, π/2)
 """
@@ -60,7 +60,7 @@ GalCoords{F}(c::T) where {F, T <: AbstractSkyCoords} = convert(GalCoords{F}, c)
 The supergalactic plane is part of a reference frame for the supercluster of galaxies that contains the Milky Way galaxy.
 The supergalactic plane as so-far observed is more or less perpendicular to the plane of the Milky Way, the angle is 84.5 degrees. Viewed from the Earth, the plane traces a great circle across the sky through the constellations
 
-# Coordinates
+### Coordinates
 - `l` - SuperGalCoords longitude in radians (-π, π)
 - `b` - SuperGalCoords latitude in radians (-π/2, π/2)
 """
@@ -88,7 +88,7 @@ causing the reference frame to change. Because of this, an equinox must be
 provided (typically 2000, commonly known as J2000) which defines the reference
 frame.
 
-# Coordinates
+### Coordinates
 - `ra` - Right ascension in radians (0, 2π)
 - `dec` - Declination in radians (-π/2, π/2)
 """
@@ -111,7 +111,7 @@ constructorof(::Type{<:FK5Coords{e}}) where {e} = FK5Coords{e}
 
 This coordinate system is geocentric with the ecliptic plane as the xy-plane with x oriented according to the equinox specified by `equinox`.
 
-# Coordinates
+### Coordinates
 - `lon` - Longitude in radians (0, 2π)
 - `lat` - Latitude in radians (-π/2, π/2)
 """

@@ -68,6 +68,21 @@ julia> SkyCoords.lat(u"μrad", c)
 910.0 μrad
 ```
 
+Units are equally supported via [DynamicQuantities.jl](https://github.com/SymbolicML/DynamicQuantities.jl). Because DynamicQuantities represents angles as dimensionless SI quantities, use its *symbolic* units (`us"..."`) when you want a result expressed in a specific angular unit:
+
+```jldoctest dynamicquantities
+julia> using DynamicQuantities
+
+julia> c = ICRSCoords(0.11255us"deg", 0.00091us"rad")
+ICRSCoords{Float64}(0.0019643680731196178, 0.00091)
+
+julia> c2 = FK5Coords{2000}(0.1us"rad", 0.5)
+FK5Coords{2000, Float64}(0.1, 0.5)
+
+julia> SkyCoords.lat(us"μrad", c)
+910.0 μrad
+```
+
 ### Parsing from strings
 
 The [AstroAngles.jl](https://github.com/JuliaAstro/AstroAngles.jl) package provides convenient string parsing utilities

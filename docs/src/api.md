@@ -19,6 +19,7 @@ GalCoords
 SuperGalCoords
 FK5Coords
 EclipticCoords
+CartesianCoords
 ```
 
 ## Conversion
@@ -49,11 +50,11 @@ ICRSCoords{Float64}(0.0, 0.0)
 ## Catalog Matching
 
 ```@docs
-SkyCoords.match(::KDTree, ::AbstractArray{<:AbstractSkyCoords})
-KDTree(::AbstractArray{<:SkyCoords.AbstractSkyCoords})
-nn(::KDTree, ::SkyCoords.AbstractSkyCoords)
-knn(::KDTree, coord::SkyCoords.AbstractSkyCoords, ::Int, ::Bool)
-inrange(::KDTree, ::SkyCoords.AbstractSkyCoords, ::Number)
+SkyCoords.match
+KDTree
+nn
+knn
+inrange
 ```
 
 ## Functions
@@ -62,4 +63,6 @@ inrange(::KDTree, ::SkyCoords.AbstractSkyCoords, ::Number)
 separation
 position_angle
 offset
+cartesian
+spherical
 ```

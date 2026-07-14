@@ -20,6 +20,7 @@ SuperGalCoords
 FK5Coords
 EclipticCoords
 CartesianCoords
+ProjectedCoords
 ```
 
 ## Conversion

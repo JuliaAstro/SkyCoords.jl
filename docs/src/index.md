@@ -1,9 +1,9 @@
 # SkyCoords.jl
 
 [![GitHub](https://img.shields.io/badge/Code-GitHub-black.svg)](https://github.com/JuliaAstro/SkyCoords.jl)
-[![Build Status](https://github.com/JuliaAstro/SkyCoords.jl/workflows/CI/badge.svg?branch=master)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
+[![CI](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
-[![Coverage](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
+[![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/graph/badge.svg?token=0WIe7bWYFj)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 
 SkyCoords.jl provides a type system for astronomical coordinate systems with appropriate conversions between them.
 
@@ -11,7 +11,7 @@ SkyCoords.jl provides a type system for astronomical coordinate systems with app
 From the Julia REPL
 
 ```julia-repl
-(v1.2) pkg> add SkyCoords
+pkg> add SkyCoords
 
 julia> using SkyCoords
 ```
@@ -22,12 +22,15 @@ DocTestSetup = :(using SkyCoords)
 
 ## Usage
 
-There are currently three supported coordinate systems. The following
+
+There are currently five supported coordinate systems. The following
 immutable types are used to represent coordinates in each system:
 
 - [`ICRSCoords`](@ref): ICRS coordinates system
 - [`GalCoords`](@ref): Galactic coordinates system
+- [`SuperGalCoords`](@ref): Supergalactic coordinates system
 - [`FK5Coords`](@ref): FK5 coordinates system (with arbitrary equinox)
+- [`EclipticCoords`](@ref): Ecliptic coordinates system
 
 Each type holds a longitude and latitude, and each is a subtype of
 [`AbstractSkyCoords`](@ref).
@@ -46,7 +49,38 @@ julia> c2.l # Note that galactic coordinate fields are l, b
 1.6814027872278692
 
 julia> c1 |> FK5Coords{2000} # Can use piping syntax for conversion
-FK5Coords{2000, Float64}(1.1102233723050133e-7, 4.411803426976326e-8)
+FK5Coords{2000, Float64}(1.1102233723050067e-7, 4.411803426976326e-8)
+```
+### Units
+
+There is built-in support for units via [Unitful.jl](https://github.com/PainterQubits/Unitful.jl)
+
+```jldoctest unitangles
+julia> using Unitful
+
+julia> c = ICRSCoords(0.11255u"°", 0.00091u"rad")
+ICRSCoords{Float64}(0.0019643680731196178, 0.00091)
+
+julia> c2 = FK5Coords{2000}(0.1u"rad", 0.5)
+FK5Coords{2000, Float64}(0.1, 0.5)
+
+julia> SkyCoords.lat(u"μrad", c)
+910.0 μrad
+```
+
+Units are equally supported via [DynamicQuantities.jl](https://github.com/SymbolicML/DynamicQuantities.jl). Because DynamicQuantities represents angles as dimensionless SI quantities, use its *symbolic* units (`us"..."`) when you want a result expressed in a specific angular unit:
+
+```jldoctest dynamicquantities
+julia> using DynamicQuantities
+
+julia> c = ICRSCoords(0.11255us"deg", 0.00091us"rad")
+ICRSCoords{Float64}(0.0019643680731196178, 0.00091)
+
+julia> c2 = FK5Coords{2000}(0.1us"rad", 0.5)
+FK5Coords{2000, Float64}(0.1, 0.5)
+
+julia> SkyCoords.lat(us"μrad", c)
+910.0 μrad
 ```
 
 ### Parsing from strings
@@ -62,7 +96,7 @@ ICRSCoords{Float64}(1.4596726677614607, 0.3842255081802917)
 
 for example, to load coordinates from a target list
 
-```julia
+```julia-repl
 julia> using CSV, DataFrames
 
 julia> table = CSV.File("target_list.csv") |> DataFrame;
@@ -123,6 +157,36 @@ julia> position_angle(mizar, alcor) |> rad2deg # degrees
 71.31046476300233
 
 ```
+
+## Catalog Matching
+
+SkyCoords.jl offers coordinate catalog matching functionality through an extension that depends on [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl). This functionality requires Julia ≥ v1.9 and `NearestNeighbors.jl` to be loaded (e.g., `using NearestNeighbors.jl`).
+
+The [`SkyCoords.match`](@ref) function can match two catalogs of coordinates with an interface similar to Astropy's `match_coordinates_sky`. This function operates on two arrays of coordinates, the first being the "reference" catalog that will be searched to find the closest coordinates to those in the second catalog. This function returns the indices into the reference catalog of the matches and the angular separation (in radians) between each coordinate and its match in the reference catalog.
+
+```jldoctest matching
+using NearestNeighbors # Required to use `match` method
+using SkyCoords
+# Generate random coordinates
+N = 1000
+lons = 2pi .* rand(N) # (0, 2π)
+lats = pi .* (rand(N) .- 0.5) # (-π, π)
+# The catalog to match against
+refcat = ICRSCoords.(lons, lats)
+# The catalog of coordinates for which you want to find neighbors in "refcat"
+matchcat = refcat[[1,5,10]]
+
+ids, sep = SkyCoords.match(refcat, matchcat)
+ids == [1,5,10] # Indices for which `refcat[ids]` match to `matchcat`
+# output
+true
+```
+
+Note that [`SkyCoords.match`](@ref) is not exported (to avoid clashing with `Base.match`) and should be used via the qualified signature `SkyCoords.match` (as above) or explicitly imported (e.g., `using SkyCoords: match`).
+
+This extension additionally supports construction of [`NearestNeighbors.KDTree`](@ref KDTree)s from `AbstractArray{<:AbstractSkyCoords}` and extends methods for general nearest neighbors queries ([`nn`](@ref), [`knn`](@ref)) and queries for all neighbors within a given separation ([`inrange`](@ref), similar to Astropy's `search_around_sky`).
+
+More complicated catalog joins are supported by the [FlexiJoins.jl](https://github.com/JuliaAPlavin/FlexiJoins.jl) package. For example, if `L` and `R` are two catalogs with coordinate keys `:coordsL` and `:coordsR` respectively, the two catalogs can be joined based on angular separation with `FlexiJoins.innerjoin((L, R), FlexiJoins.by_distance(:coordsL, :coordsR, SkyCoords.separation, <=(0.1)))` where the final condition indicates you only want to keep matches that have separations less than or equal to 0.1 rad. See their documentation on astronomy-specific applications [here](https://aplavin.github.io/FlexiJoins.jl/notebooks/skycoords.html).
 
 ## Accuracy
 

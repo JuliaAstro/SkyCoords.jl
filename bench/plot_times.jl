@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+##!/usr/bin/env julia
 using CSV
 using StatsPlots
 

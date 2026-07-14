@@ -22,9 +22,11 @@ else:
     t1 = timeit.repeat("c.galactic", setup, repeat=3, number=nloops)
     t2 = timeit.repeat("c.transform_to('fk5')", setup, repeat=3, number=nloops)
     t3 = timeit.repeat("c.transform_to(FK5(equinox='J1975'))", setup, repeat=3, number=nloops)
+    t4 = timeit.repeat("c.supergalactic", setup, repeat=3, number=nloops)
     line = """{n:d},galactic,{t1:f}
 {n:d},fk5j2000,{t2:f}
 {n:d},fk5j1975,{t3:f}
+{n:d},supergalactic,{t3:f}
 """.format(n=n, t1=min(t1)/nloops, t2=min(t2)/nloops, t3=min(t3)/nloops)
     io.write(line)
     print(line,)

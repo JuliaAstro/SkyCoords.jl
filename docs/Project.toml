@@ -1,7 +1,18 @@
 [deps]
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
-Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 AstroAngles = "5c4adb95-c1fc-4c53-b4ea-2a94080c53d2"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
+NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+SkyCoords = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 
 [compat]
-Documenter = "0.26, 0.27"
+AstroAngles = "0.1, 0.2"
+Documenter = "1"
+DynamicQuantities = "1"
+NearestNeighbors = "0.4.9"
+Unitful = "1.15"
+julia = "1.9"
+
+[sources]
+SkyCoords = {path = ".."}

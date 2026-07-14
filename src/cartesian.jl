@@ -28,8 +28,7 @@ coords2cart(c::CartesianCoords) = vec(c)
 """
     cartesian(c::AbstractSkyCoords)
 
-Returns an instance of `CartesianCoords`, where a 2-dimensional angle in the sky
-is projected onto the unit sphere in Cartesian (rectangular) coordinates.
+Returns a Cartesian representation of the coordinate `c` projected onto the unit sphere as a [`CartesianCoords`](@ref).
 
 ### See also
 [`spherical`](@ref)

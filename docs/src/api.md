@@ -19,6 +19,7 @@ GalCoords
 SuperGalCoords
 FK5Coords
 EclipticCoords
+CartesianCoords
 ```
 
 ## Conversion
@@ -62,4 +63,6 @@ inrange
 separation
 position_angle
 offset
+cartesian
+spherical
 ```

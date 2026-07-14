@@ -39,10 +39,7 @@ cartesian(c::T) where {T <: AbstractSkyCoords} = CartesianCoords{T}(coords2cart(
 """
     spherical(c::AbstractSkyCoords)
 
-Returns the spherical representation of a coordinate set. In general, all
-subtypes of [`AbstractSkyCoords`](@ref) store the coordinates as two angles, so
-an instance of the same type is returned. If `c` is a [`CartesianCoords`](@ref)
-object, the coordinates are unwrapped and the underlying coordinate is returned.
+Returns the spherical representation of the coordinate `c`. Coordinate arguments that are already in spherical coordinates are simply returned. If `c` is a [`CartesianCoords`](@ref) object, the Cartesian representation is converted to spherical and returned as a `T <: AbstractSkyCoords` where `c::CartesianCoords{T}`. 
 
 ### See also
 [`cartesian`](@ref)

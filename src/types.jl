@@ -9,6 +9,24 @@ The supertype for all sky coordinate systems.
 abstract type AbstractSkyCoords end
 
 """
+    checklat(lat)
+
+Validate that a latitude-like coordinate (declination, galactic latitude, etc.),
+given in radians, lies within the physical range `[-π/2, π/2]`.
+Throws an `ArgumentError` otherwise, and returns `lat` unchanged when valid.
+
+Every concrete `AbstractSkyCoords` subtype calls this from its inner constructor.
+Unlike longitude, which is periodic and safe to wrap with `mod2pi`, an out-of-range latitude
+does not have an unambiguous "wrapped" meaning without also flipping the longitude by π,
+so it is rejected instead.
+"""
+function checklat(lat)
+    -π / 2 <= lat <= π / 2 ||
+        throw(ArgumentError("Latitude/declination must be in [-π/2, π/2] radians, got $(lat)."))
+    return lat
+end
+
+"""
     ICRSCoords <: AbstractSkyCoords
     ICRSCoords(ra, dec)
 
@@ -23,7 +41,7 @@ This is the current standard adopted by the International Astronomical Union not
 struct ICRSCoords{T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T <: Real} = new(mod2pi(ra), dec)
+    ICRSCoords{T}(ra, dec) where {T <: Real} = new(mod2pi(ra), checklat(dec))
 end
 ICRSCoords(ra::T, dec::T) where {T <: Real} = ICRSCoords{float(T)}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(ra, dec)...)
@@ -45,7 +63,7 @@ This coordinate system is defined based on the projection of the Milky Way galax
 struct GalCoords{T <: Real} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T <: Real} = new(mod2pi(l), b)
+    GalCoords{T}(l, b) where {T <: Real} = new(mod2pi(l), checklat(b))
 end
 GalCoords(l::T, b::T) where {T <: Real} = GalCoords{float(T)}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(l, b)...)
@@ -67,7 +85,7 @@ The supergalactic plane as so-far observed is more or less perpendicular to the 
 struct SuperGalCoords{T <: Real} <: AbstractSkyCoords
     l::T
     b::T
-    SuperGalCoords{T}(l, b) where {T <: Real} = new(mod2pi(l), b)
+    SuperGalCoords{T}(l, b) where {T <: Real} = new(mod2pi(l), checklat(b))
 end
 SuperGalCoords(l::T, b::T) where {T <: Real} = SuperGalCoords{float(T)}(l, b)
 SuperGalCoords(l::Real, b::Real) = SuperGalCoords(promote(l, b)...)
@@ -95,7 +113,7 @@ frame.
 struct FK5Coords{e, T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), dec)
+    FK5Coords{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), checklat(dec))
 end
 FK5Coords{e}(ra::T, dec::T) where {e, T <: Real} = FK5Coords{e, float(T)}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} = FK5Coords{e}(promote(ra, dec)...)
@@ -118,7 +136,7 @@ This coordinate system is geocentric with the ecliptic plane as the xy-plane wit
 struct EclipticCoords{e, T <: Real} <: AbstractSkyCoords
     lon::T
     lat::T
-    EclipticCoords{e, T}(lon, lat) where {e, T <: Real} = new(mod2pi(lon), lat)
+    EclipticCoords{e, T}(lon, lat) where {e, T <: Real} = new(mod2pi(lon), checklat(lat))
 end
 EclipticCoords{e}(lon::T, lat::T) where {e, T <: Real} = EclipticCoords{e, float(T)}(lon, lat)
 EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords{e}(promote(lon, lat)...)

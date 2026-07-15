@@ -147,7 +147,7 @@ julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
 11.809723003934822
 ```
 
-with an angle
+We can then find the position angle from Mizar to Alcor with [`position_angle`](@ref):
 
 ```jldoctest sep
 julia> position_angle(mizar, alcor) # radians
@@ -155,7 +155,34 @@ julia> position_angle(mizar, alcor) # radians
 
 julia> position_angle(mizar, alcor) |> rad2deg # degrees
 71.31046476300233
+```
 
+### Offsets between Coordinates
+
+By applying a separation and position angle to a coordinate with the [`offset`](@ref) function, we can produce a new coordinate that is offset by that amount:
+
+```jldoctest offs
+julia> c1 = ICRSCoords(deg2rad(1), deg2rad(1))
+ICRSCoords{Float64}(0.017453292519943295, 0.017453292519943295)
+
+julia> c2 = ICRSCoords(deg2rad(2), deg2rad(2))
+ICRSCoords{Float64}(0.03490658503988659, 0.03490658503988659)
+
+julia> sep = separation(c1, c2)
+0.024678297290546682
+
+julia> pa = position_angle(c1, c2)
+0.785017383892913
+
+julia> offset(c1, sep, pa) ≈ c2
+true
+```
+
+The inverse operation, computing the separation and position angle from coordinate `c1` to coordinate `c2`, is also supported:
+
+```jldoctest offs
+julia> offset(c1, c2) .≈ (sep, pa)
+(true, true)
 ```
 
 ## Catalog Matching

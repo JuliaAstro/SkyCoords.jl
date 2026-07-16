@@ -87,7 +87,7 @@ spherical(c::CartesianCoords{TC}) where {TC <: AbstractSkyCoords} = TC(cart2coor
 # specified are honored exactly (the `convert` contract requires returning the
 # requested type); unspecified ones are inferred from the input. Every method
 # reduces to the two orthogonal primitives: representation change
-# (`cartesian`/`spherical`) and frame rotation (`rotmat`).
+# (`cartesian`/`spherical`) and frame change (`frame_transform`).
 
 # No parameters: keep the input frame, change representation only.
 Base.convert(::Type{CartesianCoords}, c::AbstractSkyCoords) = cartesian(c)
@@ -95,17 +95,17 @@ Base.convert(::Type{CartesianCoords}, c::CartesianCoords) = c
 
 # Frame tag specified: rotate. Element type inferred from the rotated vector.
 Base.convert(::Type{CartesianCoords{TC}}, c::AbstractSkyCoords) where {TC <: AbstractSkyCoords} = convert(CartesianCoords{TC}, cartesian(c))
-Base.convert(::Type{CartesianCoords{TC}}, c::CartesianCoords{SC}) where {TC <: AbstractSkyCoords, SC <: AbstractSkyCoords} = CartesianCoords{TC}(rotmat(TC, SC) * vec(c))
+Base.convert(::Type{CartesianCoords{TC}}, c::CartesianCoords{SC}) where {TC <: AbstractSkyCoords, SC <: AbstractSkyCoords} = CartesianCoords{TC}(frame_transform(TC, SC, vec(c)))
 Base.convert(::Type{CartesianCoords{TC}}, c::CartesianCoords{TC}) where {TC <: AbstractSkyCoords} = c
 
 # Frame tag and element type specified: both honored exactly.
 Base.convert(::Type{CartesianCoords{TC, TF}}, c::AbstractSkyCoords) where {TC <: AbstractSkyCoords, TF <: Real} = convert(CartesianCoords{TC, TF}, cartesian(c))
-Base.convert(::Type{CartesianCoords{TC, TF}}, c::CartesianCoords{SC}) where {TC <: AbstractSkyCoords, TF <: Real, SC <: AbstractSkyCoords} = CartesianCoords{TC, TF}(rotmat(TC, SC) * vec(c))
+Base.convert(::Type{CartesianCoords{TC, TF}}, c::CartesianCoords{SC}) where {TC <: AbstractSkyCoords, TF <: Real, SC <: AbstractSkyCoords} = CartesianCoords{TC, TF}(frame_transform(TC, SC, vec(c)))
 Base.convert(::Type{CartesianCoords{TC, TF}}, c::CartesianCoords{TC, TF}) where {TC <: AbstractSkyCoords, TF <: Real} = c
 
 # Spherical target from a Cartesian source: rotate, then change representation.
 function Base.convert(::Type{T}, c::CartesianCoords{SC}) where {T <: AbstractSkyCoords, SC <: AbstractSkyCoords}
-    r = rotmat(T, SC) * vec(c)
+    r = frame_transform(T, SC, vec(c))
     return T(cart2coords(r)...)
 end
 

@@ -127,11 +127,56 @@ EclipticCoords{e, F}(c::AbstractSkyCoords) where {e, F} = convert(EclipticCoords
 constructorof(::Type{<:EclipticCoords{e}}) where {e} = EclipticCoords{e}
 
 
+"""
+    FK4Coords{e, T <: Real} <: AbstractSkyCoords
+    FK4Coords{equinox}(ra, dec)
+
+[B1950 Equatorial Coordinate System](https://en.wikipedia.org/wiki/Epoch_(astronomy)#B1950.0)
+
+The predecessor to [`FK5Coords`](@ref). Like `FK5Coords`, this system is defined relative to the mean equator and equinox of a given epoch, but that epoch is Besselian rather than Julian (traditionally 1950, i.e. B1950). Unlike every other coordinate system in this package, `FK4Coords` also carries the E-terms of elliptic aberration, a small (~20″) position-dependent correction that was folded directly into the original FK4 catalog positions. Because this correction is not a rotation, `FK4Coords` implements its own `frame_transform` methods rather than providing a `rotmat`; all conversions — including through [`CartesianCoords`](@ref) — otherwise work like any other system. See [`FK4NoETerms`](@ref) for the E-terms-free, purely rotational variant.
+
+### Coordinates
+- `ra` - Right ascension in radians (0, 2π)
+- `dec` - Declination in radians (-π/2, π/2)
+"""
+struct FK4Coords{e, T <: Real} <: AbstractSkyCoords
+    ra::T
+    dec::T
+    FK4Coords{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), dec)
+end
+FK4Coords{e}(ra::T, dec::T) where {e, T <: Real} = FK4Coords{e, float(T)}(ra, dec)
+FK4Coords{e}(ra::Real, dec::Real) where {e} = FK4Coords{e}(promote(ra, dec)...)
+FK4Coords{e}(c::T) where {e, T <: AbstractSkyCoords} = convert(FK4Coords{e}, c)
+FK4Coords{e, F}(c::T) where {e, F, T <: AbstractSkyCoords} = convert(FK4Coords{e, F}, c)
+constructorof(::Type{<:FK4Coords{e}}) where {e} = FK4Coords{e}
+
+
+"""
+    FK4NoETerms{e, T <: Real} <: AbstractSkyCoords
+    FK4NoETerms{equinox}(ra, dec)
+
+[`FK4Coords`](@ref) with the E-terms of elliptic aberration removed, leaving a purely rotational equatorial system defined relative to the mean equator and equinox of a given Besselian epoch (traditionally 1950, i.e. B1950). This is astropy's `FK4NoETerms` frame.
+
+### Coordinates
+- `ra` - Right ascension in radians (0, 2π)
+- `dec` - Declination in radians (-π/2, π/2)
+"""
+struct FK4NoETerms{e, T <: Real} <: AbstractSkyCoords
+    ra::T
+    dec::T
+    FK4NoETerms{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), dec)
+end
+FK4NoETerms{e}(ra::T, dec::T) where {e, T <: Real} = FK4NoETerms{e, float(T)}(ra, dec)
+FK4NoETerms{e}(ra::Real, dec::Real) where {e} = FK4NoETerms{e}(promote(ra, dec)...)
+FK4NoETerms{e}(c::T) where {e, T <: AbstractSkyCoords} = convert(FK4NoETerms{e}, c)
+FK4NoETerms{e, F}(c::T) where {e, F, T <: AbstractSkyCoords} = convert(FK4NoETerms{e, F}, c)
+constructorof(::Type{<:FK4NoETerms{e}}) where {e} = FK4NoETerms{e}
+
 # Scalar coordinate conversions
 Base.convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c
 
 function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords}
-    r = rotmat(T, S) * coords2cart(c)
+    r = frame_transform(T, S, coords2cart(c))
     lon, lat = cart2coords(r)
     return T(lon, lat)
 end
@@ -146,5 +191,7 @@ Base.hash(c::AbstractSkyCoords, h::UInt) = hash(lonlat(c), hash(constructorof(ty
 Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::FK4Coords{e}, b::FK4Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::FK4NoETerms{e}, b::FK4NoETerms{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)

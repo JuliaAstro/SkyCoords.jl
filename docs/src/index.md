@@ -23,12 +23,14 @@ DocTestSetup = :(using SkyCoords)
 ## Usage
 
 
-There are currently five supported coordinate systems. The following
+There are currently seven supported coordinate systems. The following
 immutable types are used to represent coordinates in each system:
 
 - [`ICRSCoords`](@ref): ICRS coordinates system
 - [`GalCoords`](@ref): Galactic coordinates system
 - [`SuperGalCoords`](@ref): Supergalactic coordinates system
+- [`FK4Coords`](@ref): FK4 coordinates system (with arbitrary Besselian equinox)
+- [`FK4NoETerms`](@ref): FK4 coordinates system without the E-terms of aberration (with arbitrary Besselian equinox)
 - [`FK5Coords`](@ref): FK5 coordinates system (with arbitrary equinox)
 - [`EclipticCoords`](@ref): Ecliptic coordinates system
 

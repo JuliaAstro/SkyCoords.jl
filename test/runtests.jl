@@ -27,7 +27,7 @@ include("astropy.jl")
     c5 = ICRSCoords(ℯ, 1 + pi / 2)
     @test separation(c1, c5) ≈ separation(c5, c1) ≈ separation(c1, convert(GalCoords, c5)) ≈
         separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
-    for T in (GalCoords, FK5Coords{2000}, EclipticCoords{2000})
+    for T in (GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000})
         c2 = convert(T{Float32}, c1)
         c3 = convert(T{Float64}, c1)
         c4 = convert(T{BigFloat}, c1)
@@ -37,13 +37,27 @@ include("astropy.jl")
         @test isapprox(c2, c3, rtol = sqrt(eps(Float32)))
         @test isapprox(c3, c4, rtol = sqrt(eps(Float64)))
         c6 = convert(T, c5)
-        @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
+        # FK4Coords's E-terms of aberration are a position-dependent (non-isometric)
+        # correction, so unlike the other, purely-rotational systems, angular
+        # separations computed directly in FK4Coords are not exactly preserved
+        # relative to ICRS. This is expected (astropy's FK4 shows the same
+        # ~1e-6 discrepancy for these near-pole points), so it needs a looser tolerance here.
+        if T <: FK4Coords
+            @test isapprox(separation(c3, c6), separation(c6, c3); rtol = 1.0e-6)
+            @test isapprox(separation(c3, c6), 1; rtol = 1.0e-6)
+        else
+            @test separation(c3, c6) ≈ separation(c6, c3) ≈ 1
+        end
     end
 end
 
 @testset "string construction" for C in [
         ICRSCoords,
         GalCoords,
+        FK4Coords{1950},
+        FK4Coords{1975},
+        FK4NoETerms{1950},
+        FK4NoETerms{1975},
         FK5Coords{2000},
         FK5Coords{1970},
         EclipticCoords{2000},
@@ -74,7 +88,7 @@ end
     @test position_angle(c1, c4) ≈ 0
 
     # types
-    for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+    for T in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}]
         c1 = T(0, 0)
         c2 = T(deg2rad(1), 0)
         @test position_angle(c1, c2) ≈ π / 2
@@ -82,7 +96,7 @@ end
 end
 
 
-@testset "Offset ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+@testset "Offset ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}]
     # simple integration tests, depend that separation and position_angle are accurate
     c1s = [
         T1(0, -π / 2), # south pole
@@ -132,7 +146,9 @@ end
 end
 
 @testset "cartesian" begin
-    for CT in [ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, EclipticCoords{2000}, EclipticCoords{1975}, GalCoords]
+    # FK4Coords participates like every other system: its E-terms correction is
+    # not a rotation, but `frame_transform` doesn't require one.
+    for CT in [ICRSCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK4NoETerms{1975}, FK5Coords{2000}, FK5Coords{1975}, EclipticCoords{2000}, EclipticCoords{1975}, GalCoords]
         @test cartesian(CT(0, 0)) |> vec ≈ [1, 0, 0]
         @test cartesian(CT(0, π / 2)) |> vec ≈ [0, 0, 1]
         @test cartesian(CT(π / 2, 0)) |> vec ≈ [0, 1, 0]
@@ -163,7 +179,7 @@ end
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
 end
 
-@testset "CartesianCoords type parameters ($CT, $TF)" for TF in (Float32, Float64), CT in (ICRSCoords, GalCoords, FK5Coords{2000})
+@testset "CartesianCoords type parameters ($CT, $TF)" for TF in (Float32, Float64), CT in (ICRSCoords, GalCoords, FK5Coords{2000}, FK4Coords{1950}, FK4NoETerms{1950})
     c = CT{TF}(0.1, 0.2)
 
     # canonical form: element-type-free frame tag, element type carried by TF only
@@ -229,13 +245,15 @@ end
 @testset "constructionbase" begin
     @test setproperties(ICRSCoords(1, 2), ra = 3) == ICRSCoords(3, 2)
     @test setproperties(GalCoords(1, 2), l = 3) == GalCoords(3, 2)
+    @test setproperties(FK4Coords{1950}(1, 2), ra = 3) == FK4Coords{1950}(3, 2)
+    @test setproperties(FK4NoETerms{1950}(1, 2), ra = 3) == FK4NoETerms{1950}(3, 2)
     @test setproperties(FK5Coords{2000}(1, 2), ra = 3) == FK5Coords{2000}(3, 2)
     @test setproperties(EclipticCoords{2000}(1, 2), lon = 3) == EclipticCoords{2000}(3, 2)
     @test setproperties(cartesian(ICRSCoords(1, 2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 VERSION > v"1.9-DEV" && @testset "Accessors" begin
-    @testset for c in (ICRSCoords(1, 0.5), FK5Coords{2000}(1, 0.5), GalCoords(1, 0.5), EclipticCoords{2000}(1, 0.5))
+    @testset for c in (ICRSCoords(1, 0.5), FK4Coords{1950}(1, 0.5), FK4NoETerms{1950}(1, 0.5), FK5Coords{2000}(1, 0.5), GalCoords(1, 0.5), EclipticCoords{2000}(1, 0.5))
         Accessors.test_getset_laws(lon, c, 1.5, 0.123)
         Accessors.test_getset_laws(lat, c, 1.5, 0.123)
 
@@ -259,6 +277,8 @@ end
 VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test ICRSCoords(1u"rad", 0.5) === ICRSCoords(1, 0.5)
     @test GalCoords(1u"rad", 0.5u"rad") === GalCoords(1, 0.5)
+    @test FK4Coords{1950}(1u"°", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
+    @test FK4NoETerms{1950}(1u"°", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
     @test EclipticCoords{2000}(1u"°", 0.5u"°") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
 
@@ -282,6 +302,8 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     # Construction from quantities strips to plain radians (=== holds for the underlying Float64 fields).
     @test ICRSCoords(1us"rad", 0.5) === ICRSCoords(1, 0.5)
     @test GalCoords(1us"rad", 0.5us"rad") === GalCoords(1, 0.5)
+    @test FK4Coords{1950}(1us"deg", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
+    @test FK4NoETerms{1950}(1us"deg", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
     @test EclipticCoords{2000}(1us"deg", 0.5us"deg") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
 
@@ -305,7 +327,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
 end
 
 @testset "equality" begin
-    @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+    @testset for T in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}]
         c1 = T(1.0, 2.0)
         c2 = T(1.0, 2.001)
         c3 = T{Float32}(1.0, 2.0)
@@ -343,7 +365,7 @@ end
 end
 
 @testset "conversion" begin
-    systems = (ICRSCoords, FK5Coords{2000}, FK5Coords{1975}, EclipticCoords{2000}, EclipticCoords{1975}, GalCoords)
+    systems = (ICRSCoords, FK4Coords{1950}, FK4Coords{1975}, FK4NoETerms{1950}, FK4NoETerms{1975}, FK5Coords{2000}, FK5Coords{1975}, EclipticCoords{2000}, EclipticCoords{1975}, GalCoords)
     for IN_SYS in systems, OUT_SYS in systems
         coord_in = IN_SYS(rand(rng), rand(rng))
         coord_out = convert(OUT_SYS, coord_in)
@@ -362,7 +384,10 @@ VERSION >= v"1.9" && @testset "plotting with Makie" begin
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
 end
 
-VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+# FK4Coords is included here even though matching goes through
+# CartesianCoords{ICRSCoords} internally: `frame_transform` handles its
+# non-rotational E-terms correction on the Cartesian pathway too.
+VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}, FK4Coords{1950}, FK4NoETerms{1950}], T2 in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}, FK4Coords{1950}, FK4NoETerms{1950}]
     ## data generation
     N = 1000
     lons = 2pi .* rand(rng, N) # (0, 2π)

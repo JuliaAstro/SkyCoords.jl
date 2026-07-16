@@ -1,7 +1,7 @@
 module SkyCoords
 
 import ConstructionBase: constructorof
-using LinearAlgebra: I, norm
+using LinearAlgebra: I, dot, norm, normalize
 using Rotations: RotX, RotXYZ, RotZYZ
 using StaticArrays: SA, SVector
 
@@ -9,6 +9,8 @@ export AbstractSkyCoords,
     ICRSCoords,
     GalCoords,
     SuperGalCoords,
+    FK4Coords,
+    FK4NoETerms,
     FK5Coords,
     EclipticCoords,
     CartesianCoords,
@@ -131,6 +133,16 @@ lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 
+# Frame transformation of a Cartesian unit vector: `frame_transform(to, from, v)`.
+# This is the single primitive behind every frame change in the package
+# (`convert` reduces to it, for spherical and Cartesian representations alike).
+# For purely rotational systems — every system except FK4Coords — it is simply
+# multiplication by the `rotmat` rotation matrix below. Systems whose transform
+# is not a rotation (FK4Coords with its position-dependent E-terms) override
+# `frame_transform` directly instead of providing a `rotmat`.
+frame_transform(::Type{T}, ::Type{S}, v) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
+    rotmat(T, S) * v
+
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of
 # element type of input coordinates.
@@ -167,6 +179,134 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
     FK5J2000_TO_SUPERGAL * precess_from_j2000(e2)'
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:FK5Coords{e2}}) where {e1, e2} =
     precess_from_j2000(e1) * precess_from_j2000(e2)'
+
+# -----------------------------------------------------------------------------
+# FK4 (with E-terms of aberration)
+
+# `FK4NoETerms{e}` (see types.jl) is a purely-rotational system, so it
+# participates in the `rotmat` network like any other type. `FK4Coords` itself
+# cannot, because folding the E-terms in/out is a position-dependent correction
+# rather than a rotation; it overrides `frame_transform` below instead.
+
+# Newcomb precession, valid within the FK4/Besselian system only
+# (FK5 uses the IAU 1976/2000 Julian precession implemented by `precess_from_j2000`).
+# Explanatory Supplement to the Astronomical Almanac (Seidelmann, 1992), as
+# implemented in astropy's `FK4NoETerms._precession_matrix`.
+function newcomb_precession(byear1, byear2)
+    t1 = (byear1 - 1850.0) / 1000.0
+    dt = (byear2 - 1850.0) / 1000.0 - t1
+    dt_over_3600 = dt / 3600
+
+    zeta1 = (0.060 * t1 + 139.720) * t1 + 23035.545
+    zeta2 = -0.27 * t1 + 30.240
+    zeta = ((17.995 * dt + zeta2) * dt + zeta1) * dt_over_3600
+
+    z2 = 109.480 + 0.39 * t1
+    z = ((18.325 * dt + z2) * dt + zeta1) * dt_over_3600
+
+    theta1 = (-0.37 * t1 - 85.29) * t1 + 20051.12
+    theta2 = -0.37 * t1 - 42.65
+    theta = ((-41.8 * dt + theta2) * dt + theta1) * dt_over_3600
+
+    return RotZYZ(deg2rad(z), -deg2rad(theta), deg2rad(zeta))
+end
+
+# Besselian year -> Julian date (365.2421988-day Besselian year)
+besselian_to_jd(byear) = 2433282.4235 + (byear - 1950) * 365.2421988
+
+# Mean obliquity of the ecliptic, IAU 1980 (erfa's `obl80`)
+function mean_obliquity80(jd)
+    t = (jd - 2451545.0) / 36525.0
+    obl = @evalpoly(t, 84381.448, -46.8150, -0.00059, 0.001813)
+    return deg2rad(obl / 3600)
+end
+
+# E-terms of elliptic aberration for a given FK4 equinox (Besselian year).
+# A small (dimensionless, ~1e-4) vector correction in Cartesian space arising
+# from folding the aberration due to the eccentricity of Earth's orbit
+# directly into the FK4 catalog positions. See astropy's `fk4_e_terms`.
+function fk4_eterms(byear)
+    k = deg2rad(0.0056932)
+    jd = besselian_to_jd(byear)
+    t = (jd - besselian_to_jd(1950)) / 36525.0
+    ek = k * ((-0.000000126 * t - 0.00004193) * t + 0.01673011)
+    g = deg2rad((((0.012 * t + 1.65) * t + 6190.67) * t + 1015489.951) / 3600)
+    mekcosg = -ek * cos(g)
+    o = mean_obliquity80(jd)
+    return SA[ek * sin(g), mekcosg * cos(o), mekcosg * sin(o)]
+end
+
+# FK4 (with E-terms) -> FK4NoETerms: closed-form removal.
+remove_eterms(v, byear) = (e = fk4_eterms(byear); normalize(v - e + dot(e, v) * v))
+
+# FK4NoETerms -> FK4 (with E-terms): fixed-point iteration (matches astropy).
+function add_eterms(v, byear)
+    e = fk4_eterms(byear)
+    rhs = e + v
+    w = v
+    for _ in 1:10
+        w = rhs / (1 + dot(e, w))
+    end
+    return normalize(w)
+end
+
+# B1950 -> J2000 frame rotation, Murray 1989 A&A 218,325 eqn 28.
+const B1950_TO_J2000 = SA[
+    0.9999256794956877 -0.0111814832204662 -0.0048590038153592
+    0.0111814832391717 0.9999374848933135 -0.0000271625947142
+    0.0048590037723143 -0.0000271702937440 0.9999881946023742
+]
+
+# Correction accounting for FK4 being a slowly-rotating system, per Julian
+# century of obstime from B1950 (Murray 1989 eqn 29). We take obstime to equal
+# the FK4 equinox, matching astropy's default when no separate obstime is given.
+const FK4_CORR = SA[
+    -0.0026455262 -1.1539918689 2.1111346190
+    1.1540628161 -0.0129042997 0.0236021478
+    -2.1112979048 -0.0056024448 0.0102587734
+] * 1.0e-6
+
+fk4_B_matrix(byear) = B1950_TO_J2000 + FK4_CORR * ((byear - 1950.0) / 100.0)
+
+rotmat(::Type{<:FK4NoETerms{e}}, ::Type{<:FK4NoETerms{e}}) where {e} = I
+
+@generated rotmat(::Type{<:FK5Coords{2000}}, ::Type{<:FK4NoETerms{e}}) where {e} =
+    fk4_B_matrix(e) * newcomb_precession(e, 1950)
+@generated rotmat(::Type{<:FK4NoETerms{e}}, ::Type{<:FK5Coords{2000}}) where {e} =
+    rotmat(FK5Coords{2000}, FK4NoETerms{e})'
+
+@generated rotmat(::Type{T}, ::Type{<:FK4NoETerms{e}}) where {e, T <: AbstractSkyCoords} =
+    rotmat(T, FK5Coords{2000}) * rotmat(FK5Coords{2000}, FK4NoETerms{e})
+@generated rotmat(::Type{<:FK4NoETerms{e}}, ::Type{T}) where {e, T <: AbstractSkyCoords} =
+    rotmat(FK4NoETerms{e}, FK5Coords{2000}) * rotmat(FK5Coords{2000}, T)
+# Disambiguation, and physically correct: precess directly within the
+# Besselian/FK4 system rather than round-tripping through FK5
+# (the B-matrix correction above is a one-time system-level offset,
+# not something to apply twice).
+@generated rotmat(::Type{<:FK4NoETerms{e_to}}, ::Type{<:FK4NoETerms{e_from}}) where {e_to, e_from} =
+    newcomb_precession(e_from, e_to)
+
+# EclipticCoords and FK4NoETerms are the only two types with a generic
+# "fall back to any T <: AbstractSkyCoords" `rotmat` method (both routing
+# through FK5Coords). Without an explicit rule for this specific pair, their
+# two fallbacks are ambiguous with each other.
+@generated rotmat(::Type{<:EclipticCoords{e1}}, ::Type{<:FK4NoETerms{e2}}) where {e1, e2} =
+    rotmat(EclipticCoords{e1}, FK5Coords{e1}) * rotmat(FK5Coords{e1}, FK4NoETerms{e2})
+@generated rotmat(::Type{<:FK4NoETerms{e1}}, ::Type{<:EclipticCoords{e2}}) where {e1, e2} =
+    rotmat(FK4NoETerms{e1}, FK5Coords{2000}) * rotmat(FK5Coords{2000}, EclipticCoords{e2})
+
+# FK4Coords is FK4NoETerms with the E-terms folded in, so its frame transform
+# removes/adds the E-terms around a transform through FK4NoETerms. Because
+# these methods define the `frame_transform` primitive itself, every `convert`
+# — spherical or Cartesian, in either direction — works generically.
+frame_transform(::Type{TO}, ::Type{<:FK4Coords{e}}, v) where {TO <: AbstractSkyCoords, e} =
+    frame_transform(TO, FK4NoETerms{e}, remove_eterms(v, e))
+frame_transform(::Type{<:FK4Coords{e}}, ::Type{FROM}, v) where {e, FROM <: AbstractSkyCoords} =
+    add_eterms(frame_transform(FK4NoETerms{e}, FROM, v), e)
+# disambiguation for the FK4 -> FK4 pair; same-equinox is the identity
+frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where {e_to, e_from} =
+    add_eterms(rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, e_from), e_to)
+frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 
 # ------------------------------------------------------------------------------
 # Distance between coordinates

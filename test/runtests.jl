@@ -1,4 +1,5 @@
 using AstroAngles
+using Astrometry
 using Accessors
 using Unitful
 using DynamicQuantities: @us_str, uconvert
@@ -242,7 +243,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
 end
 
 @testset "equality" begin
-    @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
+    @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}, AltAzCoords]
         c1 = T(1.0, 2.0)
         c2 = T(1.0, 2.001)
         c3 = T{Float32}(1.0, 2.0)
@@ -270,6 +271,75 @@ end
         @test coord_out == OUT_SYS(coord_in)
         @test coord_out == coord_in |> OUT_SYS
     end
+end
+
+@testset "AltAz" begin
+    # construction, promotion, and azimuth normalization
+    @test AltAzCoords(0.5, 1) === AltAzCoords{Float64}(0.5, 1.0)
+    @test AltAzCoords(0.5f0, 1.0f0) === AltAzCoords{Float32}(0.5, 1.0)
+    @test AltAzCoords(0.3, 2π + 0.1).az ≈ 0.1
+    @test convert(AltAzCoords{Float32}, AltAzCoords(0.3, 0.4)) === AltAzCoords{Float32}(0.3, 0.4)
+
+    @test Observer(1, 2) === Observer{Float64}(1.0, 2.0, 0.0)
+    @test Observer(1.0f0, 2.0f0, 3.0f0) === Observer{Float32}(1.0, 2.0, 3.0)
+
+    # conversions without an observer location and time are undefined
+    @test_throws ArgumentError convert(AltAzCoords, ICRSCoords(1, 2))
+    @test_throws ArgumentError convert(ICRSCoords, AltAzCoords(1, 2))
+    @test_throws ArgumentError AltAzCoords(ICRSCoords(1, 2))
+    @test_throws ArgumentError GalCoords(AltAzCoords(1, 2))
+    @test_throws ArgumentError convert(EclipticCoords{2000}, AltAzCoords(1, 2))
+    @test_throws ArgumentError convert(AltAzCoords, EclipticCoords{2000}(1, 2))
+
+    # cartesian representations work within the horizontal frame, but changing
+    # the frame still requires an observer location and time
+    cc = convert(CartesianCoords{AltAzCoords}, AltAzCoords(0.3, 1.2))
+    @test vec(cc) == vec(cartesian(AltAzCoords(0.3, 1.2)))
+    @test convert(AltAzCoords{Float64}, cc) ≈ AltAzCoords(0.3, 1.2)
+    @test_throws ArgumentError convert(CartesianCoords{ICRSCoords}, AltAzCoords(0.3, 1.2))
+    @test_throws ArgumentError convert(AltAzCoords{Float64}, cartesian(ICRSCoords(1, 2)))
+
+    # M13 observed from Mount Wilson at 2021-11-08T04:00 UTC.
+    # Reference values are cross-checked against astropy (see astropy.jl for a
+    # comparison with identical Earth orientation parameters).
+    mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742)
+    jd = 2459526.5 + 4 / 24
+    m13 = ICRSCoords(deg2rad(250.423475), deg2rad(36.4613194))
+    altaz = AltAzCoords(m13, mt_wilson, jd)
+    @test rad2deg(altaz.alt) ≈ 13.357744229945306  rtol = 1.0e-9
+    @test rad2deg(altaz.az) ≈ 305.2066098441702  rtol = 1.0e-9
+
+    # round trips through every celestial frame
+    @test ICRSCoords(altaz, mt_wilson, jd) ≈ m13  atol = 1.0e-9
+    for T in (ICRSCoords, GalCoords, SuperGalCoords, FK5Coords{2000}, EclipticCoords{2000})
+        back = T(altaz, mt_wilson, jd)
+        @test back isa T
+        @test AltAzCoords(back, mt_wilson, jd) ≈ altaz  atol = 1.0e-9
+    end
+
+    # refraction lifts the apparent altitude and leaves the azimuth unchanged
+    refr = AltAzCoords(m13, mt_wilson, jd; pressure = 820, temperature = 10, relative_humidity = 0.4)
+    @test refr.alt > altaz.alt
+    @test refr.az ≈ altaz.az
+    @test ICRSCoords(refr, mt_wilson, jd; pressure = 820, temperature = 10, relative_humidity = 0.4) ≈ m13  atol = 1.0e-7
+
+    # Earth orientation parameters shift the result
+    @test separation(AltAzCoords(m13, mt_wilson, jd; dut1 = 0.5), altaz) > 0
+
+    # converting between two horizontal frames is ambiguous
+    @test_throws ArgumentError AltAzCoords(altaz, mt_wilson, jd)
+    @test_throws ArgumentError AltAzCoords{Float64}(altaz, mt_wilson, jd)
+
+    # angles between simultaneous observations match the celestial frame
+    # (up to differential aberration)
+    c2 = ICRSCoords(deg2rad(250.0), deg2rad(36.0))
+    altaz2 = AltAzCoords(c2, mt_wilson, jd)
+    @test separation(altaz, altaz2) ≈ separation(m13, c2)  atol = 1.0e-6
+
+    # offset and cartesian round trips preserve the (alt, az) field order
+    sep, pa = offset(altaz, altaz2)
+    @test offset(altaz, sep, pa) ≈ altaz2
+    @test spherical(cartesian(altaz)) ≈ altaz
 end
 
 VERSION >= v"1.9" && @testset "plotting with Makie" begin

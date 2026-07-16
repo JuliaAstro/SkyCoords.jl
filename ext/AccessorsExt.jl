@@ -12,6 +12,8 @@ set(x::ICRSCoords, ::typeof(lon), v) = @set x.ra = v
 set(x::ICRSCoords, ::typeof(lat), v) = @set x.dec = v
 set(x::FK5Coords, ::typeof(lon), v) = @set x.ra = v
 set(x::FK5Coords, ::typeof(lat), v) = @set x.dec = v
+set(x::AltAzCoords, ::typeof(lon), v) = @set x.az = v
+set(x::AltAzCoords, ::typeof(lat), v) = @set x.alt = v
 
 set(x::CartesianCoords, ::typeof(vec), v) = @set x.vec = v
 

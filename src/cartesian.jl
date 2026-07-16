@@ -46,6 +46,11 @@ Returns the spherical representation of the coordinate `c`. Coordinate arguments
 """
 spherical(c::AbstractSkyCoords) = c
 spherical(c::CartesianCoords{T}) where {T <: AbstractSkyCoords} = T(cart2coords(vec(c))...)
+# AltAzCoords is constructed as (alt, az), i.e. (lat, lon) rather than (lon, lat)
+function spherical(c::CartesianCoords{T}) where {T <: AltAzCoords}
+    az, alt = cart2coords(vec(c))
+    return T(alt, az)
+end
 
 Base.convert(::Type{<:T}, c::CartesianCoords{S}) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
     spherical(convert(CartesianCoords{T}, c))

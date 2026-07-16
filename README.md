@@ -18,7 +18,7 @@ julia> Pkg.add("SkyCoords")
 ## Usage
 
 
-There are currently five supported coordinate systems. The following
+There are currently six supported coordinate systems. The following
 immutable types are used to represent coordinates in each system:
 
 - `ICRSCoords`: ICRS coordinates system
@@ -26,6 +26,7 @@ immutable types are used to represent coordinates in each system:
 - `SuperGalCoords`: Super-Galactic coordinate system
 - `FK5Coords`: FK5 coordinates system (with arbitrary equinox)
 - `EclipticCoords`: Ecliptic coordinates system
+- `AltAzCoords`: Horizontal (altitude/azimuth) coordinates system, tied to an observer location and time (conversions require loading [Astrometry.jl](https://github.com/JuliaAstro/Astrometry.jl))
 
 ```julia
 julia> c1 = ICRSCoords(0, 0)  # inputs are ra, dec in radians

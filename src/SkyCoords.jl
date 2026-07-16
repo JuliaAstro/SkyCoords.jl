@@ -1,5 +1,5 @@
 module SkyCoords
-using AstroLib
+
 import ConstructionBase: constructorof
 using LinearAlgebra: I, norm
 using Rotations: RotX, RotXYZ, RotZYZ
@@ -13,6 +13,7 @@ export AbstractSkyCoords,
     AltAzCoords,
     EclipticCoords,
     CartesianCoords,
+    Observer,
     separation,
     position_angle,
     offset,
@@ -115,47 +116,6 @@ function ecliptic_obliquity(y)
     return deg2rad(obl / 3600)
 end
 
-# AltAz --> ICRS
-
-# Conversion functions
-# FIXME these should be matrix operations?
-function AltAzCoords(icrs::ICRSCoords, jd::AbstractFloat, location::Observatory)
-    hour_angle = 360 * ct2lst(location.longitude, jd) / 24 - rad2deg(icrs.ra)
-    if hour_angle < 0
-        hour_angle = (hour_angle + 360) % 360
-    end
-    alt = asin(
-        sin(icrs.dec) * sind(location.latitude) +
-            cos(icrs.dec) * cosd(location.latitude) * cosd(hour_angle)
-    )
-    a = acos(
-        (sin(icrs.dec) - sin(alt) * sind(location.latitude)) /
-            (cos(alt) * cosd(location.latitude))
-    )
-    if sind(hour_angle) <= 0
-        az = a
-    else
-        az = 2π - a
-    end
-    return AltAzCoords(alt, az)
-end
-
-AltAzCoords(icrs::ICRSCoords, jd::T, lat::T, long::T) where {T <: AbstractFloat} = AltAzCoords(icrs, jd, Observatory("", lat, long, 0, 0))
-
-# This isn't working yet
-function ICRSCoords(altaz::AltAzCoords, time, location)
-    dec = asind(
-        sin(altaz.alt) * sind(location.lat) +
-            cos(altaz.alt) * cosd(location.lat) * cos(altaz.az)
-    )
-    hour_angle = acosd(
-        (sin(altaz.alt) - sind(location.lat) * sind(dec)) /
-            (cosd(location.lat) * cos(dec))
-    )
-    ra = local_sidereal_time(location, time) - hour_angle
-    return ICRSCoords(dec |> deg2rad, ra |> deg2rad)
-end
-
 # -----------------------------------------------------------------------------
 # Type-dependent methods
 
@@ -165,6 +125,8 @@ lon(c::SuperGalCoords) = c.l
 lat(c::SuperGalCoords) = c.b
 lat(c::EclipticCoords) = c.lat
 lon(c::EclipticCoords) = c.lon
+lon(c::AltAzCoords) = c.az
+lat(c::AltAzCoords) = c.alt
 lon(c::AbstractSkyCoords) = c.ra
 lat(c::AbstractSkyCoords) = c.dec
 
@@ -182,6 +144,13 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:ICRSCoords}) = I
 rotmat(::Type{<:GalCoords}, ::Type{<:GalCoords}) = I
 rotmat(::Type{<:FK5Coords{e}}, ::Type{<:FK5Coords{e}}) where {e} = I
 rotmat(::Type{<:SuperGalCoords}, ::Type{<:SuperGalCoords}) = I
+# Horizontal coordinates only support the identity "rotation"; any other conversion
+# depends on the observer location and time (see AltAzCoords).
+const ALTAZ_TO_ERROR = "Converting to horizontal coordinates requires an observer location and time. Load Astrometry.jl and use `AltAzCoords(c, observer, jd)` instead."
+const ALTAZ_FROM_ERROR = "Converting from horizontal coordinates requires an observer location and time. Load Astrometry.jl and use a coordinate constructor such as `ICRSCoords(c, observer, jd)` instead."
+rotmat(::Type{<:AltAzCoords}, ::Type{<:AltAzCoords}) = I
+rotmat(::Type{<:AltAzCoords}, ::Type{<:AbstractSkyCoords}) = throw(ArgumentError(ALTAZ_TO_ERROR))
+rotmat(::Type{<:AbstractSkyCoords}, ::Type{<:AltAzCoords}) = throw(ArgumentError(ALTAZ_FROM_ERROR))
 rotmat(::Type{<:GalCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_GAL
 rotmat(::Type{<:SuperGalCoords}, ::Type{<:GalCoords}) = GAL_TO_SUPERGAL
 rotmat(::Type{<:SuperGalCoords}, ::Type{<:ICRSCoords}) = ICRS_TO_SUPERGAL
@@ -194,6 +163,8 @@ rotmat(::Type{<:ICRSCoords}, ::Type{<:SuperGalCoords}) = SUPERGAL_TO_ICRS
 @generated rotmat(::Type{T}, ::Type{<:EclipticCoords{e}}) where {e, T <: AbstractSkyCoords} = rotmat(T, FK5Coords{e}) * rotmat(FK5Coords{e}, EclipticCoords{e})
 # disambiguation:
 @generated rotmat(::Type{<:EclipticCoords{e_to}}, ::Type{<:EclipticCoords{e_from}}) where {e_to, e_from} = rotmat(EclipticCoords{e_to}, FK5Coords{e_to}) * rotmat(FK5Coords{e_to}, EclipticCoords{e_from})
+rotmat(::Type{<:AltAzCoords}, ::Type{<:EclipticCoords{e}}) where {e} = throw(ArgumentError(ALTAZ_TO_ERROR))
+rotmat(::Type{<:EclipticCoords{e}}, ::Type{<:AltAzCoords}) where {e} = throw(ArgumentError(ALTAZ_FROM_ERROR))
 
 @generated rotmat(::Type{<:FK5Coords{e1}}, ::Type{<:ICRSCoords}) where {e1} =
     precess_from_j2000(e1) * ICRS_TO_FK5J2000
@@ -295,6 +266,12 @@ julia> offset(c1, c2) .|> rad2deg
 """
 offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = T(_offset(lon(c), lat(c), sep, pa)...)
 
+# AltAzCoords is constructed as (alt, az), i.e. (lat, lon) rather than (lon, lat)
+function offset(c::T, sep, pa) where {T <: AltAzCoords}
+    az, alt = _offset(lon(c), lat(c), sep, pa)
+    return T(alt, az)
+end
+
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle
 
@@ -338,5 +315,15 @@ end
 
 # Stub to extend in NearestNeighbors extension
 function match end
+
+function __init__()
+    return Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, _
+        if exc.f isa Type && exc.f <: AbstractSkyCoords &&
+                any(t -> t <: Observer, argtypes) &&
+                Base.get_extension(SkyCoords, :AstrometryExt) === nothing
+            print(io, "\nConversions to and from horizontal coordinates require the Astrometry.jl package to be loaded. Run `using Astrometry` and try again.")
+        end
+    end
+end
 
 end # module

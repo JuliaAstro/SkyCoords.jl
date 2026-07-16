@@ -47,7 +47,7 @@ Returns the spherical representation of the coordinate `c`. Coordinate arguments
 spherical(c::AbstractSkyCoords) = c
 spherical(c::CartesianCoords{T}) where {T <: AbstractSkyCoords} = T(cart2coords(vec(c))...)
 
-Base.convert(::Type{<:T}, c::CartesianCoords{S}) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
+Base.convert(::Type{T}, c::CartesianCoords{S}) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
     spherical(convert(CartesianCoords{T}, c))
 Base.convert(::Type{<:CartesianCoords{T}}, c::S) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
     convert(CartesianCoords{T}, cartesian(c))

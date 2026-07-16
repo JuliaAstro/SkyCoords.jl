@@ -52,7 +52,7 @@ function spherical(c::CartesianCoords{T}) where {T <: AltAzCoords}
     return T(alt, az)
 end
 
-Base.convert(::Type{<:T}, c::CartesianCoords{S}) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
+Base.convert(::Type{T}, c::CartesianCoords{S}) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
     spherical(convert(CartesianCoords{T}, c))
 Base.convert(::Type{<:CartesianCoords{T}}, c::S) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
     convert(CartesianCoords{T}, cartesian(c))

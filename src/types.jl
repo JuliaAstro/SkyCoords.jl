@@ -188,10 +188,19 @@ end
 # `Dict`/`Set` as required by the `hash` contract.
 Base.:(==)(a::AbstractSkyCoords, b::AbstractSkyCoords) = constructorof(typeof(a)) == constructorof(typeof(b)) && lonlat(a) == lonlat(b)
 Base.hash(c::AbstractSkyCoords, h::UInt) = hash(lonlat(c), hash(constructorof(typeof(c)), h))
-Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::FK4Coords{e}, b::FK4Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::FK4NoETerms{e}, b::FK4NoETerms{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+
+# Same-frame approximate equality compares (lon, lat), with the longitude
+# difference taken in (-π, π] so that nearly-equal points on either side of
+# the lon = 0 wrap still compare ≈, e.g., `ICRSCoords(eps(), 1) ≈ ICRSCoords(-eps(), 1)`.
+_isapprox_lonlat(a, b; kwargs...) = isapprox(
+    SVector(lon(a), lat(a)),
+    SVector(lon(a) + rem2pi(lon(b) - lon(a), RoundNearest), lat(b));
+    kwargs...
+)
+Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = _isapprox_lonlat(a, b; kwargs...)
+Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = _isapprox_lonlat(a, b; kwargs...)
+Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = _isapprox_lonlat(a, b; kwargs...)
+Base.isapprox(a::FK4Coords{e}, b::FK4Coords{e}; kwargs...) where {e} = _isapprox_lonlat(a, b; kwargs...)
+Base.isapprox(a::FK4NoETerms{e}, b::FK4NoETerms{e}; kwargs...) where {e} = _isapprox_lonlat(a, b; kwargs...)
+Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = _isapprox_lonlat(a, b; kwargs...)
+Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = _isapprox_lonlat(a, b; kwargs...)

@@ -375,6 +375,13 @@ end
         @test c1 ≈ c2  rtol = 1.0e-3
         @test c1 ≈ c4  rtol = 1.0e-3
 
+         # longitude comparison is periodic: points on either side of the
+         # lon = 0 wrap are still ≈
+         @test T(eps(), 1) ≈ T(0, 1)
+         @test T(eps(), 1) ≈ T(-eps(), 1)
+         @test !(T(π, 1) ≈ T(-π + 1.0e-3, 1))
+         @test T(π, 1) ≈ T(-π + 1.0e-3, 1)  atol = 1.0e-2
+
         # `==` implies equal hashes, so value-equal coordinates of different
         # element types collapse in a Set; c2 and c4 stay distinct because
         # 2.001 rounds to different values in Float32 and Float64

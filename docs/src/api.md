@@ -22,6 +22,7 @@ FK4NoETerms
 FK5Coords
 EclipticCoords
 CartesianCoords
+ProjectedCoords
 ```
 
 ## Conversion

@@ -13,8 +13,10 @@ export AbstractSkyCoords,
     FK4NoETerms,
     FK5Coords,
     EclipticCoords,
+    AltAzCoords,
     CartesianCoords,
     ProjectedCoords,
+    Observer,
     separation,
     position_angle,
     offset,
@@ -127,6 +129,8 @@ lon(c::SuperGalCoords) = c.l
 lat(c::SuperGalCoords) = c.b
 lat(c::EclipticCoords) = c.lat
 lon(c::EclipticCoords) = c.lon
+lon(c::AltAzCoords) = c.az
+lat(c::AltAzCoords) = c.alt
 lon(c::AbstractSkyCoords) = c.ra
 lat(c::AbstractSkyCoords) = c.dec
 
@@ -137,6 +141,8 @@ lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 # results through this hook, so a frame whose natural argument order is not
 # (lon, lat) only overrides it here.
 fromlonlat(::Type{T}, lon, lat) where {T <: AbstractSkyCoords} = T(lon, lat)
+# AltAzCoords is constructed as (alt, az), i.e. (lat, lon)
+fromlonlat(::Type{T}, lon, lat) where {T <: AltAzCoords} = T(lat, lon)
 
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
@@ -333,6 +339,33 @@ frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where
     add_eterms(rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, e_from), e_to)
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 
+# -----------------------------------------------------------------------------
+# Horizontal (alt/az) coordinates
+
+# AltAzCoords (see types.jl) is a well-defined sphere, so same-frame operations
+# — Cartesian representations included — work like in any other system. Its
+# relation to the celestial frames, however, depends on the observer location
+# and time, data that lives outside the type system. The `frame_transform`
+# primitive is therefore gated with an informative error for every mixed pair;
+# the actual transforms are provided by the Astrometry.jl package extension as
+# observer-aware constructors, e.g. `AltAzCoords(c, observer, jd)`.
+const ALTAZ_TO_ERROR = "Converting to horizontal coordinates requires an observer location and time. Load Astrometry.jl and use `AltAzCoords(c, observer, jd)` instead."
+const ALTAZ_FROM_ERROR = "Converting from horizontal coordinates requires an observer location and time. Load Astrometry.jl and use a coordinate constructor such as `ICRSCoords(c, observer, jd)` instead."
+
+frame_transform(::Type{<:AltAzCoords}, ::Type{<:AltAzCoords}, v) = v
+frame_transform(::Type{<:AltAzCoords}, ::Type{<:AbstractSkyCoords}, v) = throw(ArgumentError(ALTAZ_TO_ERROR))
+frame_transform(::Type{<:AbstractSkyCoords}, ::Type{<:AltAzCoords}, v) = throw(ArgumentError(ALTAZ_FROM_ERROR))
+# FK4Coords has generic `frame_transform` fallbacks of its own (see above);
+# without explicit rules for the FK4 <-> AltAz pairs, those fallbacks are
+# ambiguous with the gates here.
+frame_transform(::Type{<:AltAzCoords}, ::Type{<:FK4Coords{e}}, v) where {e} = throw(ArgumentError(ALTAZ_TO_ERROR))
+frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:AltAzCoords}, v) where {e} = throw(ArgumentError(ALTAZ_FROM_ERROR))
+# ProjectedCoords also has a generic delegation method (see projected.jl) that is
+# ambiguous with the gates above. Resolve by delegating to the origin frame, whose
+# own rule then decides: an AltAz origin passes through, a celestial origin throws.
+frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AltAzCoords, TC <: AbstractSkyCoords} =
+    frame_transform(T, TC, v)
+
 # ------------------------------------------------------------------------------
 # Distance between coordinates
 
@@ -461,5 +494,15 @@ end
 
 # Stub to extend in NearestNeighbors extension
 function match end
+
+function __init__()
+    return Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, _
+        if exc.f isa Type && exc.f <: AbstractSkyCoords &&
+                any(t -> t <: Observer, argtypes) &&
+                Base.get_extension(SkyCoords, :AstrometryExt) === nothing
+            print(io, "\nConversions to and from horizontal coordinates require the Astrometry.jl package to be loaded. Run `using Astrometry` and try again.")
+        end
+    end
+end
 
 end # module

@@ -11,6 +11,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [weakdeps]
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+Astrometry = "f1a567a2-b8c3-46a6-a8e4-0d50b742dea6"
 DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
@@ -18,6 +19,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [extensions]
 AccessorsExt = "Accessors"
+AstrometryExt = "Astrometry"
 DynamicQuantitiesExt = "DynamicQuantities"
 MakieExt = "Makie"
 NearestNeighborsExt = "NearestNeighbors"
@@ -25,6 +27,7 @@ UnitfulExt = "Unitful"
 
 [compat]
 Accessors = "0.1"
+Astrometry = "0.2.2"
 ConstructionBase = "1"
 DynamicQuantities = "1"
 LinearAlgebra = "1"
@@ -37,6 +40,7 @@ julia = "1.10"
 
 [extras]
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+Astrometry = "f1a567a2-b8c3-46a6-a8e4-0d50b742dea6"
 DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"

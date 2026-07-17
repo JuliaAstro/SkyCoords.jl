@@ -76,3 +76,41 @@ end
         test_against_astropy(IN_SYS, OUT_SYS; atol)
     end
 end
+
+@testset "AltAz" begin
+    apt = pyimport("astropy.time")
+    iers = pyimport("astropy.utils.iers")
+    iers.conf.auto_download = false
+
+    # Mount Wilson at 2021-11-08T04:00 UTC
+    observer = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742.0)
+    location = apc.EarthLocation.from_geodetic(
+        lon = rad2deg(observer.longitude), lat = rad2deg(observer.latitude),
+        height = observer.altitude,
+    )
+    jd = 2459526.5 + 4 / 24
+    time = apt.Time(jd, format = "jd", scale = "utc", location = location)
+
+    # Look up the Earth orientation parameters astropy uses, so that both
+    # libraries run with identical inputs.
+    eop = iers.earth_orientation_table.get()
+    dut1 = pyconvert(Float64, eop.ut1_utc(time).to_value("s"))
+    pm = eop.pm_xy(time)
+    xp = deg2rad(pyconvert(Float64, pm[0].to_value("deg")))
+    yp = deg2rad(pyconvert(Float64, pm[1].to_value("deg")))
+
+    frame = apc.AltAz(obstime = time, location = location, pressure = 0)
+    n = 100
+    icrs_list = apc.SkyCoord(lons[1:n], lats[1:n], unit = ("rad", "rad"), frame = apc.ICRS)
+    ap_altaz = icrs_list.transform_to(frame)
+    ap_alts = pyconvert(Vector, ap_altaz.alt.rad)
+    ap_azs = pyconvert(Vector, ap_altaz.az.rad)
+
+    atol = 1.0e-8 # radians, ~2 μas
+    for (lon, lat, ap_alt, ap_az) in zip(lons[1:n], lats[1:n], ap_alts, ap_azs)
+        altaz = AltAzCoords(ICRSCoords(lon, lat), observer, jd; dut1, xp, yp)
+        @test separation(altaz, AltAzCoords(ap_alt, ap_az)) < atol
+        icrs = ICRSCoords(AltAzCoords(ap_alt, ap_az), observer, jd; dut1, xp, yp)
+        @test separation(icrs, ICRSCoords(lon, lat)) < atol
+    end
+end

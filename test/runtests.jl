@@ -1,4 +1,5 @@
 using AstroAngles
+using Astrometry
 using Accessors
 using Unitful
 using DynamicQuantities: @us_str, uconvert
@@ -333,11 +334,12 @@ end
     @test setproperties(FK4NoETerms{1950}(1, 2), ra = 3) == FK4NoETerms{1950}(3, 2)
     @test setproperties(FK5Coords{2000}(1, 2), ra = 3) == FK5Coords{2000}(3, 2)
     @test setproperties(EclipticCoords{2000}(1, 2), lon = 3) == EclipticCoords{2000}(3, 2)
+    @test setproperties(AltAzCoords(1, 2), alt = 3) == AltAzCoords(3, 2)
     @test setproperties(cartesian(ICRSCoords(1, 2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 VERSION > v"1.9-DEV" && @testset "Accessors" begin
-    @testset for c in (ICRSCoords(1, 0.5), FK4Coords{1950}(1, 0.5), FK4NoETerms{1950}(1, 0.5), FK5Coords{2000}(1, 0.5), GalCoords(1, 0.5), EclipticCoords{2000}(1, 0.5))
+    @testset for c in (ICRSCoords(1, 0.5), FK4Coords{1950}(1, 0.5), FK4NoETerms{1950}(1, 0.5), FK5Coords{2000}(1, 0.5), GalCoords(1, 0.5), EclipticCoords{2000}(1, 0.5), AltAzCoords(0.5, 1))
         Accessors.test_getset_laws(lon, c, 1.5, 0.123)
         Accessors.test_getset_laws(lat, c, 1.5, 0.123)
 
@@ -365,6 +367,7 @@ VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test FK4NoETerms{1950}(1u"°", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
     @test EclipticCoords{2000}(1u"°", 0.5u"°") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+    @test AltAzCoords(0.5u"rad", 1u"°") === AltAzCoords(0.5, deg2rad(1))
 
     @test SkyCoords.lat(u"rad", ICRSCoords(1, 0.5)) === 0.5u"rad"
     @test SkyCoords.lon(u"°", ICRSCoords(1, 0.5)) === rad2deg(1)u"°"
@@ -390,6 +393,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test FK4NoETerms{1950}(1us"deg", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
     @test EclipticCoords{2000}(1us"deg", 0.5us"deg") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+    @test AltAzCoords(0.5us"rad", 1us"deg") === AltAzCoords(0.5, deg2rad(1))
 
     # Accessors return symbolic quantities in the requested units.
     # Symbolic `Quantity`s compare equal with `==` (not `===`, which is struct identity).
@@ -411,7 +415,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
 end
 
 @testset "equality" begin
-    @testset for T in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}]
+    @testset for T in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}, AltAzCoords]
         c1 = T(1.0, 2.0)
         c2 = T(1.0, 2.001)
         c3 = T{Float32}(1.0, 2.0)
@@ -428,11 +432,13 @@ end
         @test c1 ≈ c4  rtol = 1.0e-3
 
          # longitude comparison is periodic: points on either side of the
-         # lon = 0 wrap are still ≈
-         @test T(eps(), 1) ≈ T(0, 1)
-         @test T(eps(), 1) ≈ T(-eps(), 1)
-         @test !(T(π, 1) ≈ T(-π + 1.0e-3, 1))
-         @test T(π, 1) ≈ T(-π + 1.0e-3, 1)  atol = 1.0e-2
+         # lon = 0 wrap are still ≈. Built through `fromlonlat` so the wrap
+         # value lands in the longitude slot for every frame (AltAzCoords
+         # takes (alt, az), i.e. (lat, lon))
+         @test SkyCoords.fromlonlat(T, eps(), 1) ≈ SkyCoords.fromlonlat(T, 0, 1)
+         @test SkyCoords.fromlonlat(T, eps(), 1) ≈ SkyCoords.fromlonlat(T, -eps(), 1)
+         @test !(SkyCoords.fromlonlat(T, π, 1) ≈ SkyCoords.fromlonlat(T, -π + 1.0e-3, 1))
+         @test SkyCoords.fromlonlat(T, π, 1) ≈ SkyCoords.fromlonlat(T, -π + 1.0e-3, 1)  atol = 1.0e-2
 
         # `==` implies equal hashes, so value-equal coordinates of different
         # element types collapse in a Set; c2 and c4 stay distinct because
@@ -464,6 +470,110 @@ end
         @test coord_out == OUT_SYS(coord_in)
         @test coord_out == coord_in |> OUT_SYS
     end
+end
+
+@testset "AltAz" begin
+    # construction, promotion, and azimuth normalization
+    @test AltAzCoords(0.5, 1) === AltAzCoords{Float64}(0.5, 1.0)
+    @test AltAzCoords(0.5f0, 1.0f0) === AltAzCoords{Float32}(0.5, 1.0)
+    @test AltAzCoords(0.3, 2π + 0.1).az ≈ 0.1
+    @test SkyCoords.lon(AltAzCoords(0.3, 1.2)) == 1.2
+    @test SkyCoords.lat(AltAzCoords(0.3, 1.2)) == 0.3
+
+    @test Observer(1, 2) === Observer{Float64}(1.0, 2.0, 0.0)
+    @test Observer(1.0f0, 2.0f0, 3.0f0) === Observer{Float32}(1.0, 2.0, 3.0)
+
+    # element-type-only conversion stays within the frame
+    @test convert(AltAzCoords, AltAzCoords(0.3, 0.4)) === AltAzCoords(0.3, 0.4)
+    @test @inferred(convert(AltAzCoords{Float32}, AltAzCoords(0.3, 0.4))) isa AltAzCoords{Float32}
+    @test convert(AltAzCoords{Float32}, AltAzCoords(0.3, 0.4)) ≈ AltAzCoords{Float32}(0.3, 0.4)
+
+    # changing the frame without an observer location and time is undefined,
+    # whichever way the conversion is spelled
+    @test_throws ArgumentError convert(AltAzCoords, ICRSCoords(1, 2))
+    @test_throws ArgumentError convert(ICRSCoords, AltAzCoords(1, 2))
+    @test_throws ArgumentError AltAzCoords(ICRSCoords(1, 2))
+    @test_throws ArgumentError GalCoords(AltAzCoords(1, 2))
+    @test_throws ArgumentError convert(EclipticCoords{2000}, AltAzCoords(1, 2))
+    @test_throws ArgumentError convert(AltAzCoords, EclipticCoords{2000}(1, 2))
+    # ProjectedCoords delegates to its origin frame, so a projection around a
+    # celestial origin still requires an observer, while one around an AltAz
+    # origin converts through freely
+    @test_throws ArgumentError convert(AltAzCoords, project(ICRSCoords(1.1, 0.2), ICRSCoords(1.15, 0.25)))
+    paz = project(AltAzCoords(0.3, 1.2), AltAzCoords(0.35, 1.25))
+    @test convert(AltAzCoords, paz) ≈ AltAzCoords(0.35, 1.25)
+    @test_throws ArgumentError convert(ICRSCoords, paz)
+
+    # azimuth comparison is periodic: nearly-north headings are ≈
+    @test AltAzCoords(0.3, eps()) ≈ AltAzCoords(0.3, -eps())
+    @test !(AltAzCoords(0.3, eps()) ≈ AltAzCoords(0.3, π))
+
+    # FK4 pairs exercise the `frame_transform` disambiguation methods
+    @test_throws ArgumentError convert(FK4Coords{1950}, AltAzCoords(1, 2))
+    @test_throws ArgumentError convert(AltAzCoords, FK4Coords{1950}(1, 2))
+    @test_throws ArgumentError convert(FK4NoETerms{1950}, AltAzCoords(1, 2))
+    @test_throws ArgumentError convert(AltAzCoords, FK4NoETerms{1950}(1, 2))
+
+    # Cartesian representations work within the horizontal frame, but changing
+    # the frame still requires an observer location and time
+    cc = @inferred convert(CartesianCoords{AltAzCoords}, AltAzCoords(0.3, 1.2))
+    @test cc isa CartesianCoords{AltAzCoords, Float64}
+    @test vec(cc) == vec(cartesian(AltAzCoords(0.3, 1.2)))
+    @test convert(AltAzCoords{Float64}, cc) ≈ AltAzCoords(0.3, 1.2)
+    @test CartesianCoords{AltAzCoords{Float32}}(AltAzCoords(0.3, 1.2)) isa CartesianCoords{AltAzCoords{Float32}, Float32}
+    @test_throws ArgumentError convert(CartesianCoords{ICRSCoords}, AltAzCoords(0.3, 1.2))
+    @test_throws ArgumentError convert(CartesianCoords{ICRSCoords}, cc)
+    @test_throws ArgumentError convert(AltAzCoords{Float64}, cartesian(ICRSCoords(1, 2)))
+
+    # spherical/cartesian round trips and offset preserve the (alt, az)
+    # argument order through the `fromlonlat` hook
+    altaz = AltAzCoords(0.3, 1.2)
+    @test @inferred(spherical(cartesian(altaz))) isa AltAzCoords{Float64}
+    @test spherical(cartesian(altaz)) ≈ altaz
+    altaz2 = AltAzCoords(0.25, 1.15)
+    sep, pa = offset(altaz, altaz2)
+    @test @inferred(offset(altaz, sep, pa)) isa AltAzCoords{Float64}
+    @test offset(altaz, sep, pa) ≈ altaz2
+
+    # M13 observed from Mount Wilson at 2021-11-08T04:00 UTC.
+    # Reference values are cross-checked against astropy (see astropy.jl for a
+    # comparison with identical Earth orientation parameters).
+    mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742)
+    jd = 2459526.5 + 4 / 24
+    m13 = ICRSCoords(deg2rad(250.423475), deg2rad(36.4613194))
+    obs = AltAzCoords(m13, mt_wilson, jd)
+    @test rad2deg(obs.alt) ≈ 13.357744229945306  rtol = 1.0e-9
+    @test rad2deg(obs.az) ≈ 305.2066098441702  rtol = 1.0e-9
+
+    # round trips through every celestial frame, including the non-rotational
+    # FK4Coords (the extension converts through ICRS with `frame_transform`)
+    @test ICRSCoords(obs, mt_wilson, jd) ≈ m13  atol = 1.0e-9
+    for T in (ICRSCoords, GalCoords, SuperGalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000})
+        back = T(obs, mt_wilson, jd)
+        @test back isa T
+        @test AltAzCoords(back, mt_wilson, jd) ≈ obs  atol = 1.0e-9
+    end
+    # Cartesian input converts through ICRS inside the extension as well
+    @test AltAzCoords(cartesian(m13), mt_wilson, jd) ≈ obs  atol = 1.0e-12
+
+    # refraction lifts the apparent altitude and leaves the azimuth unchanged
+    refr = AltAzCoords(m13, mt_wilson, jd; pressure = 820, temperature = 10, relative_humidity = 0.4)
+    @test refr.alt > obs.alt
+    @test refr.az ≈ obs.az
+    @test ICRSCoords(refr, mt_wilson, jd; pressure = 820, temperature = 10, relative_humidity = 0.4) ≈ m13  atol = 1.0e-7
+
+    # Earth orientation parameters shift the result
+    @test separation(AltAzCoords(m13, mt_wilson, jd; dut1 = 0.5), obs) > 0
+
+    # converting between two horizontal frames is ambiguous
+    @test_throws ArgumentError AltAzCoords(obs, mt_wilson, jd)
+    @test_throws ArgumentError AltAzCoords{Float64}(obs, mt_wilson, jd)
+
+    # angles between simultaneous observations match the celestial frame
+    # (up to differential aberration)
+    c2 = ICRSCoords(deg2rad(250.0), deg2rad(36.0))
+    obs2 = AltAzCoords(c2, mt_wilson, jd)
+    @test separation(obs, obs2) ≈ separation(m13, c2)  atol = 1.0e-6
 end
 
 VERSION >= v"1.9" && @testset "plotting with Makie" begin

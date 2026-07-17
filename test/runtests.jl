@@ -177,6 +177,38 @@ end
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
+
+    # FK4Coords's E-terms correction is not a rotation, but `frame_transform`
+    # doesn't require one: all four Cartesian/spherical directions must agree
+    # with converting spherically and wrapping/unwrapping around that, not
+    # just avoid throwing.
+    fk4 = FK4Coords{1950}(0.4, -0.1)
+    other = ICRSCoords(0.2, 0.3)
+    @test convert(FK4Coords{1975}, cartesian(other)) ≈ convert(FK4Coords{1975}, other)
+    @test convert(CartesianCoords{ICRSCoords}, fk4) ≈ cartesian(convert(ICRSCoords, fk4))
+    @test convert(CartesianCoords{ICRSCoords}, cartesian(fk4)) ≈ cartesian(convert(ICRSCoords, fk4))
+    @test convert(CartesianCoords{FK4Coords{1950}}, cartesian(other)) ≈ cartesian(convert(FK4Coords{1950}, other))
+    @test convert(CartesianCoords{FK4Coords{1975}}, cartesian(fk4)) ≈ cartesian(convert(FK4Coords{1975}, fk4))
+
+    # a target that doesn't fully specify a frame (a required equinox is
+    # missing) raises a clear error instead of a confusing `rotmat`
+    # MethodError, regardless of source and pathway
+    @test_throws ArgumentError convert(FK4Coords, other)
+    @test_throws ArgumentError convert(FK4NoETerms, other)
+    @test_throws ArgumentError convert(FK5Coords, other)
+    @test_throws ArgumentError convert(EclipticCoords, other)
+    @test_throws ArgumentError convert(FK4NoETerms, fk4)
+    @test_throws ArgumentError convert(FK4Coords, cartesian(other))
+    @test_throws ArgumentError convert(FK4NoETerms, cartesian(other))
+    @test_throws ArgumentError convert(CartesianCoords{FK4Coords}, cartesian(other))
+    @test_throws ArgumentError convert(CartesianCoords{FK4NoETerms}, cartesian(other))
+    @test_throws ArgumentError convert(CartesianCoords{FK5Coords}, other)
+    @test_throws ArgumentError CartesianCoords{FK4Coords}(1, 0, 0)
+
+    # an instance that already matches a bare/partial target converts by
+    # identity, following the usual Base convention (like `convert(Integer, 3)`)
+    @test convert(FK4Coords, fk4) === fk4
+    @test convert(FK5Coords, FK5Coords{2000}(1, 2)) === FK5Coords{2000}(1, 2)
 end
 
 @testset "CartesianCoords type parameters ($CT, $TF)" for TF in (Float32, Float64), CT in (ICRSCoords, GalCoords, FK5Coords{2000}, FK4Coords{1950}, FK4NoETerms{1950})

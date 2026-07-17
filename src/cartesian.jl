@@ -24,6 +24,7 @@ struct CartesianCoords{TC <: AbstractSkyCoords, TF <: Real} <: AbstractSkyCoords
     vec::SVector{3, TF}
 
     function CartesianCoords{TC, TF}(vec) where {TC <: AbstractSkyCoords, TF <: Real}
+        _checkframe(TC)
         TCF = _eltype(TC)
         if !(TCF === TF || TCF === nothing)
             throw(ArgumentError("Element type $TF conflicts with the frame tag $TC. Use the element-type-free tag $(constructorof(TC)) or the matching element type $TCF"))

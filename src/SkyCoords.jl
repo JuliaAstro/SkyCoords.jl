@@ -140,8 +140,25 @@ coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 # multiplication by the `rotmat` rotation matrix below. Systems whose transform
 # is not a rotation (FK4Coords with its position-dependent E-terms) override
 # `frame_transform` directly instead of providing a `rotmat`.
-frame_transform(::Type{T}, ::Type{S}, v) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords} =
-    rotmat(T, S) * v
+function frame_transform(::Type{T}, ::Type{S}, v) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords}
+    _checkframe(T)
+    return rotmat(T, S) * v
+end
+
+# A type names a coordinate frame when supplying an element type makes it
+# concrete: `ICRSCoords`, `FK5Coords{2000}`, and `ICRSCoords{Float32}` all do;
+# a bare `FK5Coords` or `FK4Coords` (missing its equinox) does not — it
+# satisfies no `T <: FK5Coords{e}` for any single `e`, so it would silently
+# fall past every `rotmat`/`frame_transform` method and fail deep inside
+# `rotmat` with a confusing `MethodError`. Check before the lookup instead.
+# Both checks fold away at compile time on the specialized (valid) paths.
+_isframe(::Type{TC}) where {TC <: AbstractSkyCoords} =
+    isconcretetype(TC) || (TC isa UnionAll && isconcretetype(TC{Float64}))
+_checkframe(::Type{TC}) where {TC <: AbstractSkyCoords} =
+    _isframe(TC) || throw(ArgumentError(
+        "$TC does not fully specify a coordinate system (a required equinox/epoch " *
+        "is missing); fully specify its type parameters, e.g. `$TC{1950}`",
+    ))
 
 # Rotation matrix between coordinate systems: `rotmat(to, from)`
 # Note that all of these return SMatrix{3,3}{Float64}, regardless of

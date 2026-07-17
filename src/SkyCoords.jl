@@ -132,6 +132,12 @@ lat(c::AbstractSkyCoords) = c.dec
 
 lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 
+# Inverse of `lonlat`: construct a coordinate of type `T` from (lon, lat)
+# angles. The generic machinery (`convert`, `spherical`, `offset`) builds
+# results through this hook, so a frame whose natural argument order is not
+# (lon, lat) only overrides it here.
+fromlonlat(::Type{T}, lon, lat) where {T <: AbstractSkyCoords} = T(lon, lat)
+
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
 
@@ -410,7 +416,7 @@ julia> offset(c1, c2) .|> rad2deg
 ### See Also
 [`separation`](@ref), [`position_angle`](@ref)
 """
-offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = T(_offset(lon(c), lat(c), sep, pa)...)
+offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = fromlonlat(T, _offset(lon(c), lat(c), sep, pa)...)
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle

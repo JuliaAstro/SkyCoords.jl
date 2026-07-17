@@ -76,13 +76,13 @@ cartesian(c::AbstractSkyCoords) = CartesianCoords{constructorof(typeof(c))}(coor
 """
     spherical(c::AbstractSkyCoords)
 
-Returns the spherical representation of the coordinate `c`. Coordinate arguments that are already in spherical coordinates are simply returned. If `c` is a [`CartesianCoords`](@ref) object, the Cartesian representation is converted to spherical and returned as `TC(lon, lat)` where `c::CartesianCoords{TC}`.
+Returns the spherical representation of the coordinate `c`. Coordinate arguments that are already in spherical coordinates are simply returned. If `c` is a [`CartesianCoords`](@ref) object, the Cartesian representation is converted to spherical and returned as a coordinate of the tag frame `TC` where `c::CartesianCoords{TC}`.
 
 ### See also
 [`cartesian`](@ref)
 """
 spherical(c::AbstractSkyCoords) = c
-spherical(c::CartesianCoords{TC}) where {TC <: AbstractSkyCoords} = TC(cart2coords(vec(c))...)
+spherical(c::CartesianCoords{TC}) where {TC <: AbstractSkyCoords} = fromlonlat(TC, cart2coords(vec(c))...)
 
 # `convert` handles target type parameters uniformly: parameters that are
 # specified are honored exactly (the `convert` contract requires returning the
@@ -107,7 +107,7 @@ Base.convert(::Type{CartesianCoords{TC, TF}}, c::CartesianCoords{TC, TF}) where 
 # Spherical target from a Cartesian source: rotate, then change representation.
 function Base.convert(::Type{T}, c::CartesianCoords{SC}) where {T <: AbstractSkyCoords, SC <: AbstractSkyCoords}
     r = frame_transform(T, SC, vec(c))
-    return T(cart2coords(r)...)
+    return fromlonlat(T, cart2coords(r)...)
 end
 
 Base.:(==)(a::CartesianCoords, b::CartesianCoords) = constructorof(typeof(a)) == constructorof(typeof(b)) && vec(a) == vec(b)

@@ -178,7 +178,7 @@ Base.convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c
 function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords}
     r = frame_transform(T, S, coords2cart(c))
     lon, lat = cart2coords(r)
-    return T(lon, lat)
+    return fromlonlat(T, lon, lat)
 end
 
 # Two coordinates are equal when they are in the same frame, identified by the

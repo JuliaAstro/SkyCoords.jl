@@ -136,7 +136,13 @@ function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords, S <: Abstr
     return T(lon, lat)
 end
 
-Base.:(==)(a::T, b::T) where {T <: AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)
+# Two coordinates are equal when they are in the same frame, identified by the
+# element-type-free frame tag, `constructorof`, and their angles are equal.
+# Element types need not match, just like `1.0 == 1.0f0`. `hash` mirrors this
+# so that value-equal coordinates of different element types collide in
+# `Dict`/`Set` as required by the `hash` contract.
+Base.:(==)(a::AbstractSkyCoords, b::AbstractSkyCoords) = constructorof(typeof(a)) == constructorof(typeof(b)) && lonlat(a) == lonlat(b)
+Base.hash(c::AbstractSkyCoords, h::UInt) = hash(lonlat(c), hash(constructorof(typeof(c)), h))
 Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
 Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)

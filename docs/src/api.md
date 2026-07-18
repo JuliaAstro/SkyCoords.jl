@@ -54,10 +54,10 @@ ICRSCoords{Float64}(0.0, 0.0)
 
 ### Horizontal (alt/az) coordinates
 
-Conversions to and from [`AltAzCoords`](@ref) depend on where and when the observation takes place, so they are not available through `convert`. Instead, load [Astrometry.jl](https://github.com/JuliaAstro/Astrometry.jl) (a weak dependency providing the IAU SOFA algorithms) and pass an [`Observer`](@ref) along with a UTC Julian date:
+Conversions to and from [`AltAzCoords`](@ref) depend on where and when the observation takes place, so they are not available through `convert`. Instead, load [SOFA.jl](https://github.com/JuliaAstro/SOFA.jl) (a weak dependency providing the IAU SOFA algorithms) and pass an [`Observer`](@ref) along with a UTC Julian date:
 
 ```julia
-julia> using Astrometry
+julia> using SOFA
 
 julia> mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742);
 

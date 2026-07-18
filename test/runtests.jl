@@ -1,5 +1,5 @@
 using AstroAngles
-using Astrometry
+using SOFA
 using Accessors
 using Unitful
 using DynamicQuantities: @us_str, uconvert

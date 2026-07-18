@@ -1,14 +1,9 @@
-module AstrometryExt
+module SOFAExt
 
 using SkyCoords
 
-# The observed-place transforms currently come from Astrometry.jl's SOFA submodule:
-# as of Astrometry.jl 0.2.2 there are no native equivalents of the topocentric
-# chain (aberration + polar motion + Earth rotation + refraction). Once Astrometry.jl
-# grows native observed-place functions (or the SOFA submodule moves out), only this
-# import and the two `_icrs_to_observed`/`_observed_to_icrs` wrappers below need to
-# change — everything else in this extension is SOFA-agnostic.
-using Astrometry.SOFA: atco13, atoc13
+# The observed-place transforms currently come from SOFA.jl
+using SOFA: atco13, atoc13
 
 const ALTAZ_TO_ALTAZ_MSG = "Converting between two sets of horizontal coordinates requires the observer location and time of both; convert through `ICRSCoords` instead."
 
@@ -67,4 +62,4 @@ end
 SkyCoords.AltAzCoords(c::AltAzCoords, observer::Observer, jd::Real; kwargs...) =
     throw(ArgumentError(ALTAZ_TO_ALTAZ_MSG))
 
-end
+end # module

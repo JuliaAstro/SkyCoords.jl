@@ -1,6 +1,7 @@
 [deps]
 AstroAngles = "5c4adb95-c1fc-4c53-b4ea-2a94080c53d2"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterInterLinks = "d12716ef-a0f6-4df4-a9f1-a5a34e75c656"
 DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
@@ -9,6 +10,7 @@ SkyCoords = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 [compat]
 AstroAngles = "0.1, 0.2"
 Documenter = "1"
+DocumenterInterLinks = "1"
 DynamicQuantities = "1"
 NearestNeighbors = "0.4.9"
 Unitful = "1.15"

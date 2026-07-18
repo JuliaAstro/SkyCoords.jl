@@ -1,9 +1,9 @@
 # Observation planning with horizontal (alt/az) coordinates.
 #
-# Conversions to and from `AltAzCoords` are provided by the Astrometry.jl
-# package extension, so make sure Astrometry.jl is loaded.
+# Conversions to and from `AltAzCoords` are provided by the SOFA.jl
+# package extension, so make sure SOFA.jl is loaded.
 using SkyCoords
-using Astrometry
+using SOFA
 
 # First we create the instance of the object in the sky we want to observe
 m13 = ICRSCoords(deg2rad(250.423475), deg2rad(36.4613194))

@@ -181,10 +181,10 @@ constructorof(::Type{<:FK4NoETerms{e}}) where {e} = FK4NoETerms{e}
 
 This coordinate system uses the observer's local horizon as the fundamental plane to define an object in the local sky, making it useful for planning observations with azimuthal mount telescopes.
 
-Unlike the other coordinate systems, mapping to and from horizontal coordinates requires knowing where and when the observation takes place. Conversions are therefore not available through `convert`; instead, load [Astrometry.jl](https://github.com/JuliaAstro/Astrometry.jl) and construct coordinates with an [`Observer`](@ref) and a UTC Julian date:
+Unlike the other coordinate systems, mapping to and from horizontal coordinates requires knowing where and when the observation takes place. Conversions are therefore not available through `convert`; instead, load [SOFA.jl](https://github.com/JuliaAstro/SOFA.jl) and construct coordinates with an [`Observer`](@ref) and a UTC Julian date:
 
 ```julia
-using SkyCoords, Astrometry
+using SkyCoords, SOFA
 
 m13 = ICRSCoords(4.3713, 0.6364)
 mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742)
@@ -194,7 +194,7 @@ altaz = AltAzCoords(m13, mt_wilson, jd)
 icrs = ICRSCoords(altaz, mt_wilson, jd)
 ```
 
-These conversions are performed with the IAU SOFA algorithms ([`Astrometry.SOFA.atco13`](https://juliaastro.org/Astrometry/stable/api/#Astrometry.SOFA.atco13-NTuple{18,%20AbstractFloat}) and [`Astrometry.SOFA.atoc13`](https://juliaastro.org/Astrometry/stable/api/#Astrometry.SOFA.atoc13-Tuple{Char,%20Vararg{AbstractFloat,%2014}})) and accept the following keyword arguments:
+These conversions are performed with the IAU SOFA algorithms ([`SOFA.atco13`](@extref) and [`SOFA.atoc13`](@extref)) and accept the following keyword arguments:
 
 - `dut1 = 0` - UT1 - UTC in seconds (from IERS bulletins)
 - `xp = 0`, `yp = 0` - Polar motion coordinates in radians (from IERS bulletins)

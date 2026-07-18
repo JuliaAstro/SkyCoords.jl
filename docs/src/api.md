@@ -66,6 +66,7 @@ inrange
 separation
 position_angle
 offset
+SkyCoords.project
 cartesian
 spherical
 ```

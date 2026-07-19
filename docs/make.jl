@@ -2,6 +2,7 @@ using Documenter
 using DocumenterInterLinks
 using NearestNeighbors
 using SkyCoords
+using SOFA
 
 DocMeta.setdocmeta!(SkyCoords, :DocTestSetup, :(using SkyCoords); recursive = true)
 include("pages.jl")

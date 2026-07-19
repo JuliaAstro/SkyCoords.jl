@@ -1,12 +1,22 @@
 [deps]
 AstroAngles = "5c4adb95-c1fc-4c53-b4ea-2a94080c53d2"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+ComputePipeline = "95dc2771-c249-4cd0-9c9f-1f3b4330693c"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterInterLinks = "d12716ef-a0f6-4df4-a9f1-a5a34e75c656"
 DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 SkyCoords = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 SOFA = "ad3d3fd0-b5f2-51ee-b274-8cdbe62317e2"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[sources]
+ComputePipeline = {rev = "ff/breaking-0.25", subdir = "ComputePipeline",  url = "https://github.com/MakieOrg/Makie.jl"}
+Makie = {rev = "ff/breaking-0.25", subdir = "Makie",  url = "https://github.com/MakieOrg/Makie.jl"}
+CairoMakie = {rev = "ff/breaking-0.25", subdir = "CairoMakie",  url = "https://github.com/MakieOrg/Makie.jl"}
+SkyCoords = {path = ".."}
+SOFA = {rev = "sofa-v2-migration", url = "https://github.com/JuliaAstro/SOFA.jl"}
 
 [compat]
 AstroAngles = "0.1, 0.2"
@@ -17,7 +27,3 @@ NearestNeighbors = "0.4.9"
 SOFA = "2"
 Unitful = "1.15"
 julia = "1.9"
-
-[sources]
-SkyCoords = {path = ".."}
-SOFA = {rev = "sofa-v2-migration", url = "https://github.com/JuliaAstro/SOFA.jl"}

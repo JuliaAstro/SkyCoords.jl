@@ -5,7 +5,6 @@ on:
     branches: [master]
     tags: ["*"]
   pull_request:
-    branches: [master]
 
 concurrency:
   # Skip intermediate builds: always.
@@ -40,6 +39,7 @@ jobs:
       - uses: codecov/codecov-action@v7
         with:
           files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
     name: Documentation

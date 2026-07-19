@@ -574,6 +574,56 @@ end
     c2 = ICRSCoords(deg2rad(250.0), deg2rad(36.0))
     obs2 = AltAzCoords(c2, mt_wilson, jd)
     @test separation(obs, obs2) ≈ separation(m13, c2)  atol = 1.0e-6
+
+    # AltAzFrame bundles the same observing context as the (observer, jd; kwargs)
+    # shorthands, which construct one in place
+    frame = AltAzFrame(mt_wilson, jd)
+    @test AltAzCoords(m13, frame) == obs
+    @test ICRSCoords(obs, frame) == ICRSCoords(obs, mt_wilson, jd)
+    frame_refr = AltAzFrame(mt_wilson, jd; pressure = 820, temperature = 10, relative_humidity = 0.4)
+    @test AltAzCoords(m13, frame_refr) == refr
+    @test ICRSCoords(refr, frame_refr) ≈ m13  atol = 1.0e-7
+
+    # repeated conversions reuse the astrometry context cached on first use
+    @test frame.cache[] !== nothing
+    @test AltAzCoords(m13, frame) == obs
+
+    # frames compare by their observing circumstances; the internal cache
+    # (filled for `frame` above, still empty for a fresh frame) does not count
+    @test frame == AltAzFrame(mt_wilson, jd)
+    @test hash(frame) == hash(AltAzFrame(mt_wilson, jd))
+    @test AltAzFrame(mt_wilson, jd).cache[] === nothing
+    @test frame != frame_refr
+    @test frame != AltAzFrame(mt_wilson, jd; dut1 = 0.5)
+    @test frame != AltAzFrame(mt_wilson, jd + 1)
+
+    # printing shows the constructor form with only the non-default keywords
+    @test repr(frame) == "AltAzFrame($(repr(mt_wilson)), $jd)"
+    @test occursin("pressure = 820.0", repr(frame_refr))
+    @test !occursin("wavelength", repr(frame_refr))
+    @test !occursin("cache", repr(frame_refr))
+
+    # frames and observers broadcast as scalars
+    @test AltAzFrame.(mt_wilson, [jd, jd + 1]) == [frame, AltAzFrame(mt_wilson, jd + 1)]
+    @test AltAzCoords.([m13, c2], frame) == [obs, obs2]
+
+    # converting between two horizontal frames names both contexts explicitly
+    frame2 = AltAzFrame(mt_wilson, jd + 1 / 24)
+    obs_later = AltAzCoords(m13, frame2)
+    @test AltAzCoords(obs, frame, frame2) ≈ obs_later  atol = 1.0e-8
+    @test AltAzCoords(cartesian(obs), frame, frame2) ≈ obs_later  atol = 1.0e-8
+    # a single frame is ambiguous, whichever way it is spelled
+    @test_throws ArgumentError AltAzCoords(obs, frame)
+    @test_throws ArgumentError AltAzCoords{Float64}(obs, frame)
+    @test_throws ArgumentError AltAzCoords(cartesian(obs), frame)
+
+    # Cartesian horizontal input converts out through its spherical form
+    @test ICRSCoords(cartesian(obs), frame) ≈ ICRSCoords(obs, frame)
+
+    # eltype-parameterized celestial targets work (regression: these were
+    # ambiguous against the untyped two-argument inner constructors)
+    @test ICRSCoords{Float32}(obs, frame) isa ICRSCoords{Float32}
+    @test FK5Coords{2000, Float64}(obs, frame) == FK5Coords{2000}(obs, frame)
 end
 
 VERSION >= v"1.9" && @testset "plotting with Makie" begin

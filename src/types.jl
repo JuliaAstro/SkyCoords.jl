@@ -181,7 +181,7 @@ constructorof(::Type{<:FK4NoETerms{e}}) where {e} = FK4NoETerms{e}
 
 This coordinate system uses the observer's local horizon as the fundamental plane to define an object in the local sky, making it useful for planning observations with azimuthal mount telescopes.
 
-Unlike the other coordinate systems, mapping to and from horizontal coordinates requires knowing where and when the observation takes place. Conversions are therefore not available through `convert`. Instead, load [SOFA.jl](@extref SOFA :doc:`index`) and construct coordinates with an [`Observer`](@ref) and a UTC Julian date:
+Unlike the other coordinate systems, mapping to and from horizontal coordinates requires knowing where and when the observation takes place. Conversions are therefore not available through `convert`. Instead, load [SOFA.jl](@extref SOFA :doc:`index`), describe the observing context with an [`AltAzFrame`](@ref), and pass the frame to the coordinate constructors:
 
 ```jldoctest
 julia> using SkyCoords, SOFA
@@ -192,24 +192,19 @@ ICRSCoords{Float64}(4.3713, 0.6364)
 julia> mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742)
 Observer{Float64}(0.5973337005073033, -2.0604868456854497, 1742.0)
 
-julia> jd = 2459526.6667  # 2021-11-08T04:00 UTC
-2.4595266667e6
+julia> frame = AltAzFrame(mt_wilson, 2459526.6667)  # 2021-11-08T04:00 UTC
+AltAzFrame(Observer{Float64}(0.5973337005073033, -2.0604868456854497, 1742.0), 2.4595266667e6)
 
-julia> altaz = AltAzCoords(m13, mt_wilson, jd)
+julia> altaz = AltAzCoords(m13, frame)
 AltAzCoords{Float64}(0.23340717371373332, 5.326718442771835)
 
-julia> icrs = ICRSCoords(altaz, mt_wilson, jd)
+julia> icrs = ICRSCoords(altaz, frame)
 ICRSCoords{Float64}(4.371299999999999, 0.6364000000000003)
 ```
 
-These conversions are performed with the IAU SOFA algorithms ([`SOFA.atco13`](@extref) and [`SOFA.atoc13`](@extref)) and accept the following keyword arguments:
+`AltAzCoords(c, observer, jd; kwargs...)` and `ICRSCoords(c, observer, jd; kwargs...)` are shorthands that construct the [`AltAzFrame`](@ref) in place, and `AltAzCoords(c, from, to)` maps a coordinate between two horizontal frames. The transforms use the IAU SOFA observed-place algorithms in their two-stage form: the star-independent astrometry context ([`SOFA.apco13`](@extref)) is computed once per frame and cached there, and each coordinate is then transformed against it ([`SOFA.atciqz`](@extref)/[`SOFA.atioq`](@extref) in, [`SOFA.atoiq`](@extref)/[`SOFA.aticq`](@extref) out), so converting many coordinates against the same frame is cheap.
 
-- `dut1 = 0`: UT1 -- UTC in seconds (from IERS bulletins)
-- `xp = 0`, `yp = 0`: Polar motion coordinates in radians (from IERS bulletins)
-- `pressure = 0`: Atmospheric pressure at the observer in hPa. The default of `0` disables atmospheric refraction. Set to the ambient pressure (~1000 hPa at sea level) to include it.
-- `temperature = 0`: Ambient temperature at the observer in °C (used for refraction)
-- `relative_humidity = 0`: Relative humidity at the observer, 0-1 (used for refraction)
-- `wavelength = 0.55`: Observing wavelength in μm (used for refraction)
+The source is treated as a fixed point at infinity: proper motion, parallax, and radial velocity are assumed to be zero, matching astropy's behavior for position-only coordinates. The resulting error stays below an arcsecond for almost all stars (bounded by the parallax, plus the proper motion accumulated since the catalog epoch), but reaches arcminutes for the fastest-moving nearby stars. Solar-system objects are out of scope; their topocentric parallax alone (up to about a degree for the Moon) is not modeled.
 
 ### Coordinates
 - `alt`: Altitude (elevation) angle above the observer's local horizon in radians (-π/2, π/2)
@@ -228,7 +223,7 @@ AltAzCoords{F}(c::T) where {F, T <: AbstractSkyCoords} = convert(AltAzCoords{F},
 """
     Observer(latitude, longitude, altitude = 0)
 
-The geodetic (WGS84) location of an observer on Earth, used for conversions to and from [`AltAzCoords`](@ref).
+The geodetic (WGS84) location of an observer on Earth. Together with an observation time, it forms an [`AltAzFrame`](@ref) for conversions to and from [`AltAzCoords`](@ref).
 
 ### Coordinates
 - `latitude` - Geodetic latitude in radians (-π/2, π/2)
@@ -245,6 +240,87 @@ Observer(latitude::T, longitude::T, altitude::T) where {T <: Real} =
     Observer{float(T)}(latitude, longitude, altitude)
 Observer(latitude::Real, longitude::Real, altitude::Real = 0) =
     Observer(promote(latitude, longitude, altitude)...)
+
+"""
+    AltAzFrame(observer, jd; kwargs...)
+
+The observing context of a horizontal coordinate: an [`Observer`](@ref) location together with a UTC Julian date and optional Earth orientation and atmospheric parameters. Load [SOFA.jl](@extref SOFA :doc:`index`) and pass a frame to the coordinate constructors to convert into and out of the horizontal system it describes. See [`AltAzCoords`](@ref) for examples.
+
+### Parameters
+
+- `observer`: [`Observer`](@ref) location on Earth
+- `jd`: UTC Julian date of the observation
+- `dut1 = 0`: UT1 -- UTC in seconds (from IERS bulletins)
+- `xp = 0`, `yp = 0`: Polar motion coordinates in radians (from IERS bulletins)
+- `pressure = 0`: Atmospheric pressure at the observer in hPa. The default of `0` disables atmospheric refraction. Set to the ambient pressure (~1000 hPa at sea level) to include it.
+- `temperature = 0`: Ambient temperature at the observer in °C (used for refraction)
+- `relative_humidity = 0`: Relative humidity at the observer, 0-1 (used for refraction)
+- `wavelength = 0.55`: Observing wavelength in μm (used for refraction)
+
+All parameters are stored as `Float64`. Note the accuracy consequences of the defaults: `dut1 = 0` can misplace a coordinate by up to ~13″ of Earth rotation (|UT1 -- UTC| is kept below 0.9 s), `xp = yp = 0` by a few tenths of an arcsecond, and `pressure = 0` ignores refraction entirely, which amounts to ~1′ at 45° altitude and over half a degree at the horizon. With refraction enabled, the SOFA model is accurate to ~0.05″ (optical) above 20° altitude, degrading to arcminutes at the horizon.
+
+The first conversion against a frame computes SOFA's star-independent astrometry context ([`SOFA.apco13`](@extref)) and caches it within the frame, so converting many coordinates against the same frame, e.g., `AltAzCoords.(catalog, frame)`, performs the expensive per-time setup only once.
+"""
+struct AltAzFrame
+    observer::Observer{Float64}
+    jd::Float64
+    dut1::Float64
+    xp::Float64
+    yp::Float64
+    pressure::Float64
+    temperature::Float64
+    relative_humidity::Float64
+    wavelength::Float64
+    # Star-independent astrometry context, computed and read only by the
+    # SOFA.jl extension; `nothing` until first use. Untyped because the
+    # value's type belongs to the extension.
+    cache::Base.RefValue{Any}
+end
+
+function AltAzFrame(
+        observer::Observer, jd::Real;
+        dut1 = 0, xp = 0, yp = 0,
+        pressure = 0, temperature = 0, relative_humidity = 0, wavelength = 0.55,
+    )
+    return AltAzFrame(
+        Observer{Float64}(observer.latitude, observer.longitude, observer.altitude),
+        jd, dut1, xp, yp, pressure, temperature, relative_humidity, wavelength,
+        Ref{Any}(nothing),
+    )
+end
+
+# Every field except the astrometry cache, which is an internal memo rather
+# than part of the frame's value: frames describe the same observing context
+# whether or not it has been computed yet.
+_frame_fields(f::AltAzFrame) = (
+    f.observer, f.jd, f.dut1, f.xp, f.yp,
+    f.pressure, f.temperature, f.relative_humidity, f.wavelength,
+)
+Base.:(==)(a::AltAzFrame, b::AltAzFrame) = _frame_fields(a) == _frame_fields(b)
+Base.hash(f::AltAzFrame, h::UInt) = hash(_frame_fields(f), hash(AltAzFrame, h))
+
+# Print the constructor form, with only the non-default keywords and without
+# the internal cache
+function Base.show(io::IO, f::AltAzFrame)
+    print(io, "AltAzFrame(", f.observer, ", ", f.jd)
+    sep = "; "
+    for (name, default) in pairs((
+            dut1 = 0.0, xp = 0.0, yp = 0.0,
+            pressure = 0.0, temperature = 0.0, relative_humidity = 0.0, wavelength = 0.55,
+        ))
+        value = getfield(f, name)
+        if value != default
+            print(io, sep, name, " = ", value)
+            sep = ", "
+        end
+    end
+    return print(io, ")")
+end
+
+# Context objects are scalars under broadcasting, so `AltAzFrame.(observer, jds)`
+# and `AltAzCoords.(coords, frame)` work without a `Ref`
+Base.broadcastable(o::Observer) = Ref(o)
+Base.broadcastable(f::AltAzFrame) = Ref(f)
 
 # Scalar coordinate conversions
 Base.convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c

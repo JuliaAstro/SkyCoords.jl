@@ -28,7 +28,7 @@ immutable types are used to represent coordinates in each system:
 - `FK4NoETerms`: FK4 coordinates system without the E-terms of aberration (with arbitrary Besselian equinox)
 - `FK5Coords`: FK5 coordinates system (with arbitrary equinox)
 - `EclipticCoords`: Ecliptic coordinates system
-- `AltAzCoords`: Horizontal (altitude/azimuth) coordinates system, tied to an observer location and time (conversions require loading [SOFA.jl](https://github.com/JuliaAstro/SOFA.jl))
+- `AltAzCoords`: Horizontal (altitude/azimuth) coordinates system, tied to an observer location and time via an `AltAzFrame` (conversions require loading [SOFA.jl](https://github.com/JuliaAstro/SOFA.jl))
 
 ```julia
 julia> c1 = ICRSCoords(0, 0)  # inputs are ra, dec in radians

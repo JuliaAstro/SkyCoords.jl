@@ -21,9 +21,10 @@ FK4Coords
 FK4NoETerms
 FK5Coords
 EclipticCoords
-AltAzCoords
 CartesianCoords
 ProjectedCoords
+AltAzCoords
+AltAzFrame
 Observer
 ```
 

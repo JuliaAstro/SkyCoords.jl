@@ -13,9 +13,10 @@ export AbstractSkyCoords,
     FK4NoETerms,
     FK5Coords,
     EclipticCoords,
-    AltAzCoords,
     CartesianCoords,
     ProjectedCoords,
+    AltAzCoords,
+    AltAzFrame,
     Observer,
     separation,
     position_angle,
@@ -345,12 +346,13 @@ frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 # AltAzCoords (see types.jl) is a well-defined sphere, so same-frame operations,
 # Cartesian representations included, work like in any other system. Its
 # relation to the celestial frames, however, depends on the observer location
-# and time, data that lives outside the type system. The `frame_transform`
-# primitive is therefore gated with an informative error for every mixed pair.
-# The actual transforms are provided by the SOFA.jl package extension as
-# observer-aware constructors, e.g., `AltAzCoords(c, observer, jd)`.
-const ALTAZ_TO_ERROR = "Converting to horizontal coordinates requires an observer location and time. Load SOFA.jl and use `AltAzCoords(c, observer, jd)` instead."
-const ALTAZ_FROM_ERROR = "Converting from horizontal coordinates requires an observer location and time. Load SOFA.jl and use a coordinate constructor such as `ICRSCoords(c, observer, jd)` instead."
+# and time, runtime data that lives outside the type system.
+# The `frame_transform` primitive is therefore gated with an informative error
+# for every mixed pair. The actual transforms are provided by the SOFA.jl package
+# extension as frame-taking constructors, e.g., `AltAzCoords(c, frame)` with
+# an `AltAzFrame` describing the observing context.
+const ALTAZ_TO_ERROR = "Converting to horizontal coordinates requires an observer location and time. Load SOFA.jl and use `AltAzCoords(c, frame)` with an `AltAzFrame`, or the shorthand `AltAzCoords(c, observer, jd)`."
+const ALTAZ_FROM_ERROR = "Converting from horizontal coordinates requires an observer location and time. Load SOFA.jl and use a coordinate constructor such as `ICRSCoords(c, frame)` with an `AltAzFrame`, or the shorthand `ICRSCoords(c, observer, jd)`."
 
 frame_transform(::Type{<:AltAzCoords}, ::Type{<:AltAzCoords}, v) = v
 frame_transform(::Type{<:AltAzCoords}, ::Type{<:AbstractSkyCoords}, v) = throw(ArgumentError(ALTAZ_TO_ERROR))

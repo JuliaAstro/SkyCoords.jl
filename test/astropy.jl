@@ -107,10 +107,11 @@ end
     ap_azs = pyconvert(Vector, ap_altaz.az.rad)
 
     atol = 1.0e-8 # radians, ~2 μas
+    skycoords_frame = AltAzFrame(observer, jd; dut1, xp, yp)
     for (lon, lat, ap_alt, ap_az) in zip(lons[1:n], lats[1:n], ap_alts, ap_azs)
-        altaz = AltAzCoords(ICRSCoords(lon, lat), observer, jd; dut1, xp, yp)
+        altaz = AltAzCoords(ICRSCoords(lon, lat), skycoords_frame)
         @test separation(altaz, AltAzCoords(ap_alt, ap_az)) < atol
-        icrs = ICRSCoords(AltAzCoords(ap_alt, ap_az), observer, jd; dut1, xp, yp)
+        icrs = ICRSCoords(AltAzCoords(ap_alt, ap_az), skycoords_frame)
         @test separation(icrs, ICRSCoords(lon, lat)) < atol
     end
 end

@@ -181,31 +181,39 @@ constructorof(::Type{<:FK4NoETerms{e}}) where {e} = FK4NoETerms{e}
 
 This coordinate system uses the observer's local horizon as the fundamental plane to define an object in the local sky, making it useful for planning observations with azimuthal mount telescopes.
 
-Unlike the other coordinate systems, mapping to and from horizontal coordinates requires knowing where and when the observation takes place. Conversions are therefore not available through `convert`; instead, load [SOFA.jl](https://github.com/JuliaAstro/SOFA.jl) and construct coordinates with an [`Observer`](@ref) and a UTC Julian date:
+Unlike the other coordinate systems, mapping to and from horizontal coordinates requires knowing where and when the observation takes place. Conversions are therefore not available through `convert`. Instead, load [SOFA.jl](@extref SOFA :doc:`index`) and construct coordinates with an [`Observer`](@ref) and a UTC Julian date:
 
-```julia
-using SkyCoords, SOFA
+```jldoctest
+julia> using SkyCoords, SOFA
 
-m13 = ICRSCoords(4.3713, 0.6364)
-mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742)
-jd = 2459526.6667  # 2021-11-08T04:00 UTC
+julia> m13 = ICRSCoords(4.3713, 0.6364)
+ICRSCoords{Float64}(4.3713, 0.6364)
 
-altaz = AltAzCoords(m13, mt_wilson, jd)
-icrs = ICRSCoords(altaz, mt_wilson, jd)
+julia> mt_wilson = Observer(deg2rad(34.2247), deg2rad(-118.0572), 1742)
+Observer{Float64}(0.5973337005073033, -2.0604868456854497, 1742.0)
+
+julia> jd = 2459526.6667  # 2021-11-08T04:00 UTC
+2.4595266667e6
+
+julia> altaz = AltAzCoords(m13, mt_wilson, jd)
+AltAzCoords{Float64}(0.23340717371373332, 5.326718442771835)
+
+julia> icrs = ICRSCoords(altaz, mt_wilson, jd)
+ICRSCoords{Float64}(4.371299999999999, 0.6364000000000003)
 ```
 
 These conversions are performed with the IAU SOFA algorithms ([`SOFA.atco13`](@extref) and [`SOFA.atoc13`](@extref)) and accept the following keyword arguments:
 
-- `dut1 = 0` - UT1 - UTC in seconds (from IERS bulletins)
-- `xp = 0`, `yp = 0` - Polar motion coordinates in radians (from IERS bulletins)
-- `pressure = 0` - Atmospheric pressure at the observer in hPa. The default of `0` disables atmospheric refraction; set to the ambient pressure (~1000 hPa at sea level) to include it
-- `temperature = 0` - Ambient temperature at the observer in °C (used for refraction)
-- `relative_humidity = 0` - Relative humidity at the observer, 0-1 (used for refraction)
-- `wavelength = 0.55` - Observing wavelength in μm (used for refraction)
+- `dut1 = 0`: UT1 -- UTC in seconds (from IERS bulletins)
+- `xp = 0`, `yp = 0`: Polar motion coordinates in radians (from IERS bulletins)
+- `pressure = 0`: Atmospheric pressure at the observer in hPa. The default of `0` disables atmospheric refraction. Set to the ambient pressure (~1000 hPa at sea level) to include it.
+- `temperature = 0`: Ambient temperature at the observer in °C (used for refraction)
+- `relative_humidity = 0`: Relative humidity at the observer, 0-1 (used for refraction)
+- `wavelength = 0.55`: Observing wavelength in μm (used for refraction)
 
 ### Coordinates
-- `alt` - Altitude (elevation) angle above the observer's local horizon in radians (-π/2, π/2)
-- `az` - Azimuth angle of the object around the horizon, increasing eastward from true north in radians (0, 2π)
+- `alt`: Altitude (elevation) angle above the observer's local horizon in radians (-π/2, π/2)
+- `az`: Azimuth angle of the object around the horizon, increasing eastward from true north in radians (0, 2π)
 """
 struct AltAzCoords{T <: Real} <: AbstractSkyCoords
     alt::T

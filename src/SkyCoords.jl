@@ -342,21 +342,21 @@ frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 # -----------------------------------------------------------------------------
 # Horizontal (alt/az) coordinates
 
-# AltAzCoords (see types.jl) is a well-defined sphere, so same-frame operations
-# — Cartesian representations included — work like in any other system. Its
+# AltAzCoords (see types.jl) is a well-defined sphere, so same-frame operations,
+# Cartesian representations included, work like in any other system. Its
 # relation to the celestial frames, however, depends on the observer location
 # and time, data that lives outside the type system. The `frame_transform`
-# primitive is therefore gated with an informative error for every mixed pair;
-# the actual transforms are provided by the SOFA.jl package extension as
-# observer-aware constructors, e.g. `AltAzCoords(c, observer, jd)`.
+# primitive is therefore gated with an informative error for every mixed pair.
+# The actual transforms are provided by the SOFA.jl package extension as
+# observer-aware constructors, e.g., `AltAzCoords(c, observer, jd)`.
 const ALTAZ_TO_ERROR = "Converting to horizontal coordinates requires an observer location and time. Load SOFA.jl and use `AltAzCoords(c, observer, jd)` instead."
 const ALTAZ_FROM_ERROR = "Converting from horizontal coordinates requires an observer location and time. Load SOFA.jl and use a coordinate constructor such as `ICRSCoords(c, observer, jd)` instead."
 
 frame_transform(::Type{<:AltAzCoords}, ::Type{<:AltAzCoords}, v) = v
 frame_transform(::Type{<:AltAzCoords}, ::Type{<:AbstractSkyCoords}, v) = throw(ArgumentError(ALTAZ_TO_ERROR))
 frame_transform(::Type{<:AbstractSkyCoords}, ::Type{<:AltAzCoords}, v) = throw(ArgumentError(ALTAZ_FROM_ERROR))
-# FK4Coords has generic `frame_transform` fallbacks of its own (see above);
-# without explicit rules for the FK4 <-> AltAz pairs, those fallbacks are
+# FK4Coords has generic `frame_transform` fallbacks of its own (see above).
+# Without explicit rules for the FK4 <--> AltAz pairs, those fallbacks are
 # ambiguous with the gates here.
 frame_transform(::Type{<:AltAzCoords}, ::Type{<:FK4Coords{e}}, v) where {e} = throw(ArgumentError(ALTAZ_TO_ERROR))
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:AltAzCoords}, v) where {e} = throw(ArgumentError(ALTAZ_FROM_ERROR))
@@ -494,15 +494,5 @@ end
 
 # Stub to extend in NearestNeighbors extension
 function match end
-
-#function __init__()
-#    return Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, _
-#        if exc.f isa Type && exc.f <: AbstractSkyCoords &&
-#                any(t -> t <: Observer, argtypes) &&
-#                Base.get_extension(SkyCoords, :SOFAExt) === nothing
-#            print(io, "\nConversions to and from horizontal coordinates require the SOFA.jl package to be loaded. Run `using SOFA` and try again.")
-#        end
-#    end
-#end
 
 end # module

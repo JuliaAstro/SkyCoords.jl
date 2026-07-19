@@ -19,7 +19,7 @@ function _icrs_to_observed(ra, dec, observer, jd; dut1, xp, yp, pressure, temper
     return obs.azi, obs.zen
 end
 
-# observed (azimuth, zenith distance) --> ICRS (ra, dec), all in radians
+# Observed (azimuth, zenith distance) --> ICRS (ra, dec), all in radians
 function _observed_to_icrs(az, zen, observer, jd; dut1, xp, yp, pressure, temperature, relative_humidity, wavelength)
     return atoc13(
         'A', float(az), float(zen),

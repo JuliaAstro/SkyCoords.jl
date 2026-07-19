@@ -1,3 +1,5 @@
+using Revise
+Revise.revise()
 using Documenter
 using DocumenterInterLinks
 using NearestNeighbors
@@ -8,11 +10,17 @@ include("pages.jl")
 
 # TODO: replace with upstream when merged
 links = InterLinks(
+    "Julia" => "https://docs.julialang.org/en/v1/objects.inv",
+    "AstroTime" => "https://juliaastro.org/AstroTime/stable/",
     "SOFA" => "https://juliaastro.org/SOFA.jl/previews/PR38/",
 )
 
 makedocs(;
-    modules = [Base.get_extension(SkyCoords, :NearestNeighborsExt), SkyCoords],
+    modules = [
+        Base.get_extension(SkyCoords, :NearestNeighborsExt),
+        Base.get_extension(SkyCoords, :SOFAExt),
+        SkyCoords,
+    ],
     plugins = [links],
     sitename = "SkyCoords.jl",
     format = Documenter.HTML(

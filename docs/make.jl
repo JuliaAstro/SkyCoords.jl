@@ -1,5 +1,3 @@
-using Revise
-Revise.revise()
 using Documenter
 using DocumenterInterLinks
 using NearestNeighbors

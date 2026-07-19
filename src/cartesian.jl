@@ -1,6 +1,7 @@
 """
     CartesianCoords{TC <: AbstractSkyCoords, TF <: Real} <: AbstractSkyCoords
     CartesianCoords{TC}(x, y, z)
+    CartesianCoords{TC, TF}(x, y, z)
     CartesianCoords{TC}(vec::AbstractVector)
     CartesianCoords(c::AbstractSkyCoords)
 
@@ -18,7 +19,8 @@ A fully parameterized tag such as `CartesianCoords{ICRSCoords{Float16}}` is also
 Its element type then determines the element type of the stored vector,
 so `CartesianCoords{ICRSCoords{Float16}}(c)` holds `Float16` data.
 Combining a parameterized tag with a conflicting explicit `TF` throws an `ArgumentError`,
-so the frame tag and the data can never disagree.
+(e.g., `CartesianCoords{ICRSCoords{Float16}, Float64}(c)`) so the frame tag and the data
+can never disagree.
 """
 struct CartesianCoords{TC <: AbstractSkyCoords, TF <: Real} <: AbstractSkyCoords
     vec::SVector{3, TF}
@@ -64,7 +66,7 @@ coords2cart(c::CartesianCoords) = vec(c)
 
 Returns a Cartesian representation of the coordinate `c` projected onto the unit sphere as a [`CartesianCoords`](@ref).
 
-The result is tagged with the element-type-free frame of `c`, e.g.
+The result is tagged with the frame of `c` and the numeric type of the data `c` contains; e.g.
 `cartesian(ICRSCoords(0.1, 0.2)) isa CartesianCoords{ICRSCoords, Float64}`.
 
 ### See also

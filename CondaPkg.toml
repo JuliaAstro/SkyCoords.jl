@@ -1,2 +1,2 @@
-[deps]
+[dev.deps]
 astropy = ">=7"

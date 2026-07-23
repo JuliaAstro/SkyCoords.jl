@@ -3,7 +3,9 @@ module UnitfulExt
 using Unitful
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords}
+# The constructors below strip units positionally, so AltAzCoords fits in even
+# though its two angle arguments are (alt, az) rather than (lon, lat)
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords, AltAzCoords}
 
 (::Type{T})(lon::Quantity, lat) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
 (::Type{T})(lon, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))

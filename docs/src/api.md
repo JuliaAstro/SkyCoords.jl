@@ -23,6 +23,9 @@ FK5Coords
 EclipticCoords
 CartesianCoords
 ProjectedCoords
+AltAzCoords
+AltAzFrame
+Observer
 ```
 
 ## Conversion
@@ -49,6 +52,9 @@ ICRSCoords{Float64}(0.0, 0.0)
   julia> c1 |> GalCoords
   GalCoords{Float64}(1.6814027872278692, -1.0504884034813007)
   ```
+
+!!! note "Horizontal (alt/az) coordinates"
+    See the [`AltAzCoords`](@ref) docs for converting to and from this system, which take local observing conditions into account.
 
 ## Catalog Matching
 

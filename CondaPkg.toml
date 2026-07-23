@@ -1,2 +1,2 @@
-[deps]
-astropy = ">=4,<6" # 4, 5
+[dev.deps]
+astropy = ">=7"

@@ -3,7 +3,7 @@ module DynamicQuantitiesExt
 using DynamicQuantities
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK5Coords, EclipticCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords}
 
 (::Type{T})(lon::UnionAbstractQuantity, lat) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
 (::Type{T})(lon, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))

@@ -22,6 +22,7 @@ FK4NoETerms
 FK5Coords
 EclipticCoords
 CartesianCoords
+ProjectedCoords
 ```
 
 ## Conversion
@@ -65,6 +66,7 @@ inrange
 separation
 position_angle
 offset
+SkyCoords.project
 cartesian
 spherical
 ```

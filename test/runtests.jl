@@ -14,12 +14,64 @@ using Test
 import Makie
 
 import SkyCoords: lat, lon
+using SkyCoords: project, origin
 
 const rng = StableRNG(2000)
 rad2arcsec(r) = 3600 * rad2deg(r)
 
 # tests against astropy.coordinates
 include("astropy.jl")
+
+@testset "projected coords" begin
+    c0 = ICRSCoords(0.1, -0.2)
+    c1 = ICRSCoords(0.1 + 1.0e-5, -0.2 + 3.0e-5)
+    cp = project(c0, c1)::ProjectedCoords
+    @test origin(cp) == c0
+    @test cp.offset[1] ≈ 0.98 * 1.0e-5  rtol = 1.0e-4
+    @test cp.offset[2] ≈ 3.0e-5
+    @test convert(ICRSCoords, cp) ≈ c1
+    @test convert(GalCoords, cp) ≈ convert(GalCoords, c1)
+    @test cp == cp
+    @test cp ≈ cp
+
+    # Equality compares origin (frame included) and offset. The same raw
+    # lon/lat numbers around an origin in a different frame are a different point on the sky
+    @test cp == ProjectedCoords(c0, cp.offset)
+    @test hash(cp) == hash(ProjectedCoords(c0, cp.offset))
+    @test cp != ProjectedCoords(GalCoords(0.1, -0.2), cp.offset)
+    @test cp != ProjectedCoords(c0, zero(cp.offset))
+    @test cp != c1
+
+    # Same-type separation works through the projected lon/lat directly
+    @test separation(cp, project(c0, c0)) ≈ separation(c1, c0)
+
+    # Projected coords are first-class in the conversion lattice.
+    # Cartesian targets work through `frame_transform` and tag with the origin's frame.
+    cart = @inferred cartesian(cp)
+    @test cart isa CartesianCoords{ICRSCoords, Float64}
+    @test cart ≈ cartesian(convert(ICRSCoords, cp))
+    @test convert(CartesianCoords, cp) == cart
+    @test convert(CartesianCoords{GalCoords}, cp) ≈ cartesian(convert(GalCoords, c1))
+    @test convert(CartesianCoords{GalCoords, Float32}, cp) isa CartesianCoords{GalCoords, Float32}
+    @test spherical(cart) isa ICRSCoords
+
+    # A non-rotational origin frame works too (E-terms via frame_transform)
+    f0 = FK4Coords{1950}(0.3, 0.1)
+    f1 = offset(f0, 1.0e-4, 0.5)
+    fp = project(f0, f1)
+    @test convert(FK4Coords{1950}, fp) ≈ f1
+    @test convert(ICRSCoords, fp) ≈ convert(ICRSCoords, f1)
+    @test convert(CartesianCoords{ICRSCoords}, fp) ≈ cartesian(convert(ICRSCoords, f1))
+
+    # Nested projections chain through their origins
+    @test convert(ICRSCoords, ProjectedCoords(cp, zero(cp.offset))) ≈ c1
+
+    # Converting into a projected type needs an origin value, which a type
+    # cannot carry. Instances already matching the target stay identity.
+    @test_throws ArgumentError convert(typeof(cp), c1)
+    @test_throws ArgumentError convert(typeof(cp), cartesian(cp))
+    @test convert(typeof(cp), cp) === cp
+end
 
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin
@@ -374,6 +426,13 @@ end
         @test !(c1 ≈ c4)
         @test c1 ≈ c2  rtol = 1.0e-3
         @test c1 ≈ c4  rtol = 1.0e-3
+
+         # longitude comparison is periodic: points on either side of the
+         # lon = 0 wrap are still ≈
+         @test T(eps(), 1) ≈ T(0, 1)
+         @test T(eps(), 1) ≈ T(-eps(), 1)
+         @test !(T(π, 1) ≈ T(-π + 1.0e-3, 1))
+         @test T(π, 1) ≈ T(-π + 1.0e-3, 1)  atol = 1.0e-2
 
         # `==` implies equal hashes, so value-equal coordinates of different
         # element types collapse in a Set; c2 and c4 stay distinct because

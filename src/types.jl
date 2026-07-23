@@ -137,8 +137,17 @@ function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords, S <: Abstr
 end
 
 Base.:(==)(a::T, b::T) where {T <: AbstractSkyCoords} = lon(a) == lon(b) && lat(a) == lat(b)
-Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = isapprox(
+    SVector(lon(a), lat(a)),
+    SVector(lon(a) + rem2pi(lon(b) - lon(a), RoundNearest), lat(b));
+    kwargs...)
+Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = isapprox(
+    SVector(lon(a), lat(a)),
+    SVector(lon(a) + rem2pi(lon(b) - lon(a), RoundNearest), lat(b));
+    kwargs...)
 Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
-Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)
+Base.isapprox(a::FK5Coords{e}, b::FK5Coords{e}; kwargs...) where {e} = isapprox(
+    SVector(lon(a), lat(a)),
+    SVector(lon(a) + rem2pi(lon(b) - lon(a), RoundNearest), lat(b));
+    kwargs...)
 Base.isapprox(a::EclipticCoords{e}, b::EclipticCoords{e}; kwargs...) where {e} = isapprox(SVector(lon(a), lat(a)), SVector(lon(b), lat(b)); kwargs...)

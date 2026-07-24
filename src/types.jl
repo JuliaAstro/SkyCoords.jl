@@ -19,9 +19,21 @@ Every concrete `AbstractSkyCoords` subtype calls this from its inner constructor
 Unlike longitude, which is periodic and safe to wrap with `mod2pi`, an out-of-range latitude
 does not have an unambiguous "wrapped" meaning without also flipping the longitude by π,
 so it is rejected instead.
+
+Number types whose comparisons are undecidable are accepted as is, so uncertainty-propagating
+types (e.g., `MonteCarloMeasurements.Particles` with a distribution straddling a pole) can be
+used without restriction.
 """
 function checklat(lat)
-    -π / 2 <= lat <= π / 2 ||
+    # Some uncertainty-propagating types (e.g., MonteCarloMeasurements.Particles) throw on
+    # comparisons they consider ambiguous, such as a distribution straddling ±π/2. Treat an
+    # undecidable comparison as valid rather than restricting which numeric types can be used.
+    valid = try
+        -π / 2 <= lat <= π / 2
+    catch
+        true
+    end
+    valid ||
         throw(ArgumentError("Latitude/declination must be in [-π/2, π/2] radians, got $(lat)."))
     return lat
 end

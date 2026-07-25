@@ -21,10 +21,23 @@ rad2arcsec(r) = 3600 * rad2deg(r)
 # tests against astropy.coordinates
 include("astropy.jl")
 
+@testset "domain validation" begin
+    for C in (ICRSCoords, GalCoords, SuperGalCoords, FK5Coords{2000}, EclipticCoords{2000})
+        @test C(0, π / 2) isa C # Poles are valid (closed interval)
+        @test C(0, -π / 2) isa C
+        @test_throws ArgumentError C(0, nextfloat(π / 2))
+        @test_throws ArgumentError C(0, prevfloat(-π / 2))
+        @test_throws ArgumentError C(0, 2)
+        @test_throws ArgumentError C(0, NaN)
+    end
+end
+
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin
     c1 = ICRSCoords(ℯ, pi / 2)
-    c5 = ICRSCoords(ℯ, 1 + pi / 2)
+    # 1 radian past the pole from c1, expressed in-range (dec must be in [-π/2, π/2]).
+    # Going past the pole flips lon by π and reflects dec through π/2.
+    c5 = ICRSCoords(ℯ + pi, pi / 2 - 1)
     @test separation(c1, c5) ≈ separation(c5, c1) ≈ separation(c1, convert(GalCoords, c5)) ≈
         separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
     for T in (GalCoords, FK5Coords{2000}, EclipticCoords{2000})
@@ -156,19 +169,19 @@ end
         @test c_conv3 ≈ c3_conv
     end
 
-    a = ICRSCoords(1, 2)
-    b = GalCoords(1, 2)
+    a = ICRSCoords(1, 1.2)
+    b = GalCoords(1, 1.2)
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
 end
 
 @testset "constructionbase" begin
-    @test setproperties(ICRSCoords(1, 2), ra = 3) == ICRSCoords(3, 2)
-    @test setproperties(GalCoords(1, 2), l = 3) == GalCoords(3, 2)
-    @test setproperties(FK5Coords{2000}(1, 2), ra = 3) == FK5Coords{2000}(3, 2)
-    @test setproperties(EclipticCoords{2000}(1, 2), lon = 3) == EclipticCoords{2000}(3, 2)
-    @test setproperties(cartesian(ICRSCoords(1, 2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
+    @test setproperties(ICRSCoords(1, 1.2), ra = 3) == ICRSCoords(3, 1.2)
+    @test setproperties(GalCoords(1, 1.2), l = 3) == GalCoords(3, 1.2)
+    @test setproperties(FK5Coords{2000}(1, 1.2), ra = 3) == FK5Coords{2000}(3, 1.2)
+    @test setproperties(EclipticCoords{2000}(1, 1.2), lon = 3) == EclipticCoords{2000}(3, 1.2)
+    @test setproperties(cartesian(ICRSCoords(1, 1.2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 VERSION > v"1.9-DEV" && @testset "Accessors" begin
@@ -243,10 +256,10 @@ end
 
 @testset "equality" begin
     @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
-        c1 = T(1.0, 2.0)
-        c2 = T(1.0, 2.001)
-        c3 = T{Float32}(1.0, 2.0)
-        c4 = T{Float32}(1.0, 2.001)
+        c1 = T(1.0, 1.2)
+        c2 = T(1.0, 1.201)
+        c3 = T{Float32}(1.0, 1.2)
+        c4 = T{Float32}(1.0, 1.201)
         @test c1 == c1
         @test_broken c1 == c3
         @test c1 ≈ c1
@@ -257,8 +270,8 @@ end
         @test c1 ≈ c4  rtol = 1.0e-3
     end
 
-    @test_broken (!(ICRSCoords(1, 2) ≈ FK5Coords{2000}(1, 2)); true)
-    @test_broken (!(FK5Coords{2000}(1, 2) ≈ FK5Coords{1950}(1, 2)); true)
+    @test_broken (!(ICRSCoords(1, 1.2) ≈ FK5Coords{2000}(1, 1.2)); true)
+    @test_broken (!(FK5Coords{2000}(1, 1.2) ≈ FK5Coords{1950}(1, 1.2)); true)
 end
 
 @testset "conversion" begin
@@ -273,11 +286,11 @@ end
 end
 
 VERSION >= v"1.9" && @testset "plotting with Makie" begin
-    coo = ICRSCoords(1, 2)
+    coo = ICRSCoords(1, 1.2)
 
-    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 2)],)
-    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 2)],)
-    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 2), Makie.Point(1, 2)],)
+    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 1.2)],)
+    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 1.2)],)
+    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 1.2), Makie.Point(1, 1.2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
 end
 

@@ -16,7 +16,7 @@ CairoMakie = {rev = "ff/breaking-0.25", subdir = "CairoMakie",  url = "https://g
 SkyCoords = {path = ".."}
 
 [compat]
-AstroAngles = "0.1, 0.2"
+AstroAngles = "0.1, 0.2, 0.3"
 Documenter = "1"
 DynamicQuantities = "1"
 NearestNeighbors = "0.4.9"

@@ -23,7 +23,7 @@ This is the current standard adopted by the International Astronomical Union not
 struct ICRSCoords{T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    ICRSCoords{T}(ra, dec) where {T <: Real} = new(mod2pi(ra), dec)
+    ICRSCoords{T}(ra::Real, dec::Real) where {T <: Real} = new(mod2pi(ra), dec)
 end
 ICRSCoords(ra::T, dec::T) where {T <: Real} = ICRSCoords{float(T)}(ra, dec)
 ICRSCoords(ra::Real, dec::Real) = ICRSCoords(promote(ra, dec)...)
@@ -45,7 +45,7 @@ This coordinate system is defined based on the projection of the Milky Way galax
 struct GalCoords{T <: Real} <: AbstractSkyCoords
     l::T
     b::T
-    GalCoords{T}(l, b) where {T <: Real} = new(mod2pi(l), b)
+    GalCoords{T}(l::Real, b::Real) where {T <: Real} = new(mod2pi(l), b)
 end
 GalCoords(l::T, b::T) where {T <: Real} = GalCoords{float(T)}(l, b)
 GalCoords(l::Real, b::Real) = GalCoords(promote(l, b)...)
@@ -67,7 +67,7 @@ The supergalactic plane as so-far observed is more or less perpendicular to the 
 struct SuperGalCoords{T <: Real} <: AbstractSkyCoords
     l::T
     b::T
-    SuperGalCoords{T}(l, b) where {T <: Real} = new(mod2pi(l), b)
+    SuperGalCoords{T}(l::Real, b::Real) where {T <: Real} = new(mod2pi(l), b)
 end
 SuperGalCoords(l::T, b::T) where {T <: Real} = SuperGalCoords{float(T)}(l, b)
 SuperGalCoords(l::Real, b::Real) = SuperGalCoords(promote(l, b)...)
@@ -95,7 +95,7 @@ frame.
 struct FK5Coords{e, T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK5Coords{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), dec)
+    FK5Coords{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), dec)
 end
 FK5Coords{e}(ra::T, dec::T) where {e, T <: Real} = FK5Coords{e, float(T)}(ra, dec)
 FK5Coords{e}(ra::Real, dec::Real) where {e} = FK5Coords{e}(promote(ra, dec)...)
@@ -118,7 +118,7 @@ This coordinate system is geocentric with the ecliptic plane as the xy-plane wit
 struct EclipticCoords{e, T <: Real} <: AbstractSkyCoords
     lon::T
     lat::T
-    EclipticCoords{e, T}(lon, lat) where {e, T <: Real} = new(mod2pi(lon), lat)
+    EclipticCoords{e, T}(lon::Real, lat::Real) where {e, T <: Real} = new(mod2pi(lon), lat)
 end
 EclipticCoords{e}(lon::T, lat::T) where {e, T <: Real} = EclipticCoords{e, float(T)}(lon, lat)
 EclipticCoords{e}(lon::Real, lat::Real) where {e} = EclipticCoords{e}(promote(lon, lat)...)
@@ -142,7 +142,7 @@ The predecessor to [`FK5Coords`](@ref). Like `FK5Coords`, this system is defined
 struct FK4Coords{e, T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK4Coords{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), dec)
+    FK4Coords{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), dec)
 end
 FK4Coords{e}(ra::T, dec::T) where {e, T <: Real} = FK4Coords{e, float(T)}(ra, dec)
 FK4Coords{e}(ra::Real, dec::Real) where {e} = FK4Coords{e}(promote(ra, dec)...)
@@ -164,7 +164,7 @@ constructorof(::Type{<:FK4Coords{e}}) where {e} = FK4Coords{e}
 struct FK4NoETerms{e, T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK4NoETerms{e, T}(ra, dec) where {T <: Real, e} = new(mod2pi(ra), dec)
+    FK4NoETerms{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), dec)
 end
 FK4NoETerms{e}(ra::T, dec::T) where {e, T <: Real} = FK4NoETerms{e, float(T)}(ra, dec)
 FK4NoETerms{e}(ra::Real, dec::Real) where {e} = FK4NoETerms{e}(promote(ra, dec)...)

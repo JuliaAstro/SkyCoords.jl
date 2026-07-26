@@ -309,6 +309,7 @@ end
 VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test ICRSCoords(1u"rad", 0.5) === ICRSCoords(1, 0.5)
     @test GalCoords(1u"rad", 0.5u"rad") === GalCoords(1, 0.5)
+    @test SuperGalCoords(1u"rad", 0.5u"rad") === SuperGalCoords(1, 0.5)
     @test FK4Coords{1950}(1u"°", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
     @test FK4NoETerms{1950}(1u"°", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
@@ -328,12 +329,23 @@ VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test offset(ICRSCoords(1, 0.5), 0.1u"rad", 2u"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
     @test offset(ICRSCoords(1, 0.5), 0.1, 100u"°") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1u"°", 100u"°") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
+
+    # Element-type-parameterized construction with quantities; these calls used
+    # to be ambiguous against the untyped inner constructors
+    @test ICRSCoords{Float64}(1u"rad", 0.5) === ICRSCoords(1, 0.5)
+    @test GalCoords{Float32}(1u"rad", 0.5u"rad") === GalCoords{Float32}(1, 0.5)
+    @test FK4Coords{1950, Float64}(1u"°", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
+    @test FK4NoETerms{1950, Float64}(1u"°", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
+    @test SuperGalCoords{Float64}(1u"rad", 0.5) === SuperGalCoords(1, 0.5)
+    @test FK5Coords{2000, Float64}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
+    @test EclipticCoords{2000, Float64}(1u"°", 0.5u"°") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
 end
 
 VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     # Construction from quantities strips to plain radians (=== holds for the underlying Float64 fields).
     @test ICRSCoords(1us"rad", 0.5) === ICRSCoords(1, 0.5)
     @test GalCoords(1us"rad", 0.5us"rad") === GalCoords(1, 0.5)
+    @test SuperGalCoords(1us"rad", 0.5us"rad") === SuperGalCoords(1, 0.5)
     @test FK4Coords{1950}(1us"deg", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
     @test FK4NoETerms{1950}(1us"deg", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
@@ -356,6 +368,27 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test offset(ICRSCoords(1, 0.5), 0.1us"rad", 2us"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
     @test offset(ICRSCoords(1, 0.5), 0.1, 100us"deg") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1us"deg", 100us"deg") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
+
+    # Element-type-parameterized construction with quantities; these calls used
+    # to be ambiguous against the untyped inner constructors
+    @test ICRSCoords{Float64}(1us"rad", 0.5) === ICRSCoords(1, 0.5)
+    @test GalCoords{Float32}(1us"rad", 0.5us"rad") === GalCoords{Float32}(1, 0.5)
+    @test FK4Coords{1950, Float64}(1us"deg", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
+    @test FK4NoETerms{1950, Float64}(1us"deg", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
+    @test SuperGalCoords{Float64}(1us"rad", 0.5) === SuperGalCoords(1, 0.5)
+    @test FK5Coords{2000, Float64}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
+    @test EclipticCoords{2000, Float64}(1us"deg", 0.5us"deg") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+end
+
+# Constructor methods across base and the units extensions are kept mutually
+# disjoint or covered; a regression here means a new method pair needs the same
+# treatment (see the typed slots in ext/UnitfulExt.jl and ext/DynamicQuantitiesExt.jl)
+VERSION > v"1.9-DEV" && @testset "method ambiguities" begin
+    exts = [
+        Base.get_extension(SkyCoords, ext) for ext in
+            (:AccessorsExt, :DynamicQuantitiesExt, :MakieExt, :NearestNeighborsExt, :UnitfulExt)
+    ]
+    @test isempty(detect_ambiguities(SkyCoords, filter(!isnothing, exts)...))
 end
 
 @testset "equality" begin

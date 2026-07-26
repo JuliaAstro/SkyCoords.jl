@@ -2,7 +2,7 @@ using AstroAngles
 using SOFA
 using Accessors
 using Unitful
-using DynamicQuantities: @us_str, uconvert
+using DynamicQuantities: DynamicQuantities, @us_str, uconvert
 using ConstructionBase: setproperties
 using DelimitedFiles
 using LinearAlgebra: normalize
@@ -383,6 +383,13 @@ VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test offset(ICRSCoords(1, 0.5), 0.1u"rad", 2u"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
     @test offset(ICRSCoords(1, 0.5), 0.1, 100u"°") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1u"°", 100u"°") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
+
+    # Observer from quantities: angles in any angular unit, altitude in any
+    # length unit, mixing with plain radians/meters allowed
+    @test Observer(34.2247u"°", -118.0572u"°", 2u"km") === Observer(deg2rad(34.2247), deg2rad(-118.0572), 2000)
+    @test Observer(0.5u"rad", -2.06) === Observer(0.5, -2.06)
+    @test Observer(0.5, -2.06u"rad", 1742u"m") === Observer(0.5, -2.06, 1742)
+    @test_throws Unitful.DimensionError Observer(1742u"m", -2.06)
 end
 
 VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
@@ -412,6 +419,13 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test offset(ICRSCoords(1, 0.5), 0.1us"rad", 2us"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
     @test offset(ICRSCoords(1, 0.5), 0.1, 100us"deg") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1us"deg", 100us"deg") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
+
+    # Observer from quantities: angles in any angular unit, altitude in any
+    # length unit, mixing with plain radians/meters allowed
+    @test Observer(34.2247us"deg", -118.0572us"deg", 2us"km") === Observer(deg2rad(34.2247), deg2rad(-118.0572), 2000)
+    @test Observer(0.5us"rad", -2.06) === Observer(0.5, -2.06)
+    @test Observer(0.5, -2.06us"rad", 1742us"m") === Observer(0.5, -2.06, 1742)
+    @test_throws DynamicQuantities.DimensionError Observer(1742us"m", -2.06)
 end
 
 @testset "equality" begin

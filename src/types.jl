@@ -229,6 +229,15 @@ The geodetic (WGS84) location of an observer on Earth. Together with an observat
 - `latitude` - Geodetic latitude in radians (-π/2, π/2)
 - `longitude` - Longitude in radians, east-positive (-π, π)
 - `altitude` - Height above the WGS84 reference ellipsoid in meters
+
+With [Unitful.jl](https://github.com/PainterQubits/Unitful.jl) or [DynamicQuantities.jl](https://github.com/JuliaPhysics/DynamicQuantities.jl) loaded, the arguments may instead be given as quantities, the latitude and longitude as angles and the altitude as a length:
+
+```jldoctest
+julia> using SkyCoords, DynamicQuantities
+
+julia> Observer(34.2247u"°", -118.0572u"°", 1742u"m")
+Observer{Float64}(0.5973337005073033, -2.0604868456854497, 1742.0)
+```
 """
 struct Observer{T <: Real}
     latitude::T

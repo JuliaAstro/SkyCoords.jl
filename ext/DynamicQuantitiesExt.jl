@@ -11,6 +11,13 @@ _COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK4Coords, FK4NoETerms, FK5Coo
 (::Type{T})(lon, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
 (::Type{T})(lon::UnionAbstractQuantity, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
 
+# `Observer` takes its latitude/longitude as angles and its altitude as a length.
+# Quantities and plain numbers can be mixed; all-plain calls dispatch to the
+# base constructor, so the plain slots here just pass through unchanged.
+_strip(u, x) = x isa UnionAbstractQuantity ? ustrip(u, x) : x
+SkyCoords.Observer(latitude::Union{Real, UnionAbstractQuantity}, longitude::Union{Real, UnionAbstractQuantity}, altitude::Union{Real, UnionAbstractQuantity} = 0) =
+    Observer(_strip(u"rad", latitude), _strip(u"rad", longitude), _strip(u"m", altitude))
+
 SkyCoords.lon(u::UnionAbstractQuantity, c) = SkyCoords.lon(c) * u"rad" |> u
 SkyCoords.lat(u::UnionAbstractQuantity, c) = SkyCoords.lat(c) * u"rad" |> u
 SkyCoords.lonlat(u::UnionAbstractQuantity, c) = SkyCoords.lonlat(c) .* u"rad" .|> u

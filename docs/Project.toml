@@ -13,6 +13,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [sources]
 ComputePipeline = {rev = "ff/breaking-0.25", subdir = "ComputePipeline",  url = "https://github.com/MakieOrg/Makie.jl"}
+DynamicQuantities = {url = "https://github.com/JuliaPhysics/DynamicQuantities.jl"}
 Makie = {rev = "ff/breaking-0.25", subdir = "Makie",  url = "https://github.com/MakieOrg/Makie.jl"}
 CairoMakie = {rev = "ff/breaking-0.25", subdir = "CairoMakie",  url = "https://github.com/MakieOrg/Makie.jl"}
 SkyCoords = {path = ".."}

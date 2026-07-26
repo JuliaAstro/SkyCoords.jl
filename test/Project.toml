@@ -17,6 +17,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [sources]
+DynamicQuantities = {url = "https://github.com/JuliaPhysics/DynamicQuantities.jl"}
 SOFA = {rev = "sofa-v2-migration", url = "https://github.com/JuliaAstro/SOFA.jl"}
 
 [compat]

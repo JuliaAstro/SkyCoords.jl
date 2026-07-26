@@ -17,7 +17,15 @@ Use [`project`](@ref) instead.
 struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractProjectedCoords
     origin::TC
     offset::SVector{2, T}
+
+    # Typed like the spherical types' inner constructors so the two-argument
+    # form stays disjoint from extension constructors taking other argument
+    # pairs
+    ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Real}) where {TC <: AbstractSkyCoords, T <: Real} =
+        new(origin, offset)
 end
+ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Real} =
+    ProjectedCoords{TC, T}(origin, offset)
 
 origin(c::ProjectedCoords) = c.origin
 lon(c::AbstractProjectedCoords) = lon(origin(c)) + c.offset[1] / cos(lat(origin(c)))

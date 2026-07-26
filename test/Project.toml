@@ -17,7 +17,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 Accessors = "0.1"
-AstroAngles = "0.1, 0.2"
+AstroAngles = "0.1, 0.2, 0.3"
 CondaPkg = "0.2"
 ConstructionBase = "1"
 DelimitedFiles = "1"

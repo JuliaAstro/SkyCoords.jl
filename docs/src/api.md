@@ -17,6 +17,8 @@ AbstractSkyCoords
 ICRSCoords
 GalCoords
 SuperGalCoords
+FK4Coords
+FK4NoETerms
 FK5Coords
 EclipticCoords
 CartesianCoords

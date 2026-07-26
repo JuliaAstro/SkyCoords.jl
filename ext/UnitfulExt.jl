@@ -3,10 +3,13 @@ module UnitfulExt
 using Unitful
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK5Coords, EclipticCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK5Coords, EclipticCoords}
 
-(::Type{T})(lon::Quantity, lat) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
-(::Type{T})(lon, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
+# Every slot is typed (`Union{Real, Quantity}` rather than `Any`) so these
+# methods stay disjoint from the Real-typed coordinate constructors and from
+# the DynamicQuantities extension, keeping dispatch free of ambiguities.
+(::Type{T})(lon::Quantity, lat::Union{Real, Quantity}) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
+(::Type{T})(lon::Union{Real, Quantity}, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
 (::Type{T})(lon::Quantity, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
 
 SkyCoords.lon(u::Unitful.Units, c) = SkyCoords.lon(c) * u"rad" |> u

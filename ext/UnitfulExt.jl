@@ -5,10 +5,13 @@ using SkyCoords
 
 # The constructors below strip units positionally, so AltAzCoords fits in even
 # though its two angle arguments are (alt, az) rather than (lon, lat)
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords, AltAzCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords, AltAzCoords}
 
-(::Type{T})(lon::Quantity, lat) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
-(::Type{T})(lon, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
+# Every slot is typed (`Union{Real, Quantity}` rather than `Any`) so these
+# methods stay disjoint from the Real-typed coordinate constructors and from
+# the DynamicQuantities extension, keeping dispatch free of ambiguities.
+(::Type{T})(lon::Quantity, lat::Union{Real, Quantity}) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
+(::Type{T})(lon::Union{Real, Quantity}, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
 (::Type{T})(lon::Quantity, lat::Quantity) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
 
 # `Observer` takes its latitude/longitude as angles and its altitude as a length.

@@ -363,6 +363,7 @@ end
 VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test ICRSCoords(1u"rad", 0.5) === ICRSCoords(1, 0.5)
     @test GalCoords(1u"rad", 0.5u"rad") === GalCoords(1, 0.5)
+    @test SuperGalCoords(1u"rad", 0.5u"rad") === SuperGalCoords(1, 0.5)
     @test FK4Coords{1950}(1u"°", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
     @test FK4NoETerms{1950}(1u"°", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
@@ -384,6 +385,16 @@ VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test offset(ICRSCoords(1, 0.5), 0.1, 100u"°") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1u"°", 100u"°") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
 
+    # Element-type-parameterized construction with quantities; these calls used
+    # to be ambiguous against the untyped inner constructors
+    @test ICRSCoords{Float64}(1u"rad", 0.5) === ICRSCoords(1, 0.5)
+    @test GalCoords{Float32}(1u"rad", 0.5u"rad") === GalCoords{Float32}(1, 0.5)
+    @test FK4Coords{1950, Float64}(1u"°", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
+    @test FK4NoETerms{1950, Float64}(1u"°", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
+    @test SuperGalCoords{Float64}(1u"rad", 0.5) === SuperGalCoords(1, 0.5)
+    @test FK5Coords{2000, Float64}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
+    @test EclipticCoords{2000, Float64}(1u"°", 0.5u"°") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+
     # Observer from quantities: angles in any angular unit, altitude in any
     # length unit, mixing with plain radians/meters allowed
     @test Observer(34.2247u"°", -118.0572u"°", 2u"km") === Observer(deg2rad(34.2247), deg2rad(-118.0572), 2000)
@@ -396,6 +407,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     # Construction from quantities strips to plain radians (=== holds for the underlying Float64 fields).
     @test ICRSCoords(1us"rad", 0.5) === ICRSCoords(1, 0.5)
     @test GalCoords(1us"rad", 0.5us"rad") === GalCoords(1, 0.5)
+    @test SuperGalCoords(1us"rad", 0.5us"rad") === SuperGalCoords(1, 0.5)
     @test FK4Coords{1950}(1us"deg", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
     @test FK4NoETerms{1950}(1us"deg", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
     @test FK5Coords{2000}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
@@ -420,12 +432,33 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test offset(ICRSCoords(1, 0.5), 0.1, 100us"deg") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1us"deg", 100us"deg") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
 
+    # Element-type-parameterized construction with quantities; these calls used
+    # to be ambiguous against the untyped inner constructors
+    @test ICRSCoords{Float64}(1us"rad", 0.5) === ICRSCoords(1, 0.5)
+    @test GalCoords{Float32}(1us"rad", 0.5us"rad") === GalCoords{Float32}(1, 0.5)
+    @test FK4Coords{1950, Float64}(1us"deg", 0.5) === FK4Coords{1950}(deg2rad(1), 0.5)
+    @test FK4NoETerms{1950, Float64}(1us"deg", 0.5) === FK4NoETerms{1950}(deg2rad(1), 0.5)
+    @test SuperGalCoords{Float64}(1us"rad", 0.5) === SuperGalCoords(1, 0.5)
+    @test FK5Coords{2000, Float64}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
+    @test EclipticCoords{2000, Float64}(1us"deg", 0.5us"deg") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+
     # Observer from quantities: angles in any angular unit, altitude in any
     # length unit, mixing with plain radians/meters allowed
     @test Observer(34.2247us"deg", -118.0572us"deg", 2us"km") === Observer(deg2rad(34.2247), deg2rad(-118.0572), 2000)
     @test Observer(0.5us"rad", -2.06) === Observer(0.5, -2.06)
     @test Observer(0.5, -2.06us"rad", 1742us"m") === Observer(0.5, -2.06, 1742)
     @test_throws DynamicQuantities.DimensionError Observer(1742us"m", -2.06)
+end
+
+# Constructor methods across base and the units extensions are kept mutually
+# disjoint or covered; a regression here means a new method pair needs the same
+# treatment (see the typed slots in ext/UnitfulExt.jl and ext/DynamicQuantitiesExt.jl)
+VERSION > v"1.9-DEV" && @testset "method ambiguities" begin
+    exts = [
+        Base.get_extension(SkyCoords, ext) for ext in
+            (:AccessorsExt, :DynamicQuantitiesExt, :MakieExt, :NearestNeighborsExt, :UnitfulExt)
+    ]
+    @test isempty(detect_ambiguities(SkyCoords, filter(!isnothing, exts)...))
 end
 
 @testset "equality" begin

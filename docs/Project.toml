@@ -20,7 +20,7 @@ SkyCoords = {path = ".."}
 SOFA = {url = "https://github.com/JuliaAstro/SOFA.jl"}
 
 [compat]
-AstroAngles = "0.1, 0.2"
+AstroAngles = "0.1, 0.2, 0.3"
 Documenter = "1"
 DocumenterInterLinks = "1"
 DynamicQuantities = "1"

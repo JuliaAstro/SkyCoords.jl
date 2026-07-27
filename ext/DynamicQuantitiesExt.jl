@@ -5,11 +5,20 @@ using SkyCoords
 
 # The constructors below strip units positionally, so AltAzCoords fits in even
 # though its two angle arguments are (alt, az) rather than (lon, lat)
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords, AltAzCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords, AltAzCoords}
 
-(::Type{T})(lon::UnionAbstractQuantity, lat) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
-(::Type{T})(lon, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
-(::Type{T})(lon::UnionAbstractQuantity, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
+# `AbstractRealQuantity` is deliberately excluded from the quantity slots: it
+# subtypes `Real`, so accepting it here would make these methods ambiguous
+# against the Real-typed coordinate constructors. `RealQuantity` angles are
+# not supported for construction; use `Quantity` or plain radians.
+const _QUANTITY_NOT_REAL = Union{AbstractQuantity, AbstractGenericQuantity}
+
+# Every slot is typed (rather than `Any`) so these methods stay disjoint from
+# the Real-typed coordinate constructors and from the Unitful extension,
+# keeping dispatch free of ambiguities.
+(::Type{T})(lon::_QUANTITY_NOT_REAL, lat::Union{Real, UnionAbstractQuantity}) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
+(::Type{T})(lon::Union{Real, UnionAbstractQuantity}, lat::_QUANTITY_NOT_REAL) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
+(::Type{T})(lon::_QUANTITY_NOT_REAL, lat::_QUANTITY_NOT_REAL) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
 
 # `Observer` takes its latitude/longitude as angles and its altitude as a length.
 # Quantities and plain numbers can be mixed; all-plain calls dispatch to the

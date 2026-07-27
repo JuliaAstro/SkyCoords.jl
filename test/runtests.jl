@@ -394,6 +394,7 @@ VERSION > v"1.9-DEV" && @testset "Unitful" begin
     @test SuperGalCoords{Float64}(1u"rad", 0.5) === SuperGalCoords(1, 0.5)
     @test FK5Coords{2000, Float64}(1u"°", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
     @test EclipticCoords{2000, Float64}(1u"°", 0.5u"°") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+    @test AltAzCoords{Float64}(0.5u"rad", 1u"°") === AltAzCoords(0.5, deg2rad(1))
 
     # Observer from quantities: angles in any angular unit, altitude in any
     # length unit, mixing with plain radians/meters allowed
@@ -441,6 +442,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test SuperGalCoords{Float64}(1us"rad", 0.5) === SuperGalCoords(1, 0.5)
     @test FK5Coords{2000, Float64}(1us"deg", 0.5) === FK5Coords{2000}(deg2rad(1), 0.5)
     @test EclipticCoords{2000, Float64}(1us"deg", 0.5us"deg") === EclipticCoords{2000}(deg2rad(1), deg2rad(0.5))
+    @test AltAzCoords{Float64}(0.5us"rad", 1us"deg") === AltAzCoords(0.5, deg2rad(1))
 
     # Observer from quantities: angles in any angular unit, altitude in any
     # length unit, mixing with plain radians/meters allowed
@@ -456,7 +458,7 @@ end
 VERSION > v"1.9-DEV" && @testset "method ambiguities" begin
     exts = [
         Base.get_extension(SkyCoords, ext) for ext in
-            (:AccessorsExt, :DynamicQuantitiesExt, :MakieExt, :NearestNeighborsExt, :UnitfulExt)
+            (:AccessorsExt, :DynamicQuantitiesExt, :MakieExt, :NearestNeighborsExt, :SOFAExt, :UnitfulExt)
     ]
     @test isempty(detect_ambiguities(SkyCoords, filter(!isnothing, exts)...))
 end

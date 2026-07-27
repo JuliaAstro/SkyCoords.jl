@@ -48,29 +48,12 @@ function _altaz_to(::Type{T}, c::HorizontalCoords, frame::AltAzFrame) where {T <
     return convert(T, ICRSCoords(ra, dec))
 end
 
+# The coordinate constructors all take `Real` (or coordinate) arguments, so
+# this generic reverse is disjoint from every one of them; no per-family
+# disambiguation is needed. Projected targets are rejected inside `convert`
+# with an informative error.
 (::Type{T})(c::HorizontalCoords, frame::AltAzFrame) where {T <: AbstractSkyCoords} =
     _altaz_to(T, c, frame)
-
-# The two-argument inner constructors (`ICRSCoords{T}(ra, dec)` and friends)
-# accept any two arguments, making each of them ambiguous with the generic
-# reverse above. Cover every concrete family explicitly.
-(::Type{ICRSCoords{F}})(c::HorizontalCoords, frame::AltAzFrame) where {F <: Real} =
-    _altaz_to(ICRSCoords{F}, c, frame)
-(::Type{GalCoords{F}})(c::HorizontalCoords, frame::AltAzFrame) where {F <: Real} =
-    _altaz_to(GalCoords{F}, c, frame)
-(::Type{SuperGalCoords{F}})(c::HorizontalCoords, frame::AltAzFrame) where {F <: Real} =
-    _altaz_to(SuperGalCoords{F}, c, frame)
-(::Type{FK4Coords{e, F}})(c::HorizontalCoords, frame::AltAzFrame) where {e, F <: Real} =
-    _altaz_to(FK4Coords{e, F}, c, frame)
-(::Type{FK4NoETerms{e, F}})(c::HorizontalCoords, frame::AltAzFrame) where {e, F <: Real} =
-    _altaz_to(FK4NoETerms{e, F}, c, frame)
-(::Type{FK5Coords{e, F}})(c::HorizontalCoords, frame::AltAzFrame) where {e, F <: Real} =
-    _altaz_to(FK5Coords{e, F}, c, frame)
-(::Type{EclipticCoords{e, F}})(c::HorizontalCoords, frame::AltAzFrame) where {e, F <: Real} =
-    _altaz_to(EclipticCoords{e, F}, c, frame)
-# Projected targets are rejected inside `convert` with an informative error
-(::Type{ProjectedCoords{TC, F}})(c::HorizontalCoords, frame::AltAzFrame) where {TC <: AbstractSkyCoords, F <: Real} =
-    _altaz_to(ProjectedCoords{TC, F}, c, frame)
 
 # Between two horizontal frames, through the celestial sphere
 SkyCoords.AltAzCoords(c::HorizontalCoords, from::AltAzFrame, to::AltAzFrame) =

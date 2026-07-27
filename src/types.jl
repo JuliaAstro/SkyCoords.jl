@@ -213,7 +213,7 @@ The source is treated as a fixed point at infinity: proper motion, parallax, and
 struct AltAzCoords{T <: Real} <: AbstractSkyCoords
     alt::T
     az::T
-    AltAzCoords{T}(alt, az) where {T <: Real} = new(alt, mod2pi(az))
+    AltAzCoords{T}(alt::Real, az::Real) where {T <: Real} = new(alt, mod2pi(az))
 end
 AltAzCoords(alt::T, az::T) where {T <: Real} = AltAzCoords{float(T)}(alt, az)
 AltAzCoords(alt::Real, az::Real) = AltAzCoords(promote(alt, az)...)

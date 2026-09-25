@@ -3,11 +3,20 @@ module DynamicQuantitiesExt
 using DynamicQuantities
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, FK5Coords, EclipticCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK5Coords, EclipticCoords}
 
-(::Type{T})(lon::UnionAbstractQuantity, lat) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
-(::Type{T})(lon, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
-(::Type{T})(lon::UnionAbstractQuantity, lat::UnionAbstractQuantity) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
+# `AbstractRealQuantity` is deliberately excluded from the quantity slots: it
+# subtypes `Real`, so accepting it here would make these methods ambiguous
+# against the Real-typed coordinate constructors. `RealQuantity` angles are
+# not supported for construction; use `Quantity` or plain radians.
+const _QUANTITY_NOT_REAL = Union{AbstractQuantity, AbstractGenericQuantity}
+
+# Every slot is typed (rather than `Any`) so these methods stay disjoint from
+# the Real-typed coordinate constructors and from the Unitful extension,
+# keeping dispatch free of ambiguities.
+(::Type{T})(lon::_QUANTITY_NOT_REAL, lat::Union{Real, UnionAbstractQuantity}) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
+(::Type{T})(lon::Union{Real, UnionAbstractQuantity}, lat::_QUANTITY_NOT_REAL) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
+(::Type{T})(lon::_QUANTITY_NOT_REAL, lat::_QUANTITY_NOT_REAL) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
 
 SkyCoords.lon(u::UnionAbstractQuantity, c) = SkyCoords.lon(c) * u"rad" |> u
 SkyCoords.lat(u::UnionAbstractQuantity, c) = SkyCoords.lat(c) * u"rad" |> u

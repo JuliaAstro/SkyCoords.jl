@@ -18,7 +18,7 @@ CartesianCoords{TC}(args::Real...) where {TC} = CartesianCoords{TC}(SVector(floa
 CartesianCoords{TC}(vec::AbstractVector{TF}) where {TC, TF} = CartesianCoords{TC, TF}(vec)
 CartesianCoords(c::AbstractSkyCoords) = convert(CartesianCoords, c)
 CartesianCoords{TC}(c::AbstractSkyCoords) where {TC} = convert(CartesianCoords{TC}, c)
-CartesianCoords{TC, TF}(c::AbstractSkyCoords) where {TC <: AbstractSkyCoords, TF} = convert(CartesianCoords{TC, TF}, c)
+CartesianCoords{TC, TF}(c::AbstractSkyCoords) where {TC <: AbstractSkyCoords, TF <: Real} = convert(CartesianCoords{TC, TF}, c)
 constructorof(::Type{<:CartesianCoords{TC}}) where {TC} = CartesianCoords{TC}
 
 Base.vec(c::CartesianCoords) = c.vec

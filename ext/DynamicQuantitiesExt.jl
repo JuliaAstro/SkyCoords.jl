@@ -3,7 +3,9 @@ module DynamicQuantitiesExt
 using DynamicQuantities
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords}
+# The constructors below strip units positionally, so AltAzCoords fits in even
+# though its two angle arguments are (alt, az) rather than (lon, lat)
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords, AltAzCoords}
 
 # `AbstractRealQuantity` is deliberately excluded from the quantity slots: it
 # subtypes `Real`, so accepting it here would make these methods ambiguous
@@ -17,6 +19,13 @@ const _QUANTITY_NOT_REAL = Union{AbstractQuantity, AbstractGenericQuantity}
 (::Type{T})(lon::_QUANTITY_NOT_REAL, lat::Union{Real, UnionAbstractQuantity}) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), lat)
 (::Type{T})(lon::Union{Real, UnionAbstractQuantity}, lat::_QUANTITY_NOT_REAL) where {T <: _COORDTYPES_LATLON} = T(lon, ustrip(u"rad", lat))
 (::Type{T})(lon::_QUANTITY_NOT_REAL, lat::_QUANTITY_NOT_REAL) where {T <: _COORDTYPES_LATLON} = T(ustrip(u"rad", lon), ustrip(u"rad", lat))
+
+# `Observer` takes its latitude/longitude as angles and its altitude as a length.
+# Quantities and plain numbers can be mixed; all-plain calls dispatch to the
+# base constructor, so the plain slots here just pass through unchanged.
+_strip(u, x) = x isa UnionAbstractQuantity ? ustrip(u, x) : x
+SkyCoords.Observer(latitude::Union{Real, UnionAbstractQuantity}, longitude::Union{Real, UnionAbstractQuantity}, altitude::Union{Real, UnionAbstractQuantity} = 0) =
+    Observer(_strip(u"rad", latitude), _strip(u"rad", longitude), _strip(u"m", altitude))
 
 SkyCoords.lon(u::UnionAbstractQuantity, c) = SkyCoords.lon(c) * u"rad" |> u
 SkyCoords.lat(u::UnionAbstractQuantity, c) = SkyCoords.lat(c) * u"rad" |> u

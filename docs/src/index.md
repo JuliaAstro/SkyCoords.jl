@@ -23,7 +23,7 @@ DocTestSetup = :(using SkyCoords)
 ## Usage
 
 
-There are currently seven supported coordinate systems. The following
+There are currently eight supported coordinate systems. The following
 immutable types are used to represent coordinates in each system:
 
 - [`ICRSCoords`](@ref): ICRS coordinates system
@@ -33,6 +33,7 @@ immutable types are used to represent coordinates in each system:
 - [`FK4NoETerms`](@ref): FK4 coordinates system without the E-terms of aberration (with arbitrary Besselian equinox)
 - [`FK5Coords`](@ref): FK5 coordinates system (with arbitrary equinox)
 - [`EclipticCoords`](@ref): Ecliptic coordinates system
+- [`AltAzCoords`](@ref): Horizontal (altitude/azimuth) coordinates system, tied to an [`Observer`](@ref) location and time via an [`AltAzFrame`](@ref)
 
 Each type holds a longitude and latitude, and each is a subtype of
 [`AbstractSkyCoords`](@ref).

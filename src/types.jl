@@ -172,7 +172,7 @@ The predecessor to [`FK5Coords`](@ref). Like `FK5Coords`, this system is defined
 struct FK4Coords{e, T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK4Coords{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), dec)
+    FK4Coords{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), checklat(dec))
 end
 FK4Coords{e}(ra::T, dec::T) where {e, T <: Real} = FK4Coords{e, float(T)}(ra, dec)
 FK4Coords{e}(ra::Real, dec::Real) where {e} = FK4Coords{e}(promote(ra, dec)...)
@@ -194,7 +194,7 @@ constructorof(::Type{<:FK4Coords{e}}) where {e} = FK4Coords{e}
 struct FK4NoETerms{e, T <: Real} <: AbstractSkyCoords
     ra::T
     dec::T
-    FK4NoETerms{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), dec)
+    FK4NoETerms{e, T}(ra::Real, dec::Real) where {T <: Real, e} = new(mod2pi(ra), checklat(dec))
 end
 FK4NoETerms{e}(ra::T, dec::T) where {e, T <: Real} = FK4NoETerms{e, float(T)}(ra, dec)
 FK4NoETerms{e}(ra::Real, dec::Real) where {e} = FK4NoETerms{e}(promote(ra, dec)...)

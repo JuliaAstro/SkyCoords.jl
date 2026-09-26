@@ -271,7 +271,7 @@ end
     # an instance that already matches a bare/partial target converts by
     # identity, following the usual Base convention (like `convert(Integer, 3)`)
     @test convert(FK4Coords, fk4) === fk4
-    @test convert(FK5Coords, FK5Coords{2000}(1, 2)) === FK5Coords{2000}(1, 2)
+    @test convert(FK5Coords, FK5Coords{2000}(1, 1.2)) === FK5Coords{2000}(1, 1.2)
 end
 
 @testset "CartesianCoords type parameters ($CT, $TF)" for TF in (Float32, Float64), CT in (ICRSCoords, GalCoords, FK5Coords{2000}, FK4Coords{1950}, FK4NoETerms{1950})
@@ -338,13 +338,13 @@ end
 end
 
 @testset "constructionbase" begin
-    @test setproperties(ICRSCoords(1, 2), ra = 3) == ICRSCoords(3, 2)
-    @test setproperties(GalCoords(1, 2), l = 3) == GalCoords(3, 2)
-    @test setproperties(FK4Coords{1950}(1, 2), ra = 3) == FK4Coords{1950}(3, 2)
-    @test setproperties(FK4NoETerms{1950}(1, 2), ra = 3) == FK4NoETerms{1950}(3, 2)
-    @test setproperties(FK5Coords{2000}(1, 2), ra = 3) == FK5Coords{2000}(3, 2)
-    @test setproperties(EclipticCoords{2000}(1, 2), lon = 3) == EclipticCoords{2000}(3, 2)
-    @test setproperties(cartesian(ICRSCoords(1, 2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
+    @test setproperties(ICRSCoords(1, 1.2), ra = 3) == ICRSCoords(3, 1.2)
+    @test setproperties(GalCoords(1, 1.2), l = 3) == GalCoords(3, 1.2)
+    @test setproperties(FK4Coords{1950}(1, 1.2), ra = 3) == FK4Coords{1950}(3, 1.2)
+    @test setproperties(FK4NoETerms{1950}(1, 1.2), ra = 3) == FK4NoETerms{1950}(3, 1.2)
+    @test setproperties(FK5Coords{2000}(1, 1.2), ra = 3) == FK5Coords{2000}(3, 1.2)
+    @test setproperties(EclipticCoords{2000}(1, 1.2), lon = 3) == EclipticCoords{2000}(3, 1.2)
+    @test setproperties(cartesian(ICRSCoords(1, 1.2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 VERSION > v"1.9-DEV" && @testset "Accessors" begin
@@ -456,10 +456,11 @@ end
 
 @testset "equality" begin
     @testset for T in [ICRSCoords, GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000}]
-        c1 = T(1.0, 2.0)
-        c2 = T(1.0, 2.001)
-        c3 = T{Float32}(1.0, 2.0)
-        c4 = T{Float32}(1.0, 2.001)
+        # 1.25 is exactly representable in Float32, so c1 and c3 hold the same value
+        c1 = T(1.0, 1.25)
+        c2 = T(1.0, 1.251)
+        c3 = T{Float32}(1.0, 1.25)
+        c4 = T{Float32}(1.0, 1.251)
         @test c1 == c1
         @test c1 == c3
         @test c1 != c2
@@ -480,14 +481,14 @@ end
 
         # `==` implies equal hashes, so value-equal coordinates of different
         # element types collapse in a Set; c2 and c4 stay distinct because
-        # 2.001 rounds to different values in Float32 and Float64
+        # 1.251 rounds to different values in Float32 and Float64
         @test hash(c1) == hash(c3)
         @test length(Set([c1, c2, c3, c4])) == 3
     end
 
     # different frames never compare equal, even with equal angles
-    @test ICRSCoords(1, 2) != GalCoords(1, 2)
-    @test FK5Coords{2000}(1, 2) != FK5Coords{1950}(1, 2)
+    @test ICRSCoords(1, 1.2) != GalCoords(1, 1.2)
+    @test FK5Coords{2000}(1, 1.2) != FK5Coords{1950}(1, 1.2)
     @test ICRSCoords(0, 0) != cartesian(ICRSCoords(0, 0))
 
     # CartesianCoords: same frame tag and equal vectors, any element type
@@ -495,8 +496,8 @@ end
     @test hash(CartesianCoords{ICRSCoords}(1, 0, 0)) == hash(CartesianCoords{ICRSCoords, Float32}(1, 0, 0))
     @test CartesianCoords{ICRSCoords}(1, 0, 0) != CartesianCoords{GalCoords}(1, 0, 0)
 
-    @test_broken (!(ICRSCoords(1, 2) ≈ FK5Coords{2000}(1, 2)); true)
-    @test_broken (!(FK5Coords{2000}(1, 2) ≈ FK5Coords{1950}(1, 2)); true)
+    @test_broken (!(ICRSCoords(1, 1.2) ≈ FK5Coords{2000}(1, 1.2)); true)
+    @test_broken (!(FK5Coords{2000}(1, 1.2) ≈ FK5Coords{1950}(1, 1.2)); true)
 end
 
 @testset "conversion" begin

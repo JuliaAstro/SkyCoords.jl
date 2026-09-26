@@ -10,6 +10,8 @@ const lats = pi .* (rand(rng, N) .- 0.5) # (-π, π)
 
 # get the astropy frames from the julia type
 astropy_conversion(::Type{<:ICRSCoords}) = apc.ICRS
+astropy_conversion(::Type{<:FK4Coords{F}}) where {F} = apc.FK4(equinox = "B$F")
+astropy_conversion(::Type{<:FK4NoETerms{F}}) where {F} = apc.FK4NoETerms(equinox = "B$F")
 astropy_conversion(::Type{<:FK5Coords{F}}) where {F} = apc.FK5(equinox = "J$F")
 astropy_conversion(::Type{<:GalCoords}) = apc.Galactic
 astropy_conversion(::Type{<:SuperGalCoords}) = apc.Supergalactic
@@ -46,6 +48,10 @@ end
 
     systems = (
         ICRSCoords{F},
+        FK4Coords{1950, F},
+        FK4Coords{1975, F},
+        FK4NoETerms{1950, F},
+        FK4NoETerms{1975, F},
         FK5Coords{2000, F},
         FK5Coords{1975, F},
         GalCoords{F},
@@ -54,7 +60,19 @@ end
         EclipticCoords{1975, F},
     )
     @testset "$IN_SYS --> $OUT_SYS" for IN_SYS in systems, OUT_SYS in systems
-        atol = IN_SYS <: EclipticCoords || OUT_SYS <: EclipticCoords ? 1.0e-3 : 0
+        # FK4Coords/FK4NoETerms need a small amount of slack against (Super)Galactic:
+        # astropy routes FK4->Galactic through a *different* (legacy, B1950-based)
+        # galactic pole than the J2000-based one used everywhere else in this package
+        # (see comment on FK5J2000_TO_GAL), so precessing an off-equinox FK4/FK4NoETerms
+        # to Galactic picks up a small (sub-arcsecond) discrepancy between the two
+        # conventions. This is independent of the E-terms, so it affects both types.
+        atol = if IN_SYS <: EclipticCoords || OUT_SYS <: EclipticCoords
+            1.0e-3
+        elseif IN_SYS <: FK4Coords || OUT_SYS <: FK4Coords || IN_SYS <: FK4NoETerms || OUT_SYS <: FK4NoETerms
+            1.0e-5
+        else
+            0
+        end
         test_against_astropy(IN_SYS, OUT_SYS; atol)
     end
 end

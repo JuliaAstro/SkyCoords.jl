@@ -75,4 +75,5 @@ offset
 SkyCoords.project
 cartesian
 spherical
+SkyCoords.checklat
 ```

@@ -3,7 +3,7 @@ module DynamicQuantitiesExt
 using DynamicQuantities
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK5Coords, EclipticCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords}
 
 # `AbstractRealQuantity` is deliberately excluded from the quantity slots: it
 # subtypes `Real`, so accepting it here would make these methods ambiguous

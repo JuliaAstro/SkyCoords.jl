@@ -10,6 +10,10 @@ set(x::EclipticCoords, ::typeof(lon), v) = @set x.lon = v
 set(x::EclipticCoords, ::typeof(lat), v) = @set x.lat = v
 set(x::ICRSCoords, ::typeof(lon), v) = @set x.ra = v
 set(x::ICRSCoords, ::typeof(lat), v) = @set x.dec = v
+set(x::FK4Coords, ::typeof(lon), v) = @set x.ra = v
+set(x::FK4Coords, ::typeof(lat), v) = @set x.dec = v
+set(x::FK4NoETerms, ::typeof(lon), v) = @set x.ra = v
+set(x::FK4NoETerms, ::typeof(lat), v) = @set x.dec = v
 set(x::FK5Coords, ::typeof(lon), v) = @set x.ra = v
 set(x::FK5Coords, ::typeof(lat), v) = @set x.dec = v
 

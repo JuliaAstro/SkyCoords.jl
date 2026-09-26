@@ -71,12 +71,23 @@ include("astropy.jl")
     @test_throws ArgumentError convert(typeof(cp), c1)
     @test_throws ArgumentError convert(typeof(cp), cartesian(cp))
     @test convert(typeof(cp), cp) === cp
+@testset "domain validation" begin
+    for C in (ICRSCoords, GalCoords, SuperGalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000})
+        @test C(0, π / 2) isa C # Poles are valid (closed interval)
+        @test C(0, -π / 2) isa C
+        @test_throws ArgumentError C(0, nextfloat(π / 2))
+        @test_throws ArgumentError C(0, prevfloat(-π / 2))
+        @test_throws ArgumentError C(0, 2)
+        @test_throws ArgumentError C(0, NaN)
+    end
 end
 
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin
     c1 = ICRSCoords(ℯ, pi / 2)
-    c5 = ICRSCoords(ℯ, 1 + pi / 2)
+    # 1 radian past the pole from c1, expressed in-range (dec must be in [-π/2, π/2]).
+    # Going past the pole flips lon by π and reflects dec through π/2.
+    c5 = ICRSCoords(ℯ + pi, pi / 2 - 1)
     @test separation(c1, c5) ≈ separation(c5, c1) ≈ separation(c1, convert(GalCoords, c5)) ≈
         separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
     for T in (GalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000})
@@ -224,8 +235,8 @@ end
         @test c_conv3 ≈ c3_conv
     end
 
-    a = ICRSCoords(1, 2)
-    b = GalCoords(1, 2)
+    a = ICRSCoords(1, 1.2)
+    b = GalCoords(1, 1.2)
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
@@ -500,11 +511,11 @@ end
 end
 
 VERSION >= v"1.9" && @testset "plotting with Makie" begin
-    coo = ICRSCoords(1, 2)
+    coo = ICRSCoords(1, 1.2)
 
-    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 2)],)
-    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 2)],)
-    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 2), Makie.Point(1, 2)],)
+    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 1.2)],)
+    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 1.2)],)
+    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 1.2), Makie.Point(1, 1.2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
 end
 

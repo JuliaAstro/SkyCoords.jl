@@ -17,7 +17,6 @@ DynamicQuantities = {url = "https://github.com/JuliaPhysics/DynamicQuantities.jl
 Makie = {rev = "ff/breaking-0.25", subdir = "Makie",  url = "https://github.com/MakieOrg/Makie.jl"}
 CairoMakie = {rev = "ff/breaking-0.25", subdir = "CairoMakie",  url = "https://github.com/MakieOrg/Makie.jl"}
 SkyCoords = {path = ".."}
-SOFA = {url = "https://github.com/JuliaAstro/SOFA.jl"}
 
 [compat]
 AstroAngles = "0.1, 0.2, 0.3"

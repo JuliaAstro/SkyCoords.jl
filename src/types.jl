@@ -228,8 +228,8 @@ AltAzFrame(Observer{Float64}(0.5973337005073033, -2.0604868456854497, 1742.0), 2
 julia> altaz = AltAzCoords(m13, frame)
 AltAzCoords{Float64}(0.23340717371373332, 5.326718442771835)
 
-julia> icrs = ICRSCoords(altaz, frame)
-ICRSCoords{Float64}(4.371299999999999, 0.6364000000000003)
+julia> ICRSCoords(altaz, frame) ≈ m13
+true
 ```
 
 `AltAzCoords(c, observer, jd; kwargs...)` and `ICRSCoords(c, observer, jd; kwargs...)` are shorthands that construct the [`AltAzFrame`](@ref) in place, and `AltAzCoords(c, from, to)` maps a coordinate between two horizontal frames. The transforms use the IAU SOFA observed-place algorithms in their two-stage form: the star-independent astrometry context ([`SOFA.apco13`](@extref)) is computed once per frame and cached there, and each coordinate is then transformed against it ([`SOFA.atciqz`](@extref)/[`SOFA.atioq`](@extref) in, [`SOFA.atoiq`](@extref)/[`SOFA.aticq`](@extref) out), so converting many coordinates against the same frame is cheap.

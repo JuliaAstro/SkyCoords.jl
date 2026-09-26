@@ -7,11 +7,10 @@ using SOFA
 DocMeta.setdocmeta!(SkyCoords, :DocTestSetup, :(using SkyCoords); recursive = true)
 include("pages.jl")
 
-# TODO: replace with upstream when merged
 links = InterLinks(
     "Julia" => "https://docs.julialang.org/en/v1/objects.inv",
     "AstroTime" => "https://juliaastro.org/AstroTime/stable/",
-    "SOFA" => "https://juliaastro.org/SOFA.jl/previews/PR38/",
+    "SOFA" => "https://juliaastro.org/SOFA/stable/",
 )
 
 makedocs(;

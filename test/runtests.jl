@@ -71,6 +71,8 @@ include("astropy.jl")
     @test_throws ArgumentError convert(typeof(cp), c1)
     @test_throws ArgumentError convert(typeof(cp), cartesian(cp))
     @test convert(typeof(cp), cp) === cp
+end
+
 @testset "domain validation" begin
     for C in (ICRSCoords, GalCoords, SuperGalCoords, FK4Coords{1950}, FK4NoETerms{1950}, FK5Coords{2000}, EclipticCoords{2000})
         @test C(0, π / 2) isa C # Poles are valid (closed interval)

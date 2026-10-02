@@ -65,4 +65,5 @@ position_angle
 offset
 cartesian
 spherical
+SkyCoords.checklat
 ```

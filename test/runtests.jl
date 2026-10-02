@@ -21,10 +21,23 @@ rad2arcsec(r) = 3600 * rad2deg(r)
 # tests against astropy.coordinates
 include("astropy.jl")
 
+@testset "domain validation" begin
+    for C in (ICRSCoords, GalCoords, SuperGalCoords, FK5Coords{2000}, EclipticCoords{2000})
+        @test C(0, π / 2) isa C # Poles are valid (closed interval)
+        @test C(0, -π / 2) isa C
+        @test_throws ArgumentError C(0, nextfloat(π / 2))
+        @test_throws ArgumentError C(0, prevfloat(-π / 2))
+        @test_throws ArgumentError C(0, 2)
+        @test_throws ArgumentError C(0, NaN)
+    end
+end
+
 # Test separation between coordinates and conversion with mixed floating types.
 @testset "Separation" begin
     c1 = ICRSCoords(ℯ, pi / 2)
-    c5 = ICRSCoords(ℯ, 1 + pi / 2)
+    # 1 radian past the pole from c1, expressed in-range (dec must be in [-π/2, π/2]).
+    # Going past the pole flips lon by π and reflects dec through π/2.
+    c5 = ICRSCoords(ℯ + pi, pi / 2 - 1)
     @test separation(c1, c5) ≈ separation(c5, c1) ≈ separation(c1, convert(GalCoords, c5)) ≈
         separation(convert(FK5Coords{1980}, c5), c1) ≈ 1
     for T in (GalCoords, FK5Coords{2000}, EclipticCoords{2000})
@@ -156,19 +169,82 @@ end
         @test c_conv3 ≈ c3_conv
     end
 
-    a = ICRSCoords(1, 2)
-    b = GalCoords(1, 2)
+    a = ICRSCoords(1, 1.2)
+    b = GalCoords(1, 1.2)
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
 end
 
+@testset "CartesianCoords type parameters ($CT, $TF)" for TF in (Float32, Float64), CT in (ICRSCoords, GalCoords, FK5Coords{2000})
+    c = CT{TF}(0.1, 0.2)
+
+    # canonical form: element-type-free frame tag, element type carried by TF only
+    cart = @inferred cartesian(c)
+    @test cart isa CartesianCoords{CT, TF}
+
+    # round trip preserves the type exactly
+    rt = @inferred spherical(cart)
+    @test typeof(rt) === typeof(c)
+    @test rt ≈ c
+
+    # every spelling of "convert to Cartesian" agrees; unspecified parameters
+    # are inferred from the input
+    @test @inferred(CartesianCoords(c)) === cart
+    @test @inferred(CartesianCoords{CT}(c)) === cart
+    @test @inferred(CartesianCoords{CT, TF}(c)) === cart
+    @test convert(CartesianCoords, c) === cart
+    @test convert(CartesianCoords{CT}, c) === cart
+    @test convert(CartesianCoords{CT, TF}, c) === cart
+    @test (c |> CartesianCoords) === cart
+
+    # identity conversions short-circuit
+    @test cartesian(cart) === cart
+    @test CartesianCoords(cart) === cart
+    @test convert(CartesianCoords, cart) === cart
+    @test convert(CartesianCoords{CT}, cart) === cart
+    @test convert(CartesianCoords{CT, TF}, cart) === cart
+
+    # an explicitly requested element type is honored exactly (convert contract)
+    for TF2 in (Float32, Float64, BigFloat)
+        @test convert(CartesianCoords{GalCoords, TF2}, c) isa CartesianCoords{GalCoords, TF2}
+        @test CartesianCoords{GalCoords, TF2}(c) isa CartesianCoords{GalCoords, TF2}
+        @test convert(CartesianCoords{CT, TF2}, cart) isa CartesianCoords{CT, TF2}
+    end
+
+    # fully parameterized frame tags remain valid and are honored literally
+    cc = CartesianCoords{CT{TF}}(c)
+    @test cc isa CartesianCoords{CT{TF}, TF}
+    @test vec(cc) == vec(cart)
+    @test spherical(cc) isa CT{TF}
+    @test cc ≈ cart
+
+    # a parameterized tag determines the element type of the data, so the tag
+    # and the stored vector can never disagree
+    TF2 = TF === Float32 ? Float64 : Float32
+    cc2 = @inferred CartesianCoords{CT{TF2}}(c)
+    @test cc2 isa CartesianCoords{CT{TF2}, TF2}
+    @test convert(CartesianCoords{CT{TF2}}, c) isa CartesianCoords{CT{TF2}, TF2}
+    @test convert(CartesianCoords{CT{TF2}}, cart) isa CartesianCoords{CT{TF2}, TF2}
+    @test spherical(cc2) isa CT{TF2}
+    @test cc2 ≈ cart
+
+    # a conflicting explicit element type is an incoherent state and throws
+    @test_throws ArgumentError CartesianCoords{CT{TF2}, TF}(1, 0, 0)
+    @test_throws ArgumentError convert(CartesianCoords{CT{TF2}, TF}, c)
+
+    # conversion from Cartesian back to spherical honors requested parameters
+    @test convert(GalCoords{Float32}, cart) isa GalCoords{Float32}
+    @test convert(GalCoords, cart) isa GalCoords
+    @test GalCoords(cart) ≈ convert(GalCoords, c)
+end
+
 @testset "constructionbase" begin
-    @test setproperties(ICRSCoords(1, 2), ra = 3) == ICRSCoords(3, 2)
-    @test setproperties(GalCoords(1, 2), l = 3) == GalCoords(3, 2)
-    @test setproperties(FK5Coords{2000}(1, 2), ra = 3) == FK5Coords{2000}(3, 2)
-    @test setproperties(EclipticCoords{2000}(1, 2), lon = 3) == EclipticCoords{2000}(3, 2)
-    @test setproperties(cartesian(ICRSCoords(1, 2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
+    @test setproperties(ICRSCoords(1, 1.2), ra = 3) == ICRSCoords(3, 1.2)
+    @test setproperties(GalCoords(1, 1.2), l = 3) == GalCoords(3, 1.2)
+    @test setproperties(FK5Coords{2000}(1, 1.2), ra = 3) == FK5Coords{2000}(3, 1.2)
+    @test setproperties(EclipticCoords{2000}(1, 1.2), lon = 3) == EclipticCoords{2000}(3, 1.2)
+    @test setproperties(cartesian(ICRSCoords(1, 1.2)), vec = [1.0, 0, 0]) == cartesian(ICRSCoords(0, 0))
 end
 
 VERSION > v"1.9-DEV" && @testset "Accessors" begin
@@ -272,22 +348,41 @@ end
 
 @testset "equality" begin
     @testset for T in [ICRSCoords, GalCoords, FK5Coords{2000}, EclipticCoords{2000}]
-        c1 = T(1.0, 2.0)
-        c2 = T(1.0, 2.001)
-        c3 = T{Float32}(1.0, 2.0)
-        c4 = T{Float32}(1.0, 2.001)
+        # 1.25 is exactly representable in Float32, so c1 and c3 hold the same value
+        c1 = T(1.0, 1.25)
+        c2 = T(1.0, 1.251)
+        c3 = T{Float32}(1.0, 1.25)
+        c4 = T{Float32}(1.0, 1.251)
         @test c1 == c1
-        @test_broken c1 == c3
+        @test c1 == c3
+        @test c1 != c2
+        @test c1 != c4
         @test c1 ≈ c1
         @test c1 ≈ c3
         @test !(c1 ≈ c2)
         @test !(c1 ≈ c4)
         @test c1 ≈ c2  rtol = 1.0e-3
         @test c1 ≈ c4  rtol = 1.0e-3
+
+        # `==` implies equal hashes, so value-equal coordinates of different
+        # element types collapse in a Set; c2 and c4 stay distinct because
+        # 1.251 rounds to different values in Float32 and Float64
+        @test hash(c1) == hash(c3)
+        @test length(Set([c1, c2, c3, c4])) == 3
     end
 
-    @test_broken (!(ICRSCoords(1, 2) ≈ FK5Coords{2000}(1, 2)); true)
-    @test_broken (!(FK5Coords{2000}(1, 2) ≈ FK5Coords{1950}(1, 2)); true)
+    # different frames never compare equal, even with equal angles
+    @test ICRSCoords(1, 1.2) != GalCoords(1, 1.2)
+    @test FK5Coords{2000}(1, 1.2) != FK5Coords{1950}(1, 1.2)
+    @test ICRSCoords(0, 0) != cartesian(ICRSCoords(0, 0))
+
+    # CartesianCoords: same frame tag and equal vectors, any element type
+    @test CartesianCoords{ICRSCoords}(1, 0, 0) == CartesianCoords{ICRSCoords, Float32}(1, 0, 0)
+    @test hash(CartesianCoords{ICRSCoords}(1, 0, 0)) == hash(CartesianCoords{ICRSCoords, Float32}(1, 0, 0))
+    @test CartesianCoords{ICRSCoords}(1, 0, 0) != CartesianCoords{GalCoords}(1, 0, 0)
+
+    @test_broken (!(ICRSCoords(1, 1.2) ≈ FK5Coords{2000}(1, 1.2)); true)
+    @test_broken (!(FK5Coords{2000}(1, 1.2) ≈ FK5Coords{1950}(1, 1.2)); true)
 end
 
 @testset "conversion" begin
@@ -302,11 +397,11 @@ end
 end
 
 VERSION >= v"1.9" && @testset "plotting with Makie" begin
-    coo = ICRSCoords(1, 2)
+    coo = ICRSCoords(1, 1.2)
 
-    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 2)],)
-    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 2)],)
-    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 2), Makie.Point(1, 2)],)
+    @test Makie.convert_arguments(Makie.Scatter, coo) == ([Makie.Point(1, 1.2)],)
+    @test Makie.convert_arguments(Makie.Scatter, [coo]) == ([Makie.Point(1, 1.2)],)
+    @test Makie.convert_arguments(Makie.Lines, [coo, coo]) == ([Makie.Point(1, 1.2), Makie.Point(1, 1.2)],)
     @test Makie.convert_arguments(Makie.Lines, [coo][1:0]) == ([],)
 end
 

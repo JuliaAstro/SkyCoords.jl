@@ -1,6 +1,6 @@
 name = "SkyCoords"
 uuid = "fc659fc5-75a3-5475-a2ea-3da92c065361"
-version = "1.7.2"
+version = "2.0.0"
 authors = "Kyle Barbary, Mosé Giordano, and contributors"
 
 [deps]

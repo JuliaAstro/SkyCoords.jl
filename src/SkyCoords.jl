@@ -14,6 +14,7 @@ export AbstractSkyCoords,
     FK5Coords,
     EclipticCoords,
     CartesianCoords,
+    ProjectedCoords,
     separation,
     position_angle,
     offset,
@@ -22,6 +23,7 @@ export AbstractSkyCoords,
 
 include("types.jl")
 include("cartesian.jl")
+include("projected.jl")
 
 # -----------------------------------------------------------------------------
 # Helper functions: Create rotation matrix about a given axis (x, y, z)

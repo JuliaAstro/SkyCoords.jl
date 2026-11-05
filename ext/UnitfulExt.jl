@@ -3,7 +3,7 @@ module UnitfulExt
 using Unitful
 using SkyCoords
 
-_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK5Coords, EclipticCoords}
+_COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4NoETerms, FK5Coords, EclipticCoords}
 
 # Every slot is typed (`Union{Real, Quantity}` rather than `Any`) so these
 # methods stay disjoint from the Real-typed coordinate constructors and from

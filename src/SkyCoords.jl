@@ -15,6 +15,9 @@ export AbstractSkyCoords,
     EclipticCoords,
     CartesianCoords,
     ProjectedCoords,
+    AltAzCoords,
+    AltAzFrame,
+    Observer,
     separation,
     position_angle,
     offset,
@@ -127,10 +130,20 @@ lon(c::SuperGalCoords) = c.l
 lat(c::SuperGalCoords) = c.b
 lat(c::EclipticCoords) = c.lat
 lon(c::EclipticCoords) = c.lon
+lon(c::AltAzCoords) = c.az
+lat(c::AltAzCoords) = c.alt
 lon(c::AbstractSkyCoords) = c.ra
 lat(c::AbstractSkyCoords) = c.dec
 
 lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
+
+# Inverse of `lonlat`: construct a coordinate of type `T` from (lon, lat)
+# angles. The generic machinery (`convert`, `spherical`, `offset`) builds
+# results through this hook, so a frame whose natural argument order is not
+# (lon, lat) only overrides it here.
+fromlonlat(::Type{T}, lon, lat) where {T <: AbstractSkyCoords} = T(lon, lat)
+# AltAzCoords is constructed as (alt, az), i.e. (lat, lon)
+fromlonlat(::Type{T}, lon, lat) where {T <: AltAzCoords} = T(lat, lon)
 
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
@@ -327,6 +340,34 @@ frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where
     add_eterms(rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, e_from), e_to)
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 
+# -----------------------------------------------------------------------------
+# Horizontal (alt/az) coordinates
+
+# AltAzCoords (see types.jl) is a well-defined sphere, so same-frame operations,
+# Cartesian representations included, work like in any other system. Its
+# relation to the celestial frames, however, depends on the observer location
+# and time, runtime data that lives outside the type system.
+# The `frame_transform` primitive is therefore gated with an informative error
+# for every mixed pair. The actual transforms are provided by the SOFA.jl package
+# extension as frame-taking constructors, e.g., `AltAzCoords(c, frame)` with
+# an `AltAzFrame` describing the observing context.
+const ALTAZ_TO_ERROR = "Converting to horizontal coordinates requires an observer location and time. Load SOFA.jl and use `AltAzCoords(c, frame)` with an `AltAzFrame`, or the shorthand `AltAzCoords(c, observer, jd)`."
+const ALTAZ_FROM_ERROR = "Converting from horizontal coordinates requires an observer location and time. Load SOFA.jl and use a coordinate constructor such as `ICRSCoords(c, frame)` with an `AltAzFrame`, or the shorthand `ICRSCoords(c, observer, jd)`."
+
+frame_transform(::Type{<:AltAzCoords}, ::Type{<:AltAzCoords}, v) = v
+frame_transform(::Type{<:AltAzCoords}, ::Type{<:AbstractSkyCoords}, v) = throw(ArgumentError(ALTAZ_TO_ERROR))
+frame_transform(::Type{<:AbstractSkyCoords}, ::Type{<:AltAzCoords}, v) = throw(ArgumentError(ALTAZ_FROM_ERROR))
+# FK4Coords has generic `frame_transform` fallbacks of its own (see above).
+# Without explicit rules for the FK4 <--> AltAz pairs, those fallbacks are
+# ambiguous with the gates here.
+frame_transform(::Type{<:AltAzCoords}, ::Type{<:FK4Coords{e}}, v) where {e} = throw(ArgumentError(ALTAZ_TO_ERROR))
+frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:AltAzCoords}, v) where {e} = throw(ArgumentError(ALTAZ_FROM_ERROR))
+# ProjectedCoords also has a generic delegation method (see projected.jl) that is
+# ambiguous with the gates above. Resolve by delegating to the origin frame, whose
+# own rule then decides: an AltAz origin passes through, a celestial origin throws.
+frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AltAzCoords, TC <: AbstractSkyCoords} =
+    frame_transform(T, TC, v)
+
 # ------------------------------------------------------------------------------
 # Distance between coordinates
 
@@ -410,7 +451,7 @@ julia> offset(c1, c2) .|> rad2deg
 ### See Also
 [`separation`](@ref), [`position_angle`](@ref)
 """
-offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = T(_offset(lon(c), lat(c), sep, pa)...)
+offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = fromlonlat(T, _offset(lon(c), lat(c), sep, pa)...)
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle

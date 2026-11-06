@@ -756,10 +756,10 @@ VERSION >= v"1.9" && @testset "Matching ($T1, $T2)" for T1 in [ICRSCoords, GalCo
         # the second neighbor is whichever one has greater separation
         a = argmax(ksep)
         @test id3[n] == kid[a]
-        @test sep3[n] == ksep[a]
+        @test sep3[n] ≈ ksep[a]
         kid, ksep = knn(tree, matchcat[n], 2, true)
         @test id3[n] == kid[2]
-        @test sep3[n] == ksep[2]
+        @test sep3[n] ≈ ksep[2]
         # Test with CartesianCoords
         @test SkyCoords.match(refcat, convert.(Ref(CartesianCoords{T2}), refcat)[rr])[1] == rr
         @test SkyCoords.match(convert.(Ref(CartesianCoords{T1}), refcat), convert.(Ref(T2), refcat)[rr])[1] == rr

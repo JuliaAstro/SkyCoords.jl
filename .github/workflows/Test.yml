@@ -1,5 +1,4 @@
-name: CI
-
+name: Test
 on:
   push:
     branches: [master]
@@ -8,9 +7,9 @@ on:
 
 concurrency:
   # Skip intermediate builds: always.
-  # Cancel intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
   test:
@@ -20,12 +19,12 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - 'min'
-          - '1'
-          - 'nightly'
+          - "min"
+          - "1"
+          - "pre"
         os:
           - ubuntu-latest
-          - macos-latest
+          - macOS-latest
           - windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -40,17 +39,3 @@ jobs:
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: julia-actions/setup-julia@v3
-        with:
-          version: '1'
-      - uses: julia-actions/cache@v3
-      - uses: julia-actions/julia-docdeploy@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}

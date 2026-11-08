@@ -448,7 +448,7 @@ end
 Offset a coordinate by a given angular separation, `separation`, in radians and position angle, `pa`, in radians.
 
 Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes.
-Returns a sky coordinate of the same type as input.
+Returns a sky coordinate of the same type as input, so a [`ProjectedCoords`](@ref) stays projected around the same origin.
 
 ### Examples
 ```jldoctest
@@ -464,7 +464,8 @@ julia> offset(c1, c2) .|> rad2deg
 ### See Also
 [`separation`](@ref), [`position_angle`](@ref)
 """
-offset(c::T, sep, pa) where {T <: AbstractSkyCoords} = fromlonlat(T, _offset(lon(c), lat(c), sep, pa)...)
+offset(c::T, sep, pa) where {T <: AbstractSkyCoords} =
+    _reproject(c, fromlonlat(_unprojected_type(T), _offset(lon(c), lat(c), sep, pa)...))
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle

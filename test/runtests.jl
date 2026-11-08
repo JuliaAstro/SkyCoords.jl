@@ -66,6 +66,17 @@ include("astropy.jl")
     @test position_angle(ProjectedCoords(cp, zero(cp.offset)), c0) ≈ pa
     @test all(offset(cp, c0) .≈ (sep, pa))
 
+    # Applying an offset stays projected around the same origin
+    moved = @inferred offset(cp, 1.0e-5, 0.5)
+    @test moved isa typeof(cp)
+    @test origin(moved) === c0
+    @test convert(ICRSCoords, moved) ≈ offset(c1, 1.0e-5, 0.5)
+    @test moved ≈ project(c0, offset(c1, 1.0e-5, 0.5))
+    @test all(offset(cp, moved) .≈ (1.0e-5, 0.5))
+    nested = ProjectedCoords(cp, zero(cp.offset))
+    @test offset(nested, 1.0e-5, 0.5) isa typeof(nested)
+    @test convert(ICRSCoords, offset(nested, 1.0e-5, 0.5)) ≈ offset(c1, 1.0e-5, 0.5)
+
     # Projected coords are first-class in the conversion lattice.
     # Cartesian targets work through `frame_transform` and tag with the origin's frame.
     cart = @inferred cartesian(cp)

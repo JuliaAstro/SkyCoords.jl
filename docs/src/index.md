@@ -1,7 +1,7 @@
 # SkyCoords.jl
 
 [![GitHub](https://img.shields.io/badge/Code-GitHub-black.svg)](https://github.com/JuliaAstro/SkyCoords.jl)
-[![CI](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/ci.yml)
+[![Test](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/Test.yml/badge.svg)](https://github.com/JuliaAstro/SkyCoords.jl/actions/workflows/Test.yml)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/SkyCoords.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html)
 [![codecov](https://codecov.io/gh/JuliaAstro/SkyCoords.jl/graph/badge.svg?token=0WIe7bWYFj)](https://codecov.io/gh/JuliaAstro/SkyCoords.jl)
 

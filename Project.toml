@@ -3,6 +3,9 @@ uuid = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 version = "2.0.0"
 authors = "Kyle Barbary, Mosé Giordano, and contributors"
 
+[workspace]
+projects = ["test", "docs"]
+
 [deps]
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -37,11 +40,3 @@ SOFA = "2"
 StaticArrays = "0.8, 0.9, 1"
 Unitful = "1.15"
 julia = "1.10"
-
-[extras]
-Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
-DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
-Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
-SOFA = "ad3d3fd0-b5f2-51ee-b274-8cdbe62317e2"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"

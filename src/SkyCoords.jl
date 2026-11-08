@@ -390,6 +390,10 @@ Return angular separation between two sky coordinates, in radians.
 The angular separation is calculated using the [Vincenty formula](http://en.wikipedia.org/wiki/Great-circle_distance),
 which is slightly more complex and computationally expensive than some alternatives,
 but is stable at at all distances, including the poles and antipodes.
+
+`c1` and `c2` can be in different frames or representations. `c2` is converted to the frame of `c1`, which for a [`ProjectedCoords`](@ref) is the frame of its origin.
+
+To test whether two coordinates are the same point on the sky, compare their separation to a tolerance, e.g., `separation(c1, c2) < 1e-9`. See [Comparing Coordinates](@ref) for why `==` does not answer this.
 """
 separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
     _separation(lon(c1), lat(c1), lon(c2), lat(c2))
@@ -397,8 +401,12 @@ separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
 separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T <: AbstractSkyCoords} =
     2 * asin(norm(vec(c1) - vec(c2)) / 2)
 
-separation(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords} =
-    separation(c1, convert(T1, c2))
+# Mixed types are compared in the left argument's frame. `convert` cannot target
+# a projected type, so a projected left argument is compared in its origin's frame.
+function separation(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords}
+    T = _unprojected_type(T1)
+    return separation(convert(T, c1), convert(T, c2))
+end
 
 
 """
@@ -415,7 +423,12 @@ julia> position_angle(c1, c2) |> rad2deg
 ```
 """
 position_angle(c1::T, c2::T) where {T <: AbstractSkyCoords} = _position_angle(lon(c1), lat(c1), lon(c2), lat(c2))
-position_angle(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords} = position_angle(c1, convert(T1, c2))
+
+# As with `separation`, a projected left argument is compared in its origin's frame.
+function position_angle(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords}
+    T = _unprojected_type(T1)
+    return position_angle(convert(T, c1), convert(T, c2))
+end
 
 
 function _position_angle(λ1, ϕ1, λ2, ϕ2)

@@ -188,6 +188,32 @@ julia> offset(c1, c2) .≈ (sep, pa)
 (true, true)
 ```
 
+### Comparing Coordinates
+
+`==` compares what two coordinates store: their frame, their representation, and their exact values. Element types do not need to match, although values that round differently, like `0.2` and `0.2f0`, are not equal. No conversion is performed, so two descriptions of one point on the sky in different frames or representations are not equal:
+
+```jldoctest compare
+julia> c = ICRSCoords(1.0, 0.2);
+
+julia> c == convert(GalCoords, c)
+false
+
+julia> c == cartesian(c)
+false
+```
+
+Converting back to the original frame does not make `==` reliable either, because each conversion rounds, so a round trip often does not return exactly the same values. `≈` applies a tolerance to the stored values and is not defined between spherical coordinates in different frames.
+
+To test whether two coordinates are the same point on the sky, compare their [`separation`](@ref) to a tolerance suited to your application. It accepts coordinates in different frames and representations, except for [`AltAzCoords`](@ref), which need an [`AltAzFrame`](@ref) to convert to or from another frame:
+
+```jldoctest compare
+julia> separation(c, convert(GalCoords, c)) < 1e-9 # Radians
+true
+
+julia> separation(c, cartesian(c)) < 1e-9
+true
+```
+
 ## Catalog Matching
 
 SkyCoords.jl offers coordinate catalog matching functionality through an extension that depends on [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl). This functionality requires Julia ≥ v1.9 and `NearestNeighbors.jl` to be loaded (e.g., `using NearestNeighbors.jl`).

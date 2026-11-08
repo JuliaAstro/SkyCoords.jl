@@ -63,6 +63,11 @@ _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentEr
     "`project(origin, c)` instead.",
 ))
 
+# The type `convert` can target in place of a projected coordinate: its origin's,
+# followed through nested projections. Every other coordinate type is its own.
+_unprojected_type(::Type{T}) where {T <: AbstractSkyCoords} = T
+_unprojected_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = _unprojected_type(TC)
+
 # The Cartesian representation is tagged with the origin's frame.
 # `constructorof(typeof(c))` (the generic tag choice) must keep returning
 # `ProjectedCoords` for `setproperties` reconstruction, but the frame this vector lives in is the origin's.

@@ -46,6 +46,26 @@ include("astropy.jl")
     # Same-type separation works through the projected lon/lat directly
     @test separation(cp, project(c0, c0)) ≈ separation(c1, c0)
 
+    # A projected left argument is compared in its origin's frame, since
+    # `convert` cannot target a projected type
+    sep = separation(c1, c0)
+    @test @inferred(separation(cp, c0)) ≈ sep
+    @test separation(c0, cp) ≈ sep
+    @test separation(cp, convert(GalCoords, c0)) ≈ sep
+    @test separation(cp, cartesian(c0)) ≈ sep
+    @test separation(cp, project(convert(GalCoords, c0), c0)) ≈ sep
+    @test separation(ProjectedCoords(cp, zero(cp.offset)), c0) ≈ sep
+
+    # The same goes for position_angle, and for offset, which is built from both
+    pa = position_angle(c1, c0)
+    @test @inferred(position_angle(cp, c0)) ≈ pa
+    @test position_angle(c0, cp) ≈ position_angle(c0, c1)
+    @test position_angle(cp, convert(GalCoords, c0)) ≈ pa
+    @test position_angle(cp, cartesian(c0)) ≈ pa
+    @test position_angle(cp, project(convert(GalCoords, c0), c0)) ≈ pa
+    @test position_angle(ProjectedCoords(cp, zero(cp.offset)), c0) ≈ pa
+    @test all(offset(cp, c0) .≈ (sep, pa))
+
     # Projected coords are first-class in the conversion lattice.
     # Cartesian targets work through `frame_transform` and tag with the origin's frame.
     cart = @inferred cartesian(cp)

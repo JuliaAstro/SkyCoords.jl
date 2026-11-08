@@ -8,9 +8,6 @@ SOFA = "ad3d3fd0-b5f2-51ee-b274-8cdbe62317e2"
 SkyCoords = "fc659fc5-75a3-5475-a2ea-3da92c065361"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
-[sources]
-SkyCoords = {path = ".."}
-
 [compat]
 AstroAngles = "0.1, 0.2, 0.3"
 Documenter = "1"

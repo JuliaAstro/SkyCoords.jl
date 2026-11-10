@@ -79,7 +79,7 @@ _reproject(c::T, r) where {T <: ProjectedCoords} = T(origin(c), _project_offset(
 # The Cartesian representation is tagged with the origin's frame.
 # `constructorof(typeof(c))` (the generic tag choice) must keep returning
 # `ProjectedCoords` for `setproperties` reconstruction, but the frame this vector lives in is the origin's.
-cartesian(c::AbstractProjectedCoords) = CartesianCoords{constructorof(typeof(origin(c)))}(coords2cart(c))
+cartesian(c::AbstractProjectedCoords) = CartesianCoords{_unprojected_type(typeof(c))}(coords2cart(c))
 
 # Equality cannot fall back to the generic frame-tag + lon/lat comparison in
 # types.jl: the bare `ProjectedCoords` tag erases the origin's frame, so raw

@@ -65,10 +65,11 @@ _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentEr
     "`project(origin, c)` instead.",
 ))
 
-# The type `convert` can target in place of a projected coordinate: its origin's,
-# followed through nested projections. Every other coordinate type is its own.
+# The type `convert` can target in place of a projected coordinate: its origin's
+# frame, followed through nested projections, without an element type so offsets
+# more precise than the origin are not rounded to it. Every other coordinate type is its own.
 _unprojected_type(::Type{T}) where {T <: AbstractSkyCoords} = T
-_unprojected_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = _unprojected_type(TC)
+_unprojected_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = constructorof(_unprojected_type(TC))
 
 # Express `r`, a coordinate in `c`'s underlying frame, the same way `c` is
 # expressed. A projected coordinate keeps its origin, and so its type.

@@ -38,11 +38,13 @@ Represent `c` as a [`ProjectedCoords`](@ref) offset from `origin`.
 
 `c` is first converted to `origin`'s frame, so the offset is expressed in that frame.
 """
-function project(origin::AbstractSkyCoords, c::AbstractSkyCoords)
-    cc = convert(typeof(origin), c)
-    Δlon = rem2pi(lon(cc) - lon(origin), RoundNearest)
-    offset = SVector(Δlon * cos(lat(origin)), lat(cc) - lat(origin))
-    return ProjectedCoords(origin, offset)
+project(origin::AbstractSkyCoords, c::AbstractSkyCoords) =
+    ProjectedCoords(origin, _project_offset(origin, convert(typeof(origin), c)))
+
+# The flat-sky offset from `origin` of `c`, which is already in `origin`'s frame.
+function _project_offset(origin, c)
+    Δlon = rem2pi(lon(c) - lon(origin), RoundNearest)
+    return SVector(Δlon * cos(lat(origin)), lat(c) - lat(origin))
 end
 
 # A projected coordinate's frame is its origin's, so the frame-change
@@ -63,10 +65,21 @@ _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentEr
     "`project(origin, c)` instead.",
 ))
 
+# The type `convert` can target in place of a projected coordinate: its origin's
+# frame, followed through nested projections, without an element type so offsets
+# more precise than the origin are not rounded to it. Every other coordinate type is its own.
+_unprojected_type(::Type{T}) where {T <: AbstractSkyCoords} = T
+_unprojected_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = constructorof(_unprojected_type(TC))
+
+# Express `r`, a coordinate in `c`'s underlying frame, the same way `c` is
+# expressed. A projected coordinate keeps its origin, and so its type.
+_reproject(::AbstractSkyCoords, r) = r
+_reproject(c::T, r) where {T <: ProjectedCoords} = T(origin(c), _project_offset(origin(c), r))
+
 # The Cartesian representation is tagged with the origin's frame.
 # `constructorof(typeof(c))` (the generic tag choice) must keep returning
 # `ProjectedCoords` for `setproperties` reconstruction, but the frame this vector lives in is the origin's.
-cartesian(c::AbstractProjectedCoords) = CartesianCoords{constructorof(typeof(origin(c)))}(coords2cart(c))
+cartesian(c::AbstractProjectedCoords) = CartesianCoords{_unprojected_type(typeof(c))}(coords2cart(c))
 
 # Equality cannot fall back to the generic frame-tag + lon/lat comparison in
 # types.jl: the bare `ProjectedCoords` tag erases the origin's frame, so raw

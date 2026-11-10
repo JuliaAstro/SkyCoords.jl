@@ -46,6 +46,41 @@ include("astropy.jl")
     # Same-type separation works through the projected lon/lat directly
     @test separation(cp, project(c0, c0)) ≈ separation(c1, c0)
 
+    # A projected left argument is compared in its origin's frame, since
+    # `convert` cannot target a projected type
+    sep = separation(c1, c0)
+    @test @inferred(separation(cp, c0)) ≈ sep
+    @test separation(c0, cp) ≈ sep
+    @test separation(cp, convert(GalCoords, c0)) ≈ sep
+    @test separation(cp, cartesian(c0)) ≈ sep
+    @test separation(cp, project(convert(GalCoords, c0), c0)) ≈ sep
+    @test separation(ProjectedCoords(cp, zero(cp.offset)), c0) ≈ sep
+    # Offsets more precise than the origin are not rounded to its element type
+    p32 = ProjectedCoords{ICRSCoords{Float32}, Float64}(ICRSCoords(0.1f0, -0.2f0), [1e-10, 2e-10])
+    @test separation(p32, convert(ICRSCoords{Float64}, origin(p32))) ≈ hypot(1e-10, 2e-10) rtol = 1e-6
+
+    # The same goes for position_angle, and for offset, which is built from both
+    pa = position_angle(c1, c0)
+    @test @inferred(position_angle(cp, c0)) ≈ pa
+    @test position_angle(c0, cp) ≈ position_angle(c0, c1)
+    @test position_angle(cp, convert(GalCoords, c0)) ≈ pa
+    @test position_angle(cp, cartesian(c0)) ≈ pa
+    @test position_angle(cp, project(convert(GalCoords, c0), c0)) ≈ pa
+    @test position_angle(ProjectedCoords(cp, zero(cp.offset)), c0) ≈ pa
+    @test all(offset(cp, c0) .≈ (sep, pa))
+
+    # Applying an offset stays projected around the same origin
+    moved = @inferred offset(cp, 1.0e-5, 0.5)
+    @test moved isa typeof(cp)
+    @test origin(moved) === c0
+    @test convert(ICRSCoords, moved) ≈ offset(c1, 1.0e-5, 0.5)
+    @test moved ≈ project(c0, offset(c1, 1.0e-5, 0.5))
+    @test all(offset(cp, moved) .≈ (1.0e-5, 0.5))
+    nested = ProjectedCoords(cp, zero(cp.offset))
+    @test offset(nested, 1.0e-5, 0.5) isa typeof(nested)
+    @test convert(ICRSCoords, offset(nested, 1.0e-5, 0.5)) ≈ offset(c1, 1.0e-5, 0.5)
+    @test cartesian(nested) ≈ cartesian(c1)
+
     # Projected coords are first-class in the conversion lattice.
     # Cartesian targets work through `frame_transform` and tag with the origin's frame.
     cart = @inferred cartesian(cp)

@@ -26,6 +26,11 @@ end
 ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Number} =
     ProjectedCoords{TC, T}(origin, offset)
 
+"""
+    origin(c::ProjectedCoords) -> coordinate
+
+The coordinate that `c` is an offset from.
+"""
 origin(c::ProjectedCoords) = c.origin
 
 # The point at distance ρ = |offset| along the great circle leaving the origin at position angle
@@ -52,9 +57,21 @@ lat(c::AbstractProjectedCoords) = lonlat(c)[2]
 """
     project(origin::AbstractSkyCoords, c::AbstractSkyCoords) -> ProjectedCoords
 
-Represent `c` as a [`ProjectedCoords`](@ref) offset from `origin`.
+Represent `c` as a [`ProjectedCoords`](@ref) offset from `origin`: its separation from `origin`
+times the unit vector `(sin, cos)` of its position angle.
 
 `c` is first converted to `origin`'s frame, so the offset is expressed in that frame.
+
+### Examples
+```jldoctest
+julia> o = ICRSCoords(0.5, 0.3); c = offset(o, 0.05, 0.6);
+
+julia> SkyCoords.project(o, c).offset ≈ 0.05 .* [sin(0.6), cos(0.6)]
+true
+
+julia> convert(ICRSCoords, SkyCoords.project(o, c)) ≈ c
+true
+```
 """
 project(origin::AbstractSkyCoords, c::AbstractSkyCoords) =
     ProjectedCoords(origin, _project_offset(origin, convert(typeof(origin), c)))

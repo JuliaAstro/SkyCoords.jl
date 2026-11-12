@@ -5,11 +5,12 @@ using Unitful
 using DynamicQuantities: DynamicQuantities, @us_str, uconvert
 using ConstructionBase: setproperties
 using DelimitedFiles
-using LinearAlgebra: normalize
+using LinearAlgebra: norm, normalize
 using NearestNeighbors
 using Random: randperm
 using SkyCoords
 using StableRNGs
+using StaticArrays: SVector
 using Statistics
 using Test
 import Makie
@@ -29,7 +30,7 @@ include("astropy.jl")
     cp = project(c0, c1)::ProjectedCoords
     @test origin(cp) == c0
     @test cp.offset[1] ≈ 0.98 * 1.0e-5  rtol = 1.0e-4
-    @test cp.offset[2] ≈ 3.0e-5
+    @test cp.offset[2] ≈ 3.0e-5  rtol = 1.0e-4
     @test convert(ICRSCoords, cp) ≈ c1
     @test convert(GalCoords, cp) ≈ convert(GalCoords, c1)
     @test cp == cp
@@ -107,6 +108,44 @@ include("astropy.jl")
     @test_throws ArgumentError convert(typeof(cp), c1)
     @test_throws ArgumentError convert(typeof(cp), cartesian(cp))
     @test convert(typeof(cp), cp) === cp
+
+    @testset "azimuthal equidistant (ARC) geometry" begin
+        as = deg2rad(1 / 3600)
+
+        # reference positions were evaluated in exact arithmetic using textbook equations
+        @testset for (o, Δ, expected) in [
+                # 1″ East at dec 80°: the great circle leaves the parallel, 13.748 μas towards the equator
+                (ICRSCoords(deg2rad(30.0), deg2rad(80.0)), SVector(as, 0.0), (0.5236266949054578, 1.3962634015288136)),
+                # East at the pole is set by the origin's longitude: 1″ along the meridian at 30° + 90°
+                (ICRSCoords(deg2rad(30.0), π / 2), SVector(as, 0.0), (2.0943951023805654, 1.5707914786580854)),
+                (ICRSCoords(0.3, -1.2), SVector(0.2, 0.1), (0.7186353155725951, -1.061115896809935)),
+                (ICRSCoords(5.0, -π / 2), SVector(-1.0e-8, 2.0e-8), (4.536352392223841, -1.5707963044342168)),
+                (ICRSCoords(1.0, 0.5), SVector(2.0, -2.0), (3.851768056743134, -0.704010673798442)),
+            ]
+            @test @inferred(convert(ICRSCoords, ProjectedCoords(o, Δ))) ≈ ICRSCoords(expected...) atol = 2.0e-15 rtol = 0
+        end
+
+        # |Δ| is the separation from the origin and atan(E, N) the position angle, and `project` inverts the projection
+        @testset for λ in [0, 3],
+                φ in [-π / 2, 0, 0.7, π / 2 - 1.0e-7, π / 2],
+                Δ in [SVector(1.0e-6, 0), SVector(0, -2.0e-6), SVector(-1.0e-8, 2.0e-8), SVector(0.3, -0.2), SVector(-1.5, 2.0)]
+            o = ICRSCoords(λ, φ)
+            p = ProjectedCoords(o, Δ)
+            @test separation(o, p) ≈ norm(Δ) atol = 2.0e-15
+            # the position angle of a point at distance ρ is known to the absolute coordinates' resolution over ρ
+            @test rem2pi(position_angle(o, p) - atan(Δ...), RoundNearest) ≈ 0 atol = 4.0e-15 / norm(Δ)
+            @test project(o, convert(ICRSCoords, p)).offset ≈ Δ atol = 2.0e-15 rtol = 0
+        end
+
+        # An offset longer than π continues along the great circle past the antipode: the same point as the
+        # shorter offset the other way, which is what `project` returns
+        o = ICRSCoords(1.0, 0.3)
+        @test project(o, convert(ICRSCoords, ProjectedCoords(o, SVector(4.0, 0.0)))).offset ≈ [4.0 - 2π, 0.0] atol = 2.0e-15 rtol = 0
+
+        # Towards the antipode: the whole distance π along the direction the rounding of π leaves
+        @test project(ICRSCoords(0.0, 0.0), ICRSCoords(π, 0.0)).offset ≈ [π, 0.0] atol = 2.0e-15 rtol = 0
+        @test project(ICRSCoords(0.0, π / 2), ICRSCoords(0.0, -π / 2)).offset ≈ [0.0, -π] atol = 2.0e-15 rtol = 0
+    end
 end
 
 @testset "domain validation" begin

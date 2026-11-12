@@ -146,6 +146,11 @@ include("astropy.jl")
         @test project(ICRSCoords(0.0, 0.0), ICRSCoords(π, 0.0)).offset ≈ [π, 0.0] atol = 2.0e-15 rtol = 0
         @test project(ICRSCoords(0.0, π / 2), ICRSCoords(0.0, -π / 2)).offset ≈ [0.0, -π] atol = 2.0e-15 rtol = 0
     end
+
+    # offsets may be angle quantities
+    o = ICRSCoords(1.0, 0.5)
+    @test @inferred(convert(ICRSCoords, ProjectedCoords(o, SVector(1.0, -2.0)u"μrad"))) ≈
+          convert(ICRSCoords, ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))) atol = 1.0e-16 rtol = 0
 end
 
 @testset "domain validation" begin

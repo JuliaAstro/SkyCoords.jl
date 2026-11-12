@@ -1,7 +1,7 @@
 abstract type AbstractProjectedCoords <: AbstractSkyCoords end
 
 """
-    ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractSkyCoords
+    ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractSkyCoords
 
 Represent a coordinate as an offset `(east, north)` from `origin`, in the azimuthal equidistant projection around it:
 the point lies at angular distance `norm(offset)` from `origin`, at position angle `atan(offset[1], offset[2])`.
@@ -13,17 +13,17 @@ Its frame is the origin's. Conversions out of a `ProjectedCoords` (spherical or 
 work like any other coordinate. Conversions into one are not possible via `convert`, since they require an origin value.
 Use [`project`](@ref) instead.
 """
-struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractProjectedCoords
+struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractProjectedCoords
     origin::TC
     offset::SVector{2, T}
 
     # Typed like the spherical types' inner constructors so the two-argument
     # form stays disjoint from extension constructors taking other argument
     # pairs
-    ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Real}) where {TC <: AbstractSkyCoords, T <: Real} =
+    ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Number}) where {TC <: AbstractSkyCoords, T <: Number} =
         new(origin, offset)
 end
-ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Real} =
+ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Number} =
     ProjectedCoords{TC, T}(origin, offset)
 
 origin(c::ProjectedCoords) = c.origin

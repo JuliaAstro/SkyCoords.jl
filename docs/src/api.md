@@ -73,6 +73,7 @@ separation
 position_angle
 offset
 SkyCoords.project
+SkyCoords.origin
 cartesian
 spherical
 SkyCoords.checklat

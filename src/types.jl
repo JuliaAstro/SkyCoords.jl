@@ -381,11 +381,10 @@ Base.hash(c::AbstractSkyCoords, h::UInt) = hash(lonlat(c), hash(constructorof(ty
 # Same-frame approximate equality compares (lon, lat), with the longitude
 # difference taken in (-π, π] so that nearly-equal points on either side of
 # the lon = 0 wrap still compare ≈, e.g., `ICRSCoords(eps(), 1) ≈ ICRSCoords(-eps(), 1)`.
-_isapprox_lonlat(a, b; kwargs...) = isapprox(
-    SVector(lon(a), lat(a)),
-    SVector(lon(a) + rem2pi(lon(b) - lon(a), RoundNearest), lat(b));
-    kwargs...
-)
+function _isapprox_lonlat(a, b; kwargs...)
+    (λa, φa), (λb, φb) = lonlat(a), lonlat(b)
+    return isapprox(SVector(λa, φa), SVector(λa + rem2pi(λb - λa, RoundNearest), φb); kwargs...)
+end
 Base.isapprox(a::ICRSCoords, b::ICRSCoords; kwargs...) = _isapprox_lonlat(a, b; kwargs...)
 Base.isapprox(a::GalCoords, b::GalCoords; kwargs...) = _isapprox_lonlat(a, b; kwargs...)
 Base.isapprox(a::SuperGalCoords, b::SuperGalCoords; kwargs...) = _isapprox_lonlat(a, b; kwargs...)

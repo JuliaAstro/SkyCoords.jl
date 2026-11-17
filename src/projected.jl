@@ -23,8 +23,9 @@ struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractProjectedC
     ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Real}) where {TC <: AbstractSkyCoords, T <: Real} =
         new(origin, offset)
 end
+# Floated like the spherical types' angles, so `offset` results fit the same type
 ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Real} =
-    ProjectedCoords{TC, T}(origin, offset)
+    ProjectedCoords{TC, float(T)}(origin, offset)
 
 """
     origin(c::ProjectedCoords) -> coordinate

@@ -155,6 +155,12 @@ include("astropy.jl")
     @test pμ == ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))
     @test hash(pμ) == hash(ProjectedCoords(o, SVector(1.0e-6, -2.0e-6)))
     @test_throws Unitful.DimensionError ProjectedCoords(o, SVector(1.0, 0.0)u"m")
+
+    # Integer and rational offsets are floated
+    @test ProjectedCoords(o, SVector(0, 0)) isa ProjectedCoords{typeof(o), Float64}
+    @test ProjectedCoords(o, SVector(1 // 1000, 0 // 1)) isa ProjectedCoords{typeof(o), Float64}
+    @test ProjectedCoords(o, SVector(1, 2)u"μrad") isa ProjectedCoords{typeof(o), Float64}
+    @test offset(ProjectedCoords(o, SVector(0, 0)), 1.0e-5, 0.3) ≈ project(o, offset(o, 1.0e-5, 0.3))
 end
 
 @testset "domain validation" begin

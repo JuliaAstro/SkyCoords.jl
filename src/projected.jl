@@ -51,11 +51,7 @@ function coords2cart(c::AbstractProjectedCoords)
     end
     # the origin at the offset's precision, which may exceed the origin's own
     λ₀, φ₀, _ = promote(lonlat(origin(c))..., w)
-    sinλ₀, cosλ₀ = sincos(λ₀)
-    sinφ₀, cosφ₀ = sincos(φ₀)
-    k̂ = SVector(cosφ₀ * cosλ₀, cosφ₀ * sinλ₀, sinφ₀)
-    ê = SVector(-sinλ₀, cosλ₀, 0)
-    n̂ = SVector(-sinφ₀ * cosλ₀, -sinφ₀ * sinλ₀, cosφ₀)
+    k̂, ê, n̂ = _local_frame(λ₀, φ₀)
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
 lonlat(c::AbstractProjectedCoords) = cart2coords(coords2cart(c))

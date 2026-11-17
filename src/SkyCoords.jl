@@ -47,6 +47,16 @@ function cart2coords(v)
     return lon, lat
 end
 
+# Unit vector at (lon, lat) and the East and North unit vectors there (set by lon at a pole)
+function _local_frame(lon, lat)
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+    k̂ = SVector(coslat * coslon, coslat * sinlon, sinlat)
+    ê = SVector(-sinlon, coslon, 0)
+    n̂ = SVector(-sinlat * coslon, -sinlat * sinlon, coslat)
+    return k̂, ê, n̂
+end
+
 # -----------------------------------------------------------------------------
 # Constant rotation matrices and precession matrix function
 
@@ -448,7 +458,7 @@ end
 
 Offset a coordinate by a given angular separation, `separation`, in radians and position angle, `pa`, in radians.
 
-Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes.
+Follows the great circle that leaves the coordinate at position angle `pa`, accurate at any separation and position, poles included.
 Returns a sky coordinate of the same type as input, so a [`ProjectedCoords`](@ref) stays projected around the same origin.
 
 ### Examples
@@ -465,8 +475,13 @@ julia> offset(c1, c2) .|> rad2deg
 ### See Also
 [`separation`](@ref), [`position_angle`](@ref)
 """
-offset(c::T, sep, pa) where {T <: AbstractSkyCoords} =
-    _reproject(c, fromlonlat(_unprojected_type(T), _offset(lonlat(c)..., sep, pa)...))
+function offset(c::T, sep, pa) where {T <: AbstractSkyCoords}
+    k̂, ê, n̂ = _local_frame(lonlat(c)...)
+    sin_sep, cos_sep = sincos(sep)
+    sin_pa, cos_pa = sincos(pa)
+    r = cos_sep * k̂ + sin_sep * (sin_pa * ê + cos_pa * n̂)
+    return _reproject(c, fromlonlat(_unprojected_type(T), cart2coords(r)...))
+end
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle
@@ -485,29 +500,6 @@ julia> offset(c1, c2) .|> rad2deg
 [`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c1::AbstractSkyCoords, c2::AbstractSkyCoords) = separation(c1, c2), position_angle(c1, c2)
-
-#= use the cosine rule in spherical geometry with three points, the north pole, the starting point,
-and the final point.
-angles: (change in lon), (position angle), (-1/position angle)
-sides: (separation), (final co-latitude), (starting co-latitude)
-=#
-function _offset(λ, ϕ, separation, pa)
-    sin_a, cos_a = sincos(separation)
-    cos_c, sin_c = sincos(ϕ)
-    sin_B, cos_B = sincos(pa)
-
-    # solving cosine rule
-    cos_b = cos_c * cos_a + sin_c * sin_a * cos_B
-
-    # solving sine rule
-    xsin_A = sin_a * sin_B * sin_c
-    xcos_A = cos_a - cos_b * cos_c
-
-    # correction for antipodes, otherwise atan2
-    ang = sin_c < 1.0e-12 ? π / 2 + cos_c * (π / 2 - pa) : atan(xsin_A, xcos_A)
-
-    return mod2pi(λ + ang), asin(cos_b)
-end
 
 # Stub to extend in NearestNeighbors extension
 function match end

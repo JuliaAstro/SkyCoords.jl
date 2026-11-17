@@ -182,6 +182,11 @@ include("astropy.jl")
         @test project(o, ICRSCoords(1.0, φ)).offset[2] ≈ φ - 0.5 rtol = 4 * eps()
         @test separation(o, ICRSCoords(1.0, φ)) ≈ φ - 0.5 rtol = 4 * eps()
     end
+
+    # offset is accurate near the poles
+    c = ICRSCoords(1.0, π / 2 - 1.0e-9)
+    @test separation(c, offset(c, 1.0e-7, 0.3)) ≈ 1.0e-7 atol = 1.0e-15
+    @test offset(ProjectedCoords(c, SVector(0.0, 0.0)), 1.0e-7, 0.3).offset ≈ 1.0e-7 .* [sin(0.3), cos(0.3)] atol = 1.0e-15 rtol = 0
 end
 
 @testset "domain validation" begin

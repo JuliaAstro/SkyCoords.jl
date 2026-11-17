@@ -54,7 +54,11 @@ function coords2cart(c::AbstractProjectedCoords)
     k̂, ê, n̂ = _local_frame(λ₀, φ₀)
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
-lonlat(c::AbstractProjectedCoords) = cart2coords(coords2cart(c))
+# longitude in [0, 2π), like the spherical types
+function lonlat(c::AbstractProjectedCoords)
+    λ, φ = cart2coords(coords2cart(c))
+    return mod2pi(λ), φ
+end
 lon(c::AbstractProjectedCoords) = lonlat(c)[1]
 lat(c::AbstractProjectedCoords) = lonlat(c)[2]
 

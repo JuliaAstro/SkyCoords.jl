@@ -187,6 +187,11 @@ include("astropy.jl")
     c = ICRSCoords(1.0, π / 2 - 1.0e-9)
     @test separation(c, offset(c, 1.0e-7, 0.3)) ≈ 1.0e-7 atol = 1.0e-15
     @test offset(ProjectedCoords(c, SVector(0.0, 0.0)), 1.0e-7, 0.3).offset ≈ 1.0e-7 .* [sin(0.3), cos(0.3)] atol = 1.0e-15 rtol = 0
+
+    # Longitude in [0, 2π)
+    p = ProjectedCoords(ICRSCoords(3.5, 0.2), SVector(0.0, 0.0))
+    @test lon(p) ≈ 3.5
+    @test lon(p) == convert(ICRSCoords, p).ra
 end
 
 @testset "domain validation" begin

@@ -146,7 +146,7 @@ fromlonlat(::Type{T}, lon, lat) where {T <: AbstractSkyCoords} = T(lon, lat)
 fromlonlat(::Type{T}, lon, lat) where {T <: AltAzCoords} = T(lat, lon)
 
 # Abstract away specific field names (ra, dec vs l, b)
-coords2cart(c::AbstractSkyCoords) = coords2cart(lon(c), lat(c))
+coords2cart(c::AbstractSkyCoords) = coords2cart(lonlat(c)...)
 
 # Frame transformation of a Cartesian unit vector: `frame_transform(to, from, v)`.
 # This is the single primitive behind every frame change in the package
@@ -396,7 +396,7 @@ but is stable at at all distances, including the poles and antipodes.
 To test whether two coordinates are the same point on the sky, compare their separation to a tolerance, e.g., `separation(c1, c2) < 1e-9`. See [Comparing Coordinates](@ref) for why `==` does not answer this.
 """
 separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
-    _separation(lon(c1), lat(c1), lon(c2), lat(c2))
+    _separation(lonlat(c1)..., lonlat(c2)...)
 
 separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T <: AbstractSkyCoords} =
     2 * asin(norm(vec(c1) - vec(c2)) / 2)
@@ -422,7 +422,7 @@ julia> position_angle(c1, c2) |> rad2deg
 90.0
 ```
 """
-position_angle(c1::T, c2::T) where {T <: AbstractSkyCoords} = _position_angle(lon(c1), lat(c1), lon(c2), lat(c2))
+position_angle(c1::T, c2::T) where {T <: AbstractSkyCoords} = _position_angle(lonlat(c1)..., lonlat(c2)...)
 
 # As with `separation`, a projected left argument is compared in its origin's frame.
 function position_angle(c1::T1, c2::T2) where {T1 <: AbstractSkyCoords, T2 <: AbstractSkyCoords}
@@ -465,7 +465,7 @@ julia> offset(c1, c2) .|> rad2deg
 [`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c::T, sep, pa) where {T <: AbstractSkyCoords} =
-    _reproject(c, fromlonlat(_unprojected_type(T), _offset(lon(c), lat(c), sep, pa)...))
+    _reproject(c, fromlonlat(_unprojected_type(T), _offset(lonlat(c)..., sep, pa)...))
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle

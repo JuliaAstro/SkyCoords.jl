@@ -192,6 +192,12 @@ include("astropy.jl")
     p = ProjectedCoords(ICRSCoords(3.5, 0.2), SVector(0.0, 0.0))
     @test lon(p) ≈ 3.5
     @test lon(p) == convert(ICRSCoords, p).ra
+
+    # Cartesian origins
+    @test origin(ProjectedCoords(cartesian(c0), cp.offset)) isa ICRSCoords
+    @test convert(ICRSCoords, ProjectedCoords(cartesian(c0), cp.offset)) ≈ c1
+    @test project(cartesian(c0), c1) ≈ cp
+    @test project(cartesian(c0), convert(GalCoords, c1)) ≈ cp
 end
 
 @testset "domain validation" begin

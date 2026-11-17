@@ -26,6 +26,9 @@ end
 # Floated like the spherical types' angles, so `offset` results fit the same type
 ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Real} =
     ProjectedCoords{TC, float(T)}(origin, offset)
+# A Cartesian origin is held in spherical form
+ProjectedCoords(origin::CartesianCoords, offset::SVector{2, T}) where {T <: Real} =
+    ProjectedCoords(spherical(origin), offset)
 
 """
     origin(c::ProjectedCoords) -> coordinate
@@ -83,6 +86,7 @@ true
 """
 project(origin::AbstractSkyCoords, c::AbstractSkyCoords) =
     ProjectedCoords(origin, _project_offset(origin, convert(typeof(origin), c)))
+project(origin::CartesianCoords, c::AbstractSkyCoords) = project(spherical(origin), c)
 
 # The offset from `origin` of `c`, which is already in `origin`'s frame: the separation θ times the
 # unit vector (sin, cos) of the position angle.

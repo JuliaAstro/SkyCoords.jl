@@ -175,6 +175,13 @@ include("astropy.jl")
     # and for a coordinate projected around itself
     J = ForwardDiff.jacobian(θ -> collect(project(ICRSCoords(θ...), o).offset), [1.0, 0.5])
     @test J ≈ [-cos(0.5) 0; 0 -1]
+
+    # Tiny North offsets keep full relative precision
+    @testset for d in (1.0e-12, 1.0e-14)
+        φ = 0.5 + d
+        @test project(o, ICRSCoords(1.0, φ)).offset[2] ≈ φ - 0.5 rtol = 4 * eps()
+        @test separation(o, ICRSCoords(1.0, φ)) ≈ φ - 0.5 rtol = 4 * eps()
+    end
 end
 
 @testset "domain validation" begin

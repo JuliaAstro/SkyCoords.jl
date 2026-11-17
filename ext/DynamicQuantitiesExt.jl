@@ -2,6 +2,7 @@ module DynamicQuantitiesExt
 
 using DynamicQuantities
 using SkyCoords
+using StaticArrays: SVector
 
 # The constructors below strip units positionally, so AltAzCoords fits in even
 # though its two angle arguments are (alt, az) rather than (lon, lat)
@@ -26,6 +27,10 @@ const _QUANTITY_NOT_REAL = Union{AbstractQuantity, AbstractGenericQuantity}
 _strip(u, x) = x isa UnionAbstractQuantity ? ustrip(u, x) : x
 SkyCoords.Observer(latitude::Union{Real, UnionAbstractQuantity}, longitude::Union{Real, UnionAbstractQuantity}, altitude::Union{Real, UnionAbstractQuantity} = 0) =
     Observer(_strip(u"rad", latitude), _strip(u"rad", longitude), _strip(u"m", altitude))
+
+# Offsets are stored in radians, like every other coordinate angle
+SkyCoords.ProjectedCoords(origin::AbstractSkyCoords, offset::SVector{2, <:_QUANTITY_NOT_REAL}) =
+    ProjectedCoords(origin, map(x -> ustrip(u"rad", x), offset))
 
 SkyCoords.lon(u::UnionAbstractQuantity, c) = SkyCoords.lon(c) * u"rad" |> u
 SkyCoords.lat(u::UnionAbstractQuantity, c) = SkyCoords.lat(c) * u"rad" |> u

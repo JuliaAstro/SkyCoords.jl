@@ -2,6 +2,7 @@ module UnitfulExt
 
 using Unitful
 using SkyCoords
+using StaticArrays: SVector
 
 # The constructors below strip units positionally, so AltAzCoords fits in even
 # though its two angle arguments are (alt, az) rather than (lon, lat)
@@ -20,6 +21,10 @@ _COORDTYPES_LATLON = Union{ICRSCoords, GalCoords, SuperGalCoords, FK4Coords, FK4
 _strip(u, x) = x isa Quantity ? ustrip(u, x) : x
 SkyCoords.Observer(latitude::Union{Real, Quantity}, longitude::Union{Real, Quantity}, altitude::Union{Real, Quantity} = 0) =
     Observer(_strip(u"rad", latitude), _strip(u"rad", longitude), _strip(u"m", altitude))
+
+# Offsets are stored in radians, so `==` and `hash` agree; non-angle quantities throw here
+SkyCoords.ProjectedCoords(origin::AbstractSkyCoords, offset::SVector{2, <:Quantity}) =
+    ProjectedCoords(origin, ustrip.(u"rad", offset))
 
 SkyCoords.lon(u::Unitful.Units, c) = SkyCoords.lon(c) * u"rad" |> u
 SkyCoords.lat(u::Unitful.Units, c) = SkyCoords.lat(c) * u"rad" |> u

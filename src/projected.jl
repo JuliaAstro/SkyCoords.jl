@@ -4,9 +4,12 @@ abstract type AbstractProjectedCoords <: AbstractSkyCoords end
     ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractSkyCoords
 
 Represent a coordinate as an offset `(east, north)` from `origin`, in the azimuthal equidistant projection around it:
-the point lies at angular distance `norm(offset)` from `origin`, at position angle `atan(offset[1], offset[2])`.
+the point lies `norm(offset)` along the great circle that leaves `origin` at position angle `atan(offset[1], offset[2])`.
+Up to `norm(offset) = π`, that is its angular distance from `origin`; longer offsets continue past the antipode.
 The projection is applicable at any distance and at any origin.
 For small offsets, `offset[1] ≈ Δlon * cos(lat)` and `offset[2] ≈ Δlat`.
+
+Offsets are in radians. Angle quantities (Unitful or DynamicQuantities) are converted to radians on construction.
 
 A projected coordinate is a _representation_ around a point, not a coordinate frame of its own.
 Its frame is the origin's. Conversions out of a `ProjectedCoords` (spherical or [`CartesianCoords`](@ref) targets alike)

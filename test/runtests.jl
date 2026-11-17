@@ -5,6 +5,7 @@ using Unitful
 using DynamicQuantities: DynamicQuantities, @us_str, uconvert
 using ConstructionBase: setproperties
 using DelimitedFiles
+using ForwardDiff
 using LinearAlgebra: norm, normalize
 using NearestNeighbors
 using Random: randperm
@@ -161,6 +162,16 @@ include("astropy.jl")
     @test ProjectedCoords(o, SVector(1 // 1000, 0 // 1)) isa ProjectedCoords{typeof(o), Float64}
     @test ProjectedCoords(o, SVector(1, 2)u"μrad") isa ProjectedCoords{typeof(o), Float64}
     @test offset(ProjectedCoords(o, SVector(0, 0)), 1.0e-5, 0.3) ≈ project(o, offset(o, 1.0e-5, 0.3))
+
+    # An explicit integer offset type still works
+    @test convert(ICRSCoords, ProjectedCoords{typeof(o), Int}(o, SVector(0, 0))) ≈ o
+    @test convert(ICRSCoords, ProjectedCoords{typeof(o), Int}(o, SVector(0, 1))) ≈ convert(ICRSCoords, ProjectedCoords(o, SVector(0.0, 1.0)))
+
+    # Derivatives stay finite at zero offset
+    J = ForwardDiff.jacobian(Δ -> collect(SkyCoords.lonlat(ProjectedCoords(o, SVector(Δ...)))), [0.0, 0.0])
+    @test J ≈ [1 / cos(0.5) 0; 0 1]
+    H = ForwardDiff.hessian(Δ -> lat(ProjectedCoords(o, SVector(Δ...))), [0.0, 0.0])
+    @test H ≈ [-tan(0.5) 0; 0 0] atol = 1.0e-12
 end
 
 @testset "domain validation" begin

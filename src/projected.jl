@@ -39,16 +39,23 @@ origin(c::ProjectedCoords) = c.origin
 # ê, n̂ its East and North unit vectors.
 function coords2cart(c::AbstractProjectedCoords)
     east, north = c.offset
-    ρ = hypot(east, north)
-    sinρ, cosρ = sincos(ρ)
+    # ρ is not differentiable at zero offset: use the series in ρ² there, so derivatives and
+    # uncertainties stay finite (`float`: integers have no `eps`)
+    ρ² = east^2 + north^2
+    if ρ² < eps(float(one(ρ²)))^2
+        cosρ, w = 1 - ρ² / 2, 1 - ρ² / 6
+    else
+        ρ = hypot(east, north)
+        sinρ, cosρ = sincos(ρ)
+        w = sinρ / ρ
+    end
     # the origin at the offset's precision, which may exceed the origin's own
-    λ₀, φ₀, _ = promote(lonlat(origin(c))..., sinρ)
+    λ₀, φ₀, _ = promote(lonlat(origin(c))..., w)
     sinλ₀, cosλ₀ = sincos(λ₀)
     sinφ₀, cosφ₀ = sincos(φ₀)
     k̂ = SVector(cosφ₀ * cosλ₀, cosφ₀ * sinλ₀, sinφ₀)
     ê = SVector(-sinλ₀, cosλ₀, 0)
     n̂ = SVector(-sinφ₀ * cosλ₀, -sinφ₀ * sinλ₀, cosφ₀)
-    w = iszero(ρ) ? one(sinρ) : sinρ / ρ
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
 lonlat(c::AbstractProjectedCoords) = cart2coords(coords2cart(c))

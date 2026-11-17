@@ -371,15 +371,20 @@ frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AltAzCo
 # ------------------------------------------------------------------------------
 # Distance between coordinates
 
-function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
-    Δλ = λ_2 - λ_1
-    sin_Δλ, cos_Δλ = sincos(Δλ)
+# Vincenty terms from (λ_1, ϕ_1) to (λ_2, ϕ_2): sin θ sin pa (East), sin θ cos pa (North), cos θ
+function _vincenty_terms(λ_1, ϕ_1, λ_2, ϕ_2)
+    sin_Δλ, cos_Δλ = sincos(λ_2 - λ_1)
     sin_ϕ1, cos_ϕ1 = sincos(ϕ_1)
     sin_ϕ2, cos_ϕ2 = sincos(ϕ_2)
-    return atan(
-        hypot(cos_ϕ2 * sin_Δλ, cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
-        sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ,
-    )
+    east = cos_ϕ2 * sin_Δλ
+    north = cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ
+    cosθ = sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ
+    return east, north, cosθ
+end
+
+function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
+    east, north, cosθ = _vincenty_terms(λ_1, ϕ_1, λ_2, ϕ_2)
+    return atan(hypot(east, north), cosθ)
 end
 
 """
@@ -432,14 +437,8 @@ end
 
 
 function _position_angle(λ1, ϕ1, λ2, ϕ2)
-    sin_Δλ, cos_Δλ = sincos(λ2 - λ1)
-    sin_ϕ1, cos_ϕ1 = sincos(ϕ1)
-    sin_ϕ2, cos_ϕ2 = sincos(ϕ2)
-
-    x = sin_ϕ2 * cos_ϕ1 - cos_ϕ2 * sin_ϕ1 * cos_Δλ
-    y = sin_Δλ * cos_ϕ2
-
-    return mod2pi(atan(y, x))
+    east, north, _ = _vincenty_terms(λ1, ϕ1, λ2, ϕ2)
+    return mod2pi(atan(east, north))
 end
 
 """

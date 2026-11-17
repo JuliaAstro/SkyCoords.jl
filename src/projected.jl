@@ -88,13 +88,7 @@ project(origin::AbstractSkyCoords, c::AbstractSkyCoords) =
 # unit vector (sin, cos) of the position angle.
 # here, (s_E, s_N) = sin θ times that unit vector
 function _project_offset(origin, c)
-    λ₀, φ₀, λ, φ = promote(lonlat(origin)..., lonlat(c)...)
-    sinφ₀, cosφ₀ = sincos(φ₀)
-    sinφ, cosφ = sincos(φ)
-    sinΔλ, cosΔλ = sincos(λ - λ₀)
-    s_E = cosφ * sinΔλ
-    s_N = cosφ₀ * sinφ - sinφ₀ * cosφ * cosΔλ
-    cosθ = sinφ₀ * sinφ + cosφ₀ * cosφ * cosΔλ
+    s_E, s_N, cosθ = _vincenty_terms(promote(lonlat(origin)..., lonlat(c)...)...)
     # sin θ is not differentiable at the origin: use the series of θ / sin θ in sin²θ there, as in
     # `coords2cart`. At the antipode sin θ is tiny but nonzero (π rounds); `cosθ > 0` keeps it exact.
     sin²θ = s_E^2 + s_N^2

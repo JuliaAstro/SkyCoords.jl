@@ -28,7 +28,7 @@ _strip(u, x) = x isa UnionAbstractQuantity ? ustrip(u, x) : x
 SkyCoords.Observer(latitude::Union{Real, UnionAbstractQuantity}, longitude::Union{Real, UnionAbstractQuantity}, altitude::Union{Real, UnionAbstractQuantity} = 0) =
     Observer(_strip(u"rad", latitude), _strip(u"rad", longitude), _strip(u"m", altitude))
 
-# Offsets are stored in radians, like every other coordinate angle
+# No trig on DynamicQuantities angles (see `offset` below), so offsets are stored in radians
 SkyCoords.ProjectedCoords(origin::AbstractSkyCoords, offset::SVector{2, <:_QUANTITY_NOT_REAL}) =
     ProjectedCoords(origin, map(x -> ustrip(u"rad", x), offset))
 

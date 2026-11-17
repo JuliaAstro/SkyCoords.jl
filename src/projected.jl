@@ -1,7 +1,7 @@
 abstract type AbstractProjectedCoords <: AbstractSkyCoords end
 
 """
-    ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractSkyCoords
+    ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractSkyCoords
 
 Represent a coordinate as an offset `(east, north)` from `origin`, in the azimuthal equidistant projection around it:
 the point lies `norm(offset)` along the great circle that leaves `origin` at position angle `atan(offset[1], offset[2])`.
@@ -9,29 +9,33 @@ Up to `norm(offset) = π`, that is its angular distance from `origin`; longer of
 The projection is applicable at any distance and at any origin.
 For small offsets, `offset[1] ≈ Δlon * cos(lat)` and `offset[2] ≈ Δlat`.
 
-Offsets are in radians. Angle quantities (Unitful or DynamicQuantities) are converted to radians on construction.
+Offsets are in radians, or angle quantities: Unitful ones are kept as given, DynamicQuantities ones converted to radians.
 
 A projected coordinate is a _representation_ around a point, not a coordinate frame of its own.
 Its frame is the origin's. Conversions out of a `ProjectedCoords` (spherical or [`CartesianCoords`](@ref) targets alike)
 work like any other coordinate. Conversions into one are not possible via `convert`, since they require an origin value.
 Use [`project`](@ref) instead.
 """
-struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Real} <: AbstractProjectedCoords
+struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractProjectedCoords
     origin::TC
     offset::SVector{2, T}
 
     # Typed like the spherical types' inner constructors so the two-argument
     # form stays disjoint from extension constructors taking other argument
     # pairs
-    ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Real}) where {TC <: AbstractSkyCoords, T <: Real} =
+    ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Number}) where {TC <: AbstractSkyCoords, T <: Number} =
         new(origin, offset)
 end
 # Floated like the spherical types' angles, so `offset` results fit the same type
-ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Real} =
-    ProjectedCoords{TC, float(T)}(origin, offset)
 # A Cartesian origin is held in spherical form
-ProjectedCoords(origin::CartesianCoords, offset::SVector{2, T}) where {T <: Real} =
-    ProjectedCoords(spherical(origin), offset)
+function ProjectedCoords(origin::AbstractSkyCoords, offset::SVector{2, T}) where {T <: Number}
+    foreach(_radians, offset)  # non-angle quantities throw
+    o = spherical(origin)
+    return ProjectedCoords{typeof(o), float(T)}(o, offset)
+end
+
+# An offset in radians. The Unitful extension converts angle quantities, which are otherwise kept as given.
+_radians(x::Real) = x
 
 """
     origin(c::ProjectedCoords) -> coordinate
@@ -146,8 +150,9 @@ cartesian(c::AbstractProjectedCoords) = CartesianCoords{_unprojected_type(typeof
 # types.jl: the bare `ProjectedCoords` tag erases the origin's frame, so raw
 # lon/lat numbers from different origin frames would compare equal. Compare
 # the origin (frame included) and the offset instead, with a matching `hash`.
+# Offsets compare in radians, so quantity offsets hash like their plain equivalents.
 Base.:(==)(a::AbstractProjectedCoords, b::AbstractProjectedCoords) =
-    origin(a) == origin(b) && a.offset == b.offset
-Base.hash(c::AbstractProjectedCoords, h::UInt) = hash(c.offset, hash(origin(c), h))
+    origin(a) == origin(b) && map(_radians, a.offset) == map(_radians, b.offset)
+Base.hash(c::AbstractProjectedCoords, h::UInt) = hash(map(_radians, c.offset), hash(origin(c), h))
 Base.isapprox(a::ProjectedCoords, b::ProjectedCoords; kwargs...) =
     isapprox(origin(a), origin(b); kwargs...) && isapprox(a.offset, b.offset; kwargs...)

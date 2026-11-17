@@ -94,10 +94,16 @@ function _project_offset(origin, c)
     sinΔλ, cosΔλ = sincos(λ - λ₀)
     s_E = cosφ * sinΔλ
     s_N = cosφ₀ * sinφ - sinφ₀ * cosφ * cosΔλ
-    sinθ = hypot(s_E, s_N)
     cosθ = sinφ₀ * sinφ + cosφ₀ * cosφ * cosΔλ
-    # sin θ = 0 only at the origin: towards the antipode, the rounding of π leaves sin Δλ or sin Δφ nonzero
-    f = iszero(sinθ) ? one(sinθ) : atan(sinθ, cosθ) / sinθ
+    # sin θ is not differentiable at the origin: use the series of θ / sin θ in sin²θ there, as in
+    # `coords2cart`. At the antipode sin θ is tiny but nonzero (π rounds); `cosθ > 0` keeps it exact.
+    sin²θ = s_E^2 + s_N^2
+    f = if sin²θ < eps(one(sin²θ))^2 && cosθ > 0
+        1 + sin²θ / 6
+    else
+        sinθ = hypot(s_E, s_N)
+        atan(sinθ, cosθ) / sinθ
+    end
     return SVector(f * s_E, f * s_N)
 end
 

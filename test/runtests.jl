@@ -172,6 +172,9 @@ include("astropy.jl")
     @test J ≈ [1 / cos(0.5) 0; 0 1]
     H = ForwardDiff.hessian(Δ -> lat(ProjectedCoords(o, SVector(Δ...))), [0.0, 0.0])
     @test H ≈ [-tan(0.5) 0; 0 0] atol = 1.0e-12
+    # and for a coordinate projected around itself
+    J = ForwardDiff.jacobian(θ -> collect(project(ICRSCoords(θ...), o).offset), [1.0, 0.5])
+    @test J ≈ [-cos(0.5) 0; 0 -1]
 end
 
 @testset "domain validation" begin

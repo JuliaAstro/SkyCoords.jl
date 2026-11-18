@@ -381,16 +381,18 @@ frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AltAzCo
 # ------------------------------------------------------------------------------
 # Distance between coordinates
 
-# Vincenty terms from (λ_1, ϕ_1) to (λ_2, ϕ_2): sin θ sin pa (East), sin θ cos pa (North), cos θ
-function _vincenty_terms(λ_1, ϕ_1, λ_2, ϕ_2)
-    Δλ = λ_2 - λ_1
-    sin_Δλ, cos_Δλ = sincos(Δλ)
+# Vincenty terms from (λ_1, ϕ_1) to (λ_2, ϕ_2): sin θ sin pa (East), sin θ cos pa (North), cos θ.
+# Free of cancellation for nearby points in three sincos: h = 1 - cos Δλ = 2 sin²(Δλ/2), and cos ϕ_2 from ϕ_1 and Δϕ.
+# Inlined, since as a call it costs about 15% of `separation`.
+@inline function _vincenty_terms(λ_1, ϕ_1, λ_2, ϕ_2)
+    sin_hΔλ, cos_hΔλ = sincos((λ_2 - λ_1) / 2)
     sin_ϕ1, cos_ϕ1 = sincos(ϕ_1)
-    sin_ϕ2, cos_ϕ2 = sincos(ϕ_2)
-    east = cos_ϕ2 * sin_Δλ
-    # cos ϕ_1 sin ϕ_2 - sin ϕ_1 cos ϕ_2 cos Δλ, without cancellation for nearby points
-    north = sin(ϕ_2 - ϕ_1) + 2 * sin_ϕ1 * cos_ϕ2 * sin(Δλ / 2)^2
-    cosθ = sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ
+    sin_Δϕ, cos_Δϕ = sincos(ϕ_2 - ϕ_1)
+    cos_ϕ2 = cos_ϕ1 * cos_Δϕ - sin_ϕ1 * sin_Δϕ
+    h = 2 * sin_hΔλ^2
+    east = 2 * sin_hΔλ * cos_hΔλ * cos_ϕ2
+    north = sin_Δϕ + h * sin_ϕ1 * cos_ϕ2
+    cosθ = cos_Δϕ - h * cos_ϕ1 * cos_ϕ2
     return east, north, cosθ
 end
 
@@ -476,11 +478,14 @@ julia> offset(c1, c2) .|> rad2deg
 [`separation`](@ref), [`position_angle`](@ref)
 """
 function offset(c::T, sep, pa) where {T <: AbstractSkyCoords}
-    k̂, ê, n̂ = _local_frame(lonlat(c)...)
+    λ, φ = lonlat(c)
+    # The great circle in the frame rotated to longitude λ, which saves a sincos
+    k̂, ê, n̂ = _local_frame(zero(φ), φ)
     sin_sep, cos_sep = sincos(sep)
     sin_pa, cos_pa = sincos(pa)
-    r = cos_sep * k̂ + sin_sep * (sin_pa * ê + cos_pa * n̂)
-    return _reproject(c, fromlonlat(_unprojected_type(T), cart2coords(r)...))
+    x, y, z = cos_sep * k̂ + sin_sep * (sin_pa * ê + cos_pa * n̂)
+    # A unit vector, so `sqrt` is safe where `cart2coords` needs `hypot`
+    return _reproject(c, fromlonlat(_unprojected_type(T), λ + atan(y, x), atan(z, sqrt(x^2 + y^2))))
 end
 
 """

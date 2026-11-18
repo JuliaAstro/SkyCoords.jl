@@ -148,15 +148,13 @@ include("astropy.jl")
         @test project(ICRSCoords(0.0, π / 2), ICRSCoords(0.0, -π / 2)).offset ≈ [0.0, -π] atol = 2.0e-15 rtol = 0
     end
 
-    # offsets may be angle quantities, kept as given and compared in radians
+    # offsets may be angle quantities, kept as given
     o = ICRSCoords(1.0, 0.5)
     @test @inferred(convert(ICRSCoords, ProjectedCoords(o, SVector(1.0, -2.0)u"μrad"))) ≈
           convert(ICRSCoords, ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))) atol = 1.0e-16 rtol = 0
     pμ = @inferred ProjectedCoords(o, SVector(1.0, -2.0)u"μrad")
     @test pμ.offset === SVector(1.0, -2.0)u"μrad"
     @test offset(pμ, 1.0e-6, 0.3).offset isa SVector{2, typeof(1.0u"μrad")}
-    @test pμ == ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))
-    @test hash(pμ) == hash(ProjectedCoords(o, SVector(1.0e-6, -2.0e-6)))
     @test_throws Unitful.DimensionError ProjectedCoords(o, SVector(1.0, 0.0)u"m")
 
     # Integer and rational offsets are floated
@@ -587,6 +585,7 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test ProjectedCoords(o, SVector(1.0, -2.0) .* us"μrad") ≈ ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))
     @test convert(ICRSCoords, ProjectedCoords(o, SVector(1.0, -2.0) .* us"μrad")) ≈
           convert(ICRSCoords, ProjectedCoords(o, SVector(1.0e-6, -2.0e-6)))
+    @test_throws DynamicQuantities.DimensionError ProjectedCoords(o, SVector(1.0, 0.0) .* us"m")
 
     # Element-type-parameterized construction with quantities; these calls used
     # to be ambiguous against the untyped inner constructors

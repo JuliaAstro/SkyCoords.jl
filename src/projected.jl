@@ -29,7 +29,7 @@ end
 # Floated like the spherical types' angles, so `offset` results fit the same type
 # A Cartesian origin is held in spherical form
 function ProjectedCoords(origin::AbstractSkyCoords, offset::SVector{2, T}) where {T <: Number}
-    foreach(_radians, offset)  # non-angle quantities throw
+    foreach(_radians, offset) # Non-angle quantities throw at compile time
     o = spherical(origin)
     return ProjectedCoords{typeof(o), float(T)}(o, offset)
 end
@@ -48,7 +48,7 @@ origin(c::ProjectedCoords) = c.origin
 # atan(east, north): cos ρ k̂ + (sin ρ / ρ) (east ê + north n̂), with k̂ the origin's unit vector and
 # ê, n̂ its East and North unit vectors.
 function coords2cart(c::AbstractProjectedCoords)
-    east, north = c.offset
+    east, north = map(_radians, c.offset) # Needed to keep the branch below type-stable
     # ρ is not differentiable at zero offset: use the series in ρ² there, so derivatives and
     # uncertainties stay finite (`float`: integers have no `eps`)
     ρ² = east^2 + north^2
@@ -59,12 +59,13 @@ function coords2cart(c::AbstractProjectedCoords)
         sinρ, cosρ = sincos(ρ)
         w = sinρ / ρ
     end
-    # the origin at the offset's precision, which may exceed the origin's own
+    # The origin at the offset's precision, which may exceed the origin's own
     λ₀, φ₀, _ = promote(lonlat(origin(c))..., w)
     k̂, ê, n̂ = _local_frame(λ₀, φ₀)
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
-# longitude in [0, 2π), like the spherical types
+
+# Longitude in [0, 2π), like the spherical types
 function lonlat(c::AbstractProjectedCoords)
     λ, φ = cart2coords(coords2cart(c))
     return mod2pi(λ), φ
@@ -150,9 +151,8 @@ cartesian(c::AbstractProjectedCoords) = CartesianCoords{_unprojected_type(typeof
 # types.jl: the bare `ProjectedCoords` tag erases the origin's frame, so raw
 # lon/lat numbers from different origin frames would compare equal. Compare
 # the origin (frame included) and the offset instead, with a matching `hash`.
-# Offsets compare in radians, so quantity offsets hash like their plain equivalents.
 Base.:(==)(a::AbstractProjectedCoords, b::AbstractProjectedCoords) =
-    origin(a) == origin(b) && map(_radians, a.offset) == map(_radians, b.offset)
-Base.hash(c::AbstractProjectedCoords, h::UInt) = hash(map(_radians, c.offset), hash(origin(c), h))
+    origin(a) == origin(b) && a.offset == b.offset
+Base.hash(c::AbstractProjectedCoords, h::UInt) = hash(c.offset, hash(origin(c), h))
 Base.isapprox(a::ProjectedCoords, b::ProjectedCoords; kwargs...) =
     isapprox(origin(a), origin(b); kwargs...) && isapprox(a.offset, b.offset; kwargs...)

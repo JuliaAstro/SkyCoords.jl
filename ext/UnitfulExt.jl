@@ -21,7 +21,7 @@ _strip(u, x) = x isa Quantity ? ustrip(u, x) : x
 SkyCoords.Observer(latitude::Union{Real, Quantity}, longitude::Union{Real, Quantity}, altitude::Union{Real, Quantity} = 0) =
     Observer(_strip(u"rad", latitude), _strip(u"rad", longitude), _strip(u"m", altitude))
 
-# Projected offsets keep their units, and are checked, compared and hashed in radians
+# Projected offsets keep their units. They convert to radians for the projection, and at construction to reject non-angle ones.
 SkyCoords._radians(x::Quantity) = ustrip(u"rad", x)
 
 SkyCoords.lon(u::Unitful.Units, c) = SkyCoords.lon(c) * u"rad" |> u

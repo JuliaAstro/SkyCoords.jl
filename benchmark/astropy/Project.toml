@@ -1,0 +1,28 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
+NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+SOFA = "ad3d3fd0-b5f2-51ee-b274-8cdbe62317e2"
+SkyCoords = "fc659fc5-75a3-5475-a2ea-3da92c065361"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[sources]
+SkyCoords = {path = "../.."}
+
+[compat]
+BenchmarkTools = "1"
+CondaPkg = "0.2"
+DynamicQuantities = "1"
+NearestNeighbors = "0.4.9"
+PythonCall = "0.9"
+SOFA = "2"
+StableRNGs = "1.0.4"
+Unitful = "1.15"
+julia = "1.11"

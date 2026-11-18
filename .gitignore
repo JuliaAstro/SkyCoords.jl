@@ -30,3 +30,9 @@ Manifest.toml
 
 # End of https://www.gitignore.io/api/julia
 .CondaPkg/
+__pycache__/
+
+# Benchmark outputs
+/benchmark/results/
+/benchmark/astropy/comparison.csv
+/benchmark/astropy/provenance.toml

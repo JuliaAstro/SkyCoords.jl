@@ -1,0 +1,27 @@
+name: Benchmark
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: MilesCranmer/AirspeedVelocity.jl@action-v1
+        with:
+          julia-version: "1"
+          # Results go to the job summary, which needs no token permissions,
+          # so pull requests from forks are benchmarked too.
+          job-summary: "true"
+          # Take benchmark/benchmarks.jl and benchmark/Project.toml from the
+          # pull request rather than from the default branch, so that changes
+          # to the suite are exercised by the pull request that makes them.
+          # Passing `script` instead would drop benchmark/Project.toml, and
+          # with it the packages that load the SkyCoords extensions.
+          bench-on: ${{ github.event.pull_request.head.sha }}

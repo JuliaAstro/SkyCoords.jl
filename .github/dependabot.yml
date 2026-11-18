@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "julia"
-    directories: ["/", "/docs", "/test"] # Location of Julia projects
+    directories: ["/", "/benchmark", "/benchmark/astropy", "/docs", "/test"] # Location of Julia projects
     schedule:
       interval: "weekly"
     groups: # Group all julia package updates into a single PR

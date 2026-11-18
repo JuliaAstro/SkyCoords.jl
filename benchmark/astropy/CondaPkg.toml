@@ -1,0 +1,8 @@
+# Pinned so that the numbers compare.jl produces can be attributed to known
+# versions (they are also recorded in provenance.toml). scipy provides the
+# KD-tree behind astropy's catalog matching.
+[deps]
+python = "=3.13"
+numpy = "=2.5"
+scipy = "=1.18"
+astropy = "=8.0"

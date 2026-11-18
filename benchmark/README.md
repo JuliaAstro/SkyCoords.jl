@@ -75,7 +75,7 @@ Operations upstream does not cover:
 
 ## CI
 
-`.github/workflows/Benchmark.yml` runs the suite on the pull request head and on `main`, and writes the comparison tables (time and memory, with ratios) to the summary page of the workflow run. A regression shows up as a ratio above 1.
+`.github/workflows/Benchmark.yml` runs the suite on the pull request head and on `main`, and writes the comparison tables (time and memory, with ratios) to the summary page of the workflow run. The ratio is `main` divided by the pull request, so a regression shows up as a ratio below 1.
 
 The suite and its `Project.toml` are taken from the pull request (`bench-on`), so a change to the benchmarks is exercised by the pull request that makes it. Pull requests from forks are benchmarked as well.
 

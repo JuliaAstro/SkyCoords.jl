@@ -50,9 +50,6 @@ function coords2cart(c::AbstractProjectedCoords)
     w = iszero(ρ) ? one(sinρ) : sinρ / ρ
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
-lonlat(c::AbstractProjectedCoords) = cart2coords(coords2cart(c))
-lon(c::AbstractProjectedCoords) = lonlat(c)[1]
-lat(c::AbstractProjectedCoords) = lonlat(c)[2]
 
 """
     project(origin::AbstractSkyCoords, c::AbstractSkyCoords) -> ProjectedCoords

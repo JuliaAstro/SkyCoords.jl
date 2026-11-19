@@ -312,6 +312,8 @@ end
         c3 = cartesian(c)
         @test c === spherical(c)
         @test c3 === cartesian(c3)
+        # the angles of a Cartesian coordinate are those of the point it represents
+        @test SkyCoords.lonlat(c3) == (lon(c3), lat(c3)) == SkyCoords.lonlat(spherical(c3))
         c_conv = convert(ICRSCoords, c)
         c3_conv = convert(CartesianCoords{ICRSCoords}, c3)
         @test c3_conv == CartesianCoords{ICRSCoords}(c3)
@@ -330,6 +332,12 @@ end
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
+    # so do the operations built on those angles
+    @test position_angle(a, b) ≈ position_angle(a3, b3) ≈ position_angle(a, b3) ≈ position_angle(a3, b)
+    @test project(a3, b).offset ≈ project(a, b).offset
+    # AltAzCoords angles too, though its constructor takes (alt, az)
+    h3 = cartesian(AltAzCoords(0.5, 1.0))
+    @test SkyCoords.lonlat(h3) == SkyCoords.lonlat(spherical(h3))
 
     # FK4Coords's E-terms correction is not a rotation, but `frame_transform`
     # doesn't require one: all four Cartesian/spherical directions must agree

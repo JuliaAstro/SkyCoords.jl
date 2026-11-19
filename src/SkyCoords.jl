@@ -137,6 +137,12 @@ lat(c::AbstractSkyCoords) = c.dec
 
 lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 
+# Representations other than spherical have no lon/lat fields: take them from the point's unit vector
+const _NonSpherical = Union{CartesianCoords, AbstractProjectedCoords}
+lonlat(c::_NonSpherical) = cart2coords(coords2cart(c))
+lon(c::_NonSpherical) = lonlat(c)[1]
+lat(c::_NonSpherical) = lonlat(c)[2]
+
 # Inverse of `lonlat`: construct a coordinate of type `T` from (lon, lat)
 # angles. The generic machinery (`convert`, `spherical`, `offset`) builds
 # results through this hook, so a frame whose natural argument order is not

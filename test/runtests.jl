@@ -396,6 +396,10 @@ end
     @test_throws ArgumentError convert(CartesianCoords{FK4NoETerms}, cartesian(other))
     @test_throws ArgumentError convert(CartesianCoords{FK5Coords}, other)
     @test_throws ArgumentError CartesianCoords{FK4Coords}(1, 0, 0)
+    # a frame tag names a spherical frame, never another representation
+    @test_throws ArgumentError CartesianCoords{CartesianCoords{ICRSCoords}}(1, 0, 0)
+    @test_throws ArgumentError convert(CartesianCoords{CartesianCoords{ICRSCoords}}, other)
+    @test_throws ArgumentError CartesianCoords{ProjectedCoords{ICRSCoords{Float64}, Float64}}(1, 0, 0)
 
     # an instance that already matches a bare/partial target converts by
     # identity, following the usual Base convention (like `convert(Integer, 3)`)

@@ -40,14 +40,20 @@ end
 #   - `nothing` for an element-type-free frame tag such as
 #     `ICRSCoords` or `FK5Coords{2000}`
 _eltype(::Type{TC}) where {TC <: AbstractSkyCoords} = isconcretetype(TC) ? fieldtype(TC, 1) : nothing
-_eltype(::Type{CartesianCoords{TC, TF}}) where {TC <: AbstractSkyCoords, TF <: Real} = TF
+
+# A frame tag names a spherical frame, never another representation
+_checkframe(::Type{TC}) where {TC <: CartesianCoords} = throw(ArgumentError(
+    "$TC is not a coordinate frame: use the frame it is in, e.g. `ICRSCoords` rather than " *
+    "`CartesianCoords{ICRSCoords}`.",
+))
 
 # Construction from raw components. As for the spherical types, an unspecified
 # element type is chosen from the frame tag if it carries one, otherwise from
 # the input (and floated); an explicit `TF` is honored exactly.
 CartesianCoords{TC}(args::Real...) where {TC <: AbstractSkyCoords} = CartesianCoords{TC}(SVector(float.(args)...))
+# The tag is validated before its element type is read
 CartesianCoords{TC}(vec::AbstractVector{TF}) where {TC <: AbstractSkyCoords, TF <: Real} =
-    CartesianCoords{TC, something(_eltype(TC), float(TF))}(vec)
+    (_checkframe(TC); CartesianCoords{TC, something(_eltype(TC), float(TF))}(vec))
 CartesianCoords{TC, TF}(args::Real...) where {TC <: AbstractSkyCoords, TF <: Real} = CartesianCoords{TC, TF}(SVector{3, TF}(args))
 
 # Construction from another coordinate: delegate to `convert`,

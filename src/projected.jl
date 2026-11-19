@@ -90,13 +90,11 @@ function _project_offset(origin, c)
     return SVector(f * s_E, f * s_N)
 end
 
-# A ProjectedCoords target can never be satisfied by `convert`. The origin
-# is a value, not a type parameter. Every conversion pathway checks its
-# target frame through `_checkframe`, so one override turns them all into a
-# clear error (instances already matching the target still convert by identity without reaching this).
+# A projected type is not a frame: its frame is its origin's, a value rather than a type parameter. Conversions
+# and Cartesian construction check their frame here (instances matching a `convert` target pass by identity).
 _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentError(
-    "Cannot `convert` into a projected coordinate type; construct one with " *
-    "`project(origin, c)` instead.",
+    "$TC is not a coordinate frame: its frame is its origin's. To express a coordinate as a projected one, " *
+    "use `project(origin, c)`.",
 ))
 
 # The type `convert` can target in place of a projected coordinate: its origin's

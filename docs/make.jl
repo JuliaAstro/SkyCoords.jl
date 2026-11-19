@@ -26,6 +26,8 @@ makedocs(;
         canonical = "https://juliaastro.org/SkyCoords/stable/",
     ),
     pages,
+    # Compare floats in doctests to 10 decimal places, so last-digit changes don't fail the build
+    doctestfilters = [r"(\d+\.\d{10})\d+" => s"\1"],
     warnonly = [:linkcheck],
 )
 

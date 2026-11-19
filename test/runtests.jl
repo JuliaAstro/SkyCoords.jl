@@ -337,6 +337,10 @@ end
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
+    # opposite points, where the chord rounds above 2
+    v = normalize(SVector(0.0, 0.6, 1.0))
+    @test separation(CartesianCoords{ICRSCoords}(v), CartesianCoords{ICRSCoords}(-v)) ≈ π
+    @test separation(a3, cartesian(ICRSCoords(1 + π, -1.2))) ≈ π
 
     # FK4Coords's E-terms correction is not a rotation, but `frame_transform`
     # doesn't require one: all four Cartesian/spherical directions must agree

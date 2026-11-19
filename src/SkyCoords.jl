@@ -1,7 +1,7 @@
 module SkyCoords
 
 import ConstructionBase: constructorof
-using LinearAlgebra: I, dot, norm, normalize
+using LinearAlgebra: I, dot, normalize
 using Rotations: RotX, RotXYZ, RotZYZ
 using StaticArrays: SA, SVector
 
@@ -396,8 +396,9 @@ To test whether two coordinates are the same point on the sky, compare their sep
 separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
     _separation(lonlat(c1)..., lonlat(c2)...)
 
+# Capped, as rounding can push the chord of nearly opposite points above 2
 separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T <: AbstractSkyCoords} =
-    2 * asin(norm(vec(c1) - vec(c2)) / 2)
+    2 * asin(min(sqrt(sum(abs2, vec(c1) - vec(c2))) / 2, 1))
 
 # Mixed types are compared in the left argument's frame. `convert` cannot target
 # a projected type, so a projected left argument is compared in its origin's frame.

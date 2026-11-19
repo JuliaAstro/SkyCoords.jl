@@ -107,6 +107,19 @@ include("astropy.jl")
     # Nested projections chain through their origins
     @test convert(ICRSCoords, ProjectedCoords(cp, zero(cp.offset))) ≈ c1
 
+    # So do Cartesian origins: a projected point lives in its origin's frame, whatever the origin's representation
+    x0 = cartesian(c0)
+    px = ProjectedCoords(x0, cp.offset)
+    @test convert(ICRSCoords, px) ≈ c1
+    @test convert(FK4Coords{1950}, px) ≈ convert(FK4Coords{1950}, c1)
+    @test convert(CartesianCoords{GalCoords}, px) ≈ cartesian(convert(GalCoords, c1))
+    @test cartesian(px) isa CartesianCoords{ICRSCoords, Float64}
+    @test separation(px, c0) ≈ sep
+    @test position_angle(px, c0) ≈ pa
+    @test convert(ICRSCoords, offset(px, 1.0e-5, 0.5)) ≈ offset(c1, 1.0e-5, 0.5)
+    # and `project` works in its origin's frame, so the origin may be projected too
+    @test project(cp, c0).offset ≈ project(c1, c0).offset
+
     # Converting into a projected type needs an origin value, which a type
     # cannot carry. Instances already matching the target stay identity.
     @test_throws ArgumentError convert(typeof(cp), c1)
@@ -661,7 +674,7 @@ end
     @test_throws ArgumentError GalCoords(AltAzCoords(1, 2))
     @test_throws ArgumentError convert(EclipticCoords{2000}, AltAzCoords(1, 2))
     @test_throws ArgumentError convert(AltAzCoords, EclipticCoords{2000}(1, 1.2))
-    # ProjectedCoords delegates to its origin frame, so a projection around a
+    # ProjectedCoords lives in its origin's frame, so a projection around a
     # celestial origin still requires an observer, while one around an AltAz
     # origin converts through freely
     @test_throws ArgumentError convert(AltAzCoords, project(ICRSCoords(1.1, 0.2), ICRSCoords(1.15, 0.25)))

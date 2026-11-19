@@ -365,7 +365,7 @@ Base.broadcastable(f::AltAzFrame) = Ref(f)
 Base.convert(::Type{T}, c::T) where {T <: AbstractSkyCoords} = c
 
 function Base.convert(::Type{T}, c::S) where {T <: AbstractSkyCoords, S <: AbstractSkyCoords}
-    r = frame_transform(T, S, coords2cart(c))
+    r = frame_transform(T, _spherical_type(S), coords2cart(c))
     lon, lat = cart2coords(r)
     return fromlonlat(T, lon, lat)
 end

@@ -11,7 +11,7 @@ For small offsets, `offset[1] ≈ Δlon * cos(lat)` and `offset[2] ≈ Δlat`.
 A projected coordinate is a _representation_ around a point, not a coordinate frame of its own.
 Its frame is the origin's. Conversions out of a `ProjectedCoords` (spherical or [`CartesianCoords`](@ref) targets alike)
 work like any other coordinate. Conversions into one are not possible via `convert`, since they require an origin value.
-Use [`project`](@ref) instead.
+Use [`project`](@ref) instead, or `oftype(p, c)` to project `c` around the origin of an existing `p`, as the same type.
 """
 struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractProjectedCoords
     origin::TC
@@ -105,10 +105,11 @@ _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentEr
 _unprojected_type(::Type{T}) where {T <: AbstractSkyCoords} = T
 _unprojected_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = constructorof(_unprojected_type(TC))
 
-# Express `r`, a coordinate in `c`'s underlying frame, the same way `c` is
-# expressed. A projected coordinate keeps its origin, and so its type.
-_reproject(::AbstractSkyCoords, r) = r
-_reproject(c::T, r) where {T <: ProjectedCoords} = T(origin(c), _project_offset(origin(c), r))
+# Unlike `convert`, `oftype` has a value to take the origin from: `y` projected around `x`'s origin, as `x`'s type.
+# As in Base, `y` already of that type is returned as is. `y` is brought into the origin's frame without the
+# origin's element type, so it is not rounded to it.
+Base.oftype(x::ProjectedCoords, y::AbstractSkyCoords) =
+    y isa typeof(x) ? y : typeof(x)(origin(x), _project_offset(origin(x), convert(_spherical_type(typeof(x)), y)))
 
 # The Cartesian representation is tagged with the origin's frame.
 # `constructorof(typeof(c))` (the generic tag choice) must keep returning

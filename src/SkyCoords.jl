@@ -477,7 +477,7 @@ julia> offset(c1, c2) .|> rad2deg
 [`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c::T, sep, pa) where {T <: AbstractSkyCoords} =
-    _reproject(c, fromlonlat(_spherical_type(T), _offset(lonlat(c)..., sep, pa)...))
+    oftype(c, fromlonlat(_spherical_type(T), _offset(lonlat(c)..., sep, pa)...))
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle

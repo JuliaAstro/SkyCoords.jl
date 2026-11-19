@@ -125,6 +125,12 @@ include("astropy.jl")
     @test_throws ArgumentError convert(typeof(cp), c1)
     @test_throws ArgumentError convert(typeof(cp), cartesian(cp))
     @test convert(typeof(cp), cp) === cp
+    # `oftype` can, taking the origin from its first argument
+    @test @inferred(oftype(cp, convert(GalCoords, c1)))::typeof(cp) ≈ cp
+    @test oftype(cp, cartesian(c1)) ≈ cp
+    @test oftype(cp, cp) === cp
+    # `offset` goes through it, without rounding the point to the origin's element type
+    @test offset(p32, 1.0e-9, 0.3).offset ≈ p32.offset + 1.0e-9 .* [sin(0.3), cos(0.3)] rtol = 1e-6
 
     @testset "azimuthal equidistant (ARC) geometry" begin
         as = deg2rad(1 / 3600)
@@ -358,6 +364,11 @@ end
     # AltAzCoords angles too, though its constructor takes (alt, az)
     h3 = cartesian(AltAzCoords(0.5, 1.0))
     @test SkyCoords.lonlat(h3) == SkyCoords.lonlat(spherical(h3))
+    # offset returns a coordinate of the same type as its input, as for the spherical types
+    for x in (a3, cartesian(ICRSCoords{Float32}(1, 1.2)), CartesianCoords{ICRSCoords{Float32}}(a), h3)
+        @test @inferred(offset(x, 0.1, 0.2)) isa typeof(x)
+        @test offset(x, 0.1, 0.2) ≈ cartesian(offset(spherical(x), 0.1, 0.2))
+    end
 
     # FK4Coords's E-terms correction is not a rotation, but `frame_transform`
     # doesn't require one: all four Cartesian/spherical directions must agree

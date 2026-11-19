@@ -39,12 +39,14 @@ function coords2cart(lon, lat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
+# lat by asin or acos, whichever is well conditioned (below or above 45°): as accurate as atan, and faster.
+# Divided by |v|, as FK4 gives vectors slightly off unit length.
 function cart2coords(v)
     x, y, z = v[begin], v[begin + 1], v[begin + 2]
-    lon = atan(y, x)
-    xy_norm = hypot(x, y)
-    lat = atan(z, xy_norm)
-    return lon, lat
+    r² = x^2 + y^2
+    n = sqrt(r² + z^2)
+    r = sqrt(r²)
+    return atan(y, x), abs(z) < r ? asin(z / n) : copysign(acos(r / n), z)
 end
 
 # -----------------------------------------------------------------------------

@@ -269,20 +269,14 @@ function fk4_eterms(byear)
     o = mean_obliquity80(jd)
     return SA[ek * sin(g), mekcosg * cos(o), mekcosg * sin(o)]
 end
+# Computed once per equinox, at compile time
+@generated fk4_eterms(::Val{byear}) where {byear} = fk4_eterms(byear)
 
 # FK4 (with E-terms) -> FK4NoETerms: closed-form removal.
-remove_eterms(v, byear) = (e = fk4_eterms(byear); normalize(v - e + dot(e, v) * v))
+remove_eterms(v, e) = normalize(v - e + dot(e, v) * v)
 
-# FK4NoETerms -> FK4 (with E-terms): fixed-point iteration (matches astropy).
-function add_eterms(v, byear)
-    e = fk4_eterms(byear)
-    rhs = e + v
-    w = v
-    for _ in 1:10
-        w = rhs / (1 + dot(e, w))
-    end
-    return normalize(w)
-end
+# FK4NoETerms -> FK4 (with E-terms): astropy iterates w = (v + e) / (1 + e⋅w), which only rescales v + e.
+add_eterms(v, e) = normalize(v + e)
 
 # B1950 -> J2000 frame rotation, Murray 1989 A&A 218,325 eqn 28.
 const B1950_TO_J2000 = SA[
@@ -334,12 +328,14 @@ rotmat(::Type{<:FK4NoETerms{e}}, ::Type{<:FK4NoETerms{e}}) where {e} = I
 # these methods define the `frame_transform` primitive itself, every `convert`
 # — spherical or Cartesian, in either direction — works generically.
 frame_transform(::Type{TO}, ::Type{<:FK4Coords{e}}, v) where {TO <: AbstractSkyCoords, e} =
-    frame_transform(TO, FK4NoETerms{e}, remove_eterms(v, e))
+    frame_transform(TO, FK4NoETerms{e}, remove_eterms(v, fk4_eterms(Val(e))))
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{FROM}, v) where {e, FROM <: AbstractSkyCoords} =
-    add_eterms(frame_transform(FK4NoETerms{e}, FROM, v), e)
+    add_eterms(frame_transform(FK4NoETerms{e}, FROM, v), fk4_eterms(Val(e)))
 # disambiguation for the FK4 -> FK4 pair; same-equinox is the identity
-frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where {e_to, e_from} =
-    add_eterms(rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, e_from), e_to)
+frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where {e_to, e_from} = add_eterms(
+    rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, fk4_eterms(Val(e_from))),
+    fk4_eterms(Val(e_to)),
+)
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 
 # -----------------------------------------------------------------------------

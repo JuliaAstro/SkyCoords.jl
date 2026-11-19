@@ -47,6 +47,10 @@ include("astropy.jl")
     # Same-type separation works through the projected lon/lat directly
     @test separation(cp, project(c0, c0)) ≈ separation(c1, c0)
 
+    # Projected lon/lat are those of the point, longitude in [0, 2π) as for the spherical types
+    pλ = ProjectedCoords(ICRSCoords(3.5, 0.2), SVector(1.0e-3, -2.0e-3))
+    @test SkyCoords.lonlat(pλ) == SkyCoords.lonlat(convert(ICRSCoords, pλ))
+
     # A projected left argument is compared in its origin's frame, since
     # `convert` cannot target a projected type
     sep = separation(c1, c0)
@@ -314,6 +318,9 @@ end
         @test c3 === cartesian(c3)
         # the angles of a Cartesian coordinate are those of the point it represents
         @test SkyCoords.lonlat(c3) == (lon(c3), lat(c3)) == SkyCoords.lonlat(spherical(c3))
+        # including the longitude range, [0, 2π)
+        c4 = cartesian(CT(4, -1))
+        @test SkyCoords.lonlat(c4) == SkyCoords.lonlat(spherical(c4))
         c_conv = convert(ICRSCoords, c)
         c3_conv = convert(CartesianCoords{ICRSCoords}, c3)
         @test c3_conv == CartesianCoords{ICRSCoords}(c3)

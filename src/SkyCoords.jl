@@ -137,9 +137,13 @@ lat(c::AbstractSkyCoords) = c.dec
 
 lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 
-# Representations other than spherical have no lon/lat fields: take them from the point's unit vector
+# Representations other than spherical have no lon/lat fields: take them from the point's unit vector,
+# longitude in [0, 2π) as the spherical types store it
 const _NonSpherical = Union{CartesianCoords, AbstractProjectedCoords}
-lonlat(c::_NonSpherical) = cart2coords(coords2cart(c))
+function lonlat(c::_NonSpherical)
+    λ, φ = cart2coords(coords2cart(c))
+    return mod2pi(λ), φ
+end
 lon(c::_NonSpherical) = lonlat(c)[1]
 lat(c::_NonSpherical) = lonlat(c)[2]
 

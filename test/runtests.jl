@@ -296,6 +296,13 @@ end
     c2 = offset(c1, deg2rad(1), deg2rad(90))
     @test 11.9 < lon(c2) |> rad2deg < 12.0
     @test 59.9 < lat(c2) |> rad2deg < 60.0
+
+    # accurate next to a pole, across it, and when landing on it
+    c1 = T1(1.0, π / 2 - 1.0e-9)
+    @test lat(offset(c1, 1.0e-7, π)) ≈ π / 2 - 1.0e-9 - 1.0e-7 atol = 1.0e-15 rtol = 0
+    @test lat(offset(c1, 1.0e-7, 0)) ≈ π / 2 - (1.0e-7 - 1.0e-9) atol = 1.0e-15 rtol = 0
+    @test lon(offset(c1, 1.0e-7, 0)) ≈ 1.0 + π
+    @test lat(offset(T1(0, 0.33), π / 2 - 0.33, 0)) ≈ π / 2
 end
 
 @testset "cartesian" begin

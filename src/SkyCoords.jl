@@ -41,7 +41,7 @@ end
 # [x, y, z] unit vector -> (lon, lat)
 # lat by asin or acos, whichever is well conditioned (below or above 45°): as accurate as atan, and faster.
 # Divided by |v|, as FK4 gives vectors slightly off unit length.
-function cart2coords(v)
+@inline function cart2coords(v)
     x, y, z = v[begin], v[begin + 1], v[begin + 2]
     r² = x^2 + y^2
     n = sqrt(r² + z^2)
@@ -449,7 +449,7 @@ end
 
 Offset a coordinate by a given angular separation, `separation`, in radians and position angle, `pa`, in radians.
 
-Uses the sine and cosine rules in spherical coordinates with corrections for the antipodes.
+Follows the great circle that leaves the coordinate at position angle `pa`.
 Returns a sky coordinate of the same type as input, so a [`ProjectedCoords`](@ref) stays projected around the same origin.
 
 ### Examples
@@ -466,8 +466,19 @@ julia> offset(c1, c2) .|> rad2deg
 ### See Also
 [`separation`](@ref), [`position_angle`](@ref)
 """
-offset(c::T, sep, pa) where {T <: AbstractSkyCoords} =
-    _reproject(c, fromlonlat(_unprojected_type(T), _offset(lonlat(c)..., sep, pa)...))
+function offset(c::T, sep, pa) where {T <: AbstractSkyCoords}
+    λ, φ = lonlat(c)
+    # cos(sep) k̂ + sin(sep) (sin(pa) ê + cos(pa) n̂) for the unit vectors k̂ to the coordinate, ê East and n̂ North,
+    # in the frame where the coordinate is at longitude 0, which saves a sincos
+    sinφ, cosφ = sincos(φ)
+    sin_sep, cos_sep = sincos(sep)
+    sin_pa, cos_pa = sincos(pa)
+    x = cos_sep * cosφ - sin_sep * cos_pa * sinφ
+    y = sin_sep * sin_pa
+    z = cos_sep * sinφ + sin_sep * cos_pa * cosφ
+    Δλ, φ′ = cart2coords((x, y, z))
+    return _reproject(c, fromlonlat(_unprojected_type(T), λ + Δλ, φ′))
+end
 
 """
     offset(::AbstractSkyCoords, AbstractSkyCoords) -> angle, angle
@@ -486,29 +497,6 @@ julia> offset(c1, c2) .|> rad2deg
 [`separation`](@ref), [`position_angle`](@ref)
 """
 offset(c1::AbstractSkyCoords, c2::AbstractSkyCoords) = separation(c1, c2), position_angle(c1, c2)
-
-#= use the cosine rule in spherical geometry with three points, the north pole, the starting point,
-and the final point.
-angles: (change in lon), (position angle), (-1/position angle)
-sides: (separation), (final co-latitude), (starting co-latitude)
-=#
-function _offset(λ, ϕ, separation, pa)
-    sin_a, cos_a = sincos(separation)
-    cos_c, sin_c = sincos(ϕ)
-    sin_B, cos_B = sincos(pa)
-
-    # solving cosine rule
-    cos_b = cos_c * cos_a + sin_c * sin_a * cos_B
-
-    # solving sine rule
-    xsin_A = sin_a * sin_B * sin_c
-    xcos_A = cos_a - cos_b * cos_c
-
-    # correction for antipodes, otherwise atan2
-    ang = sin_c < 1.0e-12 ? π / 2 + cos_c * (π / 2 - pa) : atan(xsin_A, xcos_A)
-
-    return mod2pi(λ + ang), asin(cos_b)
-end
 
 # Stub to extend in NearestNeighbors extension
 function match end

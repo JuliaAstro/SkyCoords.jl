@@ -47,6 +47,10 @@ include("astropy.jl")
     # Same-type separation works through the projected lon/lat directly
     @test separation(cp, project(c0, c0)) ≈ separation(c1, c0)
 
+    # Projected lon/lat are those of the point, longitude in [0, 2π) as for the spherical types
+    pλ = ProjectedCoords(ICRSCoords(3.5, 0.2), SVector(1.0e-3, -2.0e-3))
+    @test SkyCoords.lonlat(pλ) == SkyCoords.lonlat(convert(ICRSCoords, pλ))
+
     # A projected left argument is compared in its origin's frame, since
     # `convert` cannot target a projected type
     sep = separation(c1, c0)
@@ -103,11 +107,30 @@ include("astropy.jl")
     # Nested projections chain through their origins
     @test convert(ICRSCoords, ProjectedCoords(cp, zero(cp.offset))) ≈ c1
 
+    # So do Cartesian origins: a projected point lives in its origin's frame, whatever the origin's representation
+    x0 = cartesian(c0)
+    px = ProjectedCoords(x0, cp.offset)
+    @test convert(ICRSCoords, px) ≈ c1
+    @test convert(FK4Coords{1950}, px) ≈ convert(FK4Coords{1950}, c1)
+    @test convert(CartesianCoords{GalCoords}, px) ≈ cartesian(convert(GalCoords, c1))
+    @test cartesian(px) isa CartesianCoords{ICRSCoords, Float64}
+    @test separation(px, c0) ≈ sep
+    @test position_angle(px, c0) ≈ pa
+    @test convert(ICRSCoords, offset(px, 1.0e-5, 0.5)) ≈ offset(c1, 1.0e-5, 0.5)
+    # and `project` works in its origin's frame, so the origin may be projected too
+    @test project(cp, c0).offset ≈ project(c1, c0).offset
+
     # Converting into a projected type needs an origin value, which a type
     # cannot carry. Instances already matching the target stay identity.
     @test_throws ArgumentError convert(typeof(cp), c1)
     @test_throws ArgumentError convert(typeof(cp), cartesian(cp))
     @test convert(typeof(cp), cp) === cp
+    # `oftype` can, taking the origin from its first argument
+    @test @inferred(oftype(cp, convert(GalCoords, c1)))::typeof(cp) ≈ cp
+    @test oftype(cp, cartesian(c1)) ≈ cp
+    @test oftype(cp, cp) === cp
+    # `offset` goes through it, without rounding the point to the origin's element type
+    @test offset(p32, 1.0e-9, 0.3).offset ≈ p32.offset + 1.0e-9 .* [sin(0.3), cos(0.3)] rtol = 1e-6
 
     @testset "azimuthal equidistant (ARC) geometry" begin
         as = deg2rad(1 / 3600)
@@ -319,6 +342,11 @@ end
         c3 = cartesian(c)
         @test c === spherical(c)
         @test c3 === cartesian(c3)
+        # the angles of a Cartesian coordinate are those of the point it represents
+        @test SkyCoords.lonlat(c3) == (lon(c3), lat(c3)) == SkyCoords.lonlat(spherical(c3))
+        # including the longitude range, [0, 2π)
+        c4 = cartesian(CT(4, -1))
+        @test SkyCoords.lonlat(c4) == SkyCoords.lonlat(spherical(c4))
         c_conv = convert(ICRSCoords, c)
         c3_conv = convert(CartesianCoords{ICRSCoords}, c3)
         @test c3_conv == CartesianCoords{ICRSCoords}(c3)
@@ -337,6 +365,17 @@ end
     a3 = cartesian(a)
     b3 = cartesian(b)
     @test separation(a, b) ≈ separation(a3, b3) ≈ separation(a, b3) ≈ separation(a3, b)
+    # so do the operations built on those angles
+    @test position_angle(a, b) ≈ position_angle(a3, b3) ≈ position_angle(a, b3) ≈ position_angle(a3, b)
+    @test project(a3, b).offset ≈ project(a, b).offset
+    # AltAzCoords angles too, though its constructor takes (alt, az)
+    h3 = cartesian(AltAzCoords(0.5, 1.0))
+    @test SkyCoords.lonlat(h3) == SkyCoords.lonlat(spherical(h3))
+    # offset returns a coordinate of the same type as its input, as for the spherical types
+    for x in (a3, cartesian(ICRSCoords{Float32}(1, 1.2)), CartesianCoords{ICRSCoords{Float32}}(a), h3)
+        @test @inferred(offset(x, 0.1, 0.2)) isa typeof(x)
+        @test offset(x, 0.1, 0.2) ≈ cartesian(offset(spherical(x), 0.1, 0.2))
+    end
     # opposite points, where the chord rounds above 2
     v = normalize(SVector(0.0, 0.6, 1.0))
     @test separation(CartesianCoords{ICRSCoords}(v), CartesianCoords{ICRSCoords}(-v)) ≈ π
@@ -368,6 +407,10 @@ end
     @test_throws ArgumentError convert(CartesianCoords{FK4NoETerms}, cartesian(other))
     @test_throws ArgumentError convert(CartesianCoords{FK5Coords}, other)
     @test_throws ArgumentError CartesianCoords{FK4Coords}(1, 0, 0)
+    # a frame tag names a spherical frame, never another representation
+    @test_throws ArgumentError CartesianCoords{CartesianCoords{ICRSCoords}}(1, 0, 0)
+    @test_throws ArgumentError convert(CartesianCoords{CartesianCoords{ICRSCoords}}, other)
+    @test_throws ArgumentError CartesianCoords{ProjectedCoords{ICRSCoords{Float64}, Float64}}(1, 0, 0)
 
     # an instance that already matches a bare/partial target converts by
     # identity, following the usual Base convention (like `convert(Integer, 3)`)
@@ -657,7 +700,7 @@ end
     @test_throws ArgumentError GalCoords(AltAzCoords(1, 2))
     @test_throws ArgumentError convert(EclipticCoords{2000}, AltAzCoords(1, 2))
     @test_throws ArgumentError convert(AltAzCoords, EclipticCoords{2000}(1, 1.2))
-    # ProjectedCoords delegates to its origin frame, so a projection around a
+    # ProjectedCoords lives in its origin's frame, so a projection around a
     # celestial origin still requires an observer, while one around an AltAz
     # origin converts through freely
     @test_throws ArgumentError convert(AltAzCoords, project(ICRSCoords(1.1, 0.2), ICRSCoords(1.15, 0.25)))

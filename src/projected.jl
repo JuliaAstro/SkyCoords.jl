@@ -11,7 +11,7 @@ For small offsets, `offset[1] ≈ Δlon * cos(lat)` and `offset[2] ≈ Δlat`.
 A projected coordinate is a _representation_ around a point, not a coordinate frame of its own.
 Its frame is the origin's. Conversions out of a `ProjectedCoords` (spherical or [`CartesianCoords`](@ref) targets alike)
 work like any other coordinate. Conversions into one are not possible via `convert`, since they require an origin value.
-Use [`project`](@ref) instead.
+Use [`project`](@ref) instead, or `oftype(p, c)` to project `c` around the origin of an existing `p`, as the same type.
 """
 struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractProjectedCoords
     origin::TC
@@ -50,9 +50,6 @@ function coords2cart(c::AbstractProjectedCoords)
     w = iszero(ρ) ? one(sinρ) : sinρ / ρ
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
-lonlat(c::AbstractProjectedCoords) = cart2coords(coords2cart(c))
-lon(c::AbstractProjectedCoords) = lonlat(c)[1]
-lat(c::AbstractProjectedCoords) = lonlat(c)[2]
 
 """
     project(origin::AbstractSkyCoords, c::AbstractSkyCoords) -> ProjectedCoords
@@ -74,7 +71,7 @@ true
 ```
 """
 project(origin::AbstractSkyCoords, c::AbstractSkyCoords) =
-    ProjectedCoords(origin, _project_offset(origin, convert(typeof(origin), c)))
+    ProjectedCoords(origin, _project_offset(origin, convert(_spherical_type(typeof(origin)), c)))
 
 # The offset from `origin` of `c`, which is already in `origin`'s frame: the separation θ times the
 # unit vector (sin, cos) of the position angle.
@@ -93,22 +90,11 @@ function _project_offset(origin, c)
     return SVector(f * s_E, f * s_N)
 end
 
-# A projected coordinate's frame is its origin's, so the frame-change
-# primitive delegates to it; every `convert` out of a ProjectedCoords then
-# works generically
-frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AbstractSkyCoords, TC <: AbstractSkyCoords} =
-    frame_transform(T, TC, v)
-# Disambiguate against FK4Coords's own generic-source frame_transform method
-frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:ProjectedCoords{TC}}, v) where {e, TC <: AbstractSkyCoords} =
-    frame_transform(FK4Coords{e}, TC, v)
-
-# A ProjectedCoords target can never be satisfied by `convert`. The origin
-# is a value, not a type parameter. Every conversion pathway checks its
-# target frame through `_checkframe`, so one override turns them all into a
-# clear error (instances already matching the target still convert by identity without reaching this).
+# A projected type is not a frame: its frame is its origin's, a value rather than a type parameter. Conversions
+# and Cartesian construction check their frame here (instances matching a `convert` target pass by identity).
 _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentError(
-    "Cannot `convert` into a projected coordinate type; construct one with " *
-    "`project(origin, c)` instead.",
+    "$TC is not a coordinate frame: its frame is its origin's. To express a coordinate as a projected one, " *
+    "use `project(origin, c)`.",
 ))
 
 # The type `convert` can target in place of a projected coordinate: its origin's
@@ -117,15 +103,16 @@ _checkframe(::Type{TC}) where {TC <: AbstractProjectedCoords} = throw(ArgumentEr
 _unprojected_type(::Type{T}) where {T <: AbstractSkyCoords} = T
 _unprojected_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = constructorof(_unprojected_type(TC))
 
-# Express `r`, a coordinate in `c`'s underlying frame, the same way `c` is
-# expressed. A projected coordinate keeps its origin, and so its type.
-_reproject(::AbstractSkyCoords, r) = r
-_reproject(c::T, r) where {T <: ProjectedCoords} = T(origin(c), _project_offset(origin(c), r))
+# Unlike `convert`, `oftype` has a value to take the origin from: `y` projected around `x`'s origin, as `x`'s type.
+# As in Base, `y` already of that type is returned as is. `y` is brought into the origin's frame without the
+# origin's element type, so it is not rounded to it.
+Base.oftype(x::ProjectedCoords, y::AbstractSkyCoords) =
+    y isa typeof(x) ? y : typeof(x)(origin(x), _project_offset(origin(x), convert(_spherical_type(typeof(x)), y)))
 
 # The Cartesian representation is tagged with the origin's frame.
 # `constructorof(typeof(c))` (the generic tag choice) must keep returning
 # `ProjectedCoords` for `setproperties` reconstruction, but the frame this vector lives in is the origin's.
-cartesian(c::AbstractProjectedCoords) = CartesianCoords{_unprojected_type(typeof(c))}(coords2cart(c))
+cartesian(c::AbstractProjectedCoords) = CartesianCoords{_spherical_type(typeof(c))}(coords2cart(c))
 
 # Equality cannot fall back to the generic frame-tag + lon/lat comparison in
 # types.jl: the bare `ProjectedCoords` tag erases the origin's frame, so raw

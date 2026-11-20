@@ -139,6 +139,16 @@ lat(c::AbstractSkyCoords) = c.dec
 
 lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 
+# Representations other than spherical have no lon/lat fields: take them from the point's unit vector,
+# longitude in [0, 2π) as the spherical types store it
+const _NonSpherical = Union{CartesianCoords, AbstractProjectedCoords}
+function lonlat(c::_NonSpherical)
+    λ, φ = cart2coords(coords2cart(c))
+    return mod2pi(λ), φ
+end
+lon(c::_NonSpherical) = lonlat(c)[1]
+lat(c::_NonSpherical) = lonlat(c)[2]
+
 # Inverse of `lonlat`: construct a coordinate of type `T` from (lon, lat)
 # angles. The generic machinery (`convert`, `spherical`, `offset`) builds
 # results through this hook, so a frame whose natural argument order is not
@@ -146,6 +156,13 @@ lonlat(c::AbstractSkyCoords) = (lon(c), lat(c))
 fromlonlat(::Type{T}, lon, lat) where {T <: AbstractSkyCoords} = T(lon, lat)
 # AltAzCoords is constructed as (alt, az), i.e. (lat, lon)
 fromlonlat(::Type{T}, lon, lat) where {T <: AltAzCoords} = T(lat, lon)
+
+# The spherical type whose frame the points of `T` live in: `T` itself for spherical types, the frame tag
+# for Cartesian ones, the origin's for projected ones (without element type, so offsets more precise than
+# the origin are not rounded to it). It is what `frame_transform` and `fromlonlat` take.
+_spherical_type(::Type{T}) where {T <: AbstractSkyCoords} = T
+_spherical_type(::Type{<:CartesianCoords{TC}}) where {TC <: AbstractSkyCoords} = _spherical_type(TC)
+_spherical_type(::Type{<:ProjectedCoords{TC}}) where {TC <: AbstractSkyCoords} = constructorof(_spherical_type(TC))
 
 # Abstract away specific field names (ra, dec vs l, b)
 coords2cart(c::AbstractSkyCoords) = coords2cart(lonlat(c)...)
@@ -360,11 +377,6 @@ frame_transform(::Type{<:AbstractSkyCoords}, ::Type{<:AltAzCoords}, v) = throw(A
 # ambiguous with the gates here.
 frame_transform(::Type{<:AltAzCoords}, ::Type{<:FK4Coords{e}}, v) where {e} = throw(ArgumentError(ALTAZ_TO_ERROR))
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:AltAzCoords}, v) where {e} = throw(ArgumentError(ALTAZ_FROM_ERROR))
-# ProjectedCoords also has a generic delegation method (see projected.jl) that is
-# ambiguous with the gates above. Resolve by delegating to the origin frame, whose
-# own rule then decides: an AltAz origin passes through, a celestial origin throws.
-frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AltAzCoords, TC <: AbstractSkyCoords} =
-    frame_transform(T, TC, v)
 
 # ------------------------------------------------------------------------------
 # Distance between coordinates
@@ -474,7 +486,7 @@ function offset(c::T, sep, pa) where {T <: AbstractSkyCoords}
     y = sin_sep * sin_pa
     z = cos_sep * sinφ + sin_sep * cos_pa * cosφ
     Δλ, φ′ = cart2coords((x, y, z))
-    return _reproject(c, fromlonlat(_unprojected_type(T), λ + Δλ, φ′))
+    return oftype(c, fromlonlat(_spherical_type(T), λ + Δλ, φ′))
 end
 
 """

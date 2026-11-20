@@ -1,7 +1,7 @@
 module SkyCoords
 
 import ConstructionBase: constructorof
-using LinearAlgebra: I, dot, norm, normalize
+using LinearAlgebra: I, dot, normalize
 using Rotations: RotX, RotXYZ, RotZYZ
 using StaticArrays: SA, SVector
 
@@ -39,12 +39,14 @@ function coords2cart(lon, lat)
 end
 
 # [x, y, z] unit vector -> (lon, lat)
-function cart2coords(v)
+# lat by asin or acos, whichever is well conditioned (below or above 45°): as accurate as atan, and faster.
+# Divided by |v|, as FK4 gives vectors slightly off unit length.
+@inline function cart2coords(v)
     x, y, z = v[begin], v[begin + 1], v[begin + 2]
-    lon = atan(y, x)
-    xy_norm = hypot(x, y)
-    lat = atan(z, xy_norm)
-    return lon, lat
+    r² = x^2 + y^2
+    n = sqrt(r² + z^2)
+    r = sqrt(r²)
+    return atan(y, x), abs(z) < r ? asin(z / n) : copysign(acos(r / n), z)
 end
 
 # Unit vector at (lon, lat) and the East and North unit vectors there (set by lon at a pole)
@@ -277,20 +279,14 @@ function fk4_eterms(byear)
     o = mean_obliquity80(jd)
     return SA[ek * sin(g), mekcosg * cos(o), mekcosg * sin(o)]
 end
+# Computed once per equinox, at compile time
+@generated fk4_eterms(::Val{byear}) where {byear} = fk4_eterms(byear)
 
 # FK4 (with E-terms) -> FK4NoETerms: closed-form removal.
-remove_eterms(v, byear) = (e = fk4_eterms(byear); normalize(v - e + dot(e, v) * v))
+remove_eterms(v, e) = normalize(v - e + dot(e, v) * v)
 
-# FK4NoETerms -> FK4 (with E-terms): fixed-point iteration (matches astropy).
-function add_eterms(v, byear)
-    e = fk4_eterms(byear)
-    rhs = e + v
-    w = v
-    for _ in 1:10
-        w = rhs / (1 + dot(e, w))
-    end
-    return normalize(w)
-end
+# FK4NoETerms -> FK4 (with E-terms): astropy iterates w = (v + e) / (1 + e⋅w), which only rescales v + e.
+add_eterms(v, e) = normalize(v + e)
 
 # B1950 -> J2000 frame rotation, Murray 1989 A&A 218,325 eqn 28.
 const B1950_TO_J2000 = SA[
@@ -342,12 +338,14 @@ rotmat(::Type{<:FK4NoETerms{e}}, ::Type{<:FK4NoETerms{e}}) where {e} = I
 # these methods define the `frame_transform` primitive itself, every `convert`
 # — spherical or Cartesian, in either direction — works generically.
 frame_transform(::Type{TO}, ::Type{<:FK4Coords{e}}, v) where {TO <: AbstractSkyCoords, e} =
-    frame_transform(TO, FK4NoETerms{e}, remove_eterms(v, e))
+    frame_transform(TO, FK4NoETerms{e}, remove_eterms(v, fk4_eterms(Val(e))))
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{FROM}, v) where {e, FROM <: AbstractSkyCoords} =
-    add_eterms(frame_transform(FK4NoETerms{e}, FROM, v), e)
+    add_eterms(frame_transform(FK4NoETerms{e}, FROM, v), fk4_eterms(Val(e)))
 # disambiguation for the FK4 -> FK4 pair; same-equinox is the identity
-frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where {e_to, e_from} =
-    add_eterms(rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, e_from), e_to)
+frame_transform(::Type{<:FK4Coords{e_to}}, ::Type{<:FK4Coords{e_from}}, v) where {e_to, e_from} = add_eterms(
+    rotmat(FK4NoETerms{e_to}, FK4NoETerms{e_from}) * remove_eterms(v, fk4_eterms(Val(e_from))),
+    fk4_eterms(Val(e_to)),
+)
 frame_transform(::Type{<:FK4Coords{e}}, ::Type{<:FK4Coords{e}}, v) where {e} = v
 
 # -----------------------------------------------------------------------------
@@ -417,8 +415,9 @@ To test whether two coordinates are the same point on the sky, compare their sep
 separation(c1::T, c2::T) where {T <: AbstractSkyCoords} =
     _separation(lonlat(c1)..., lonlat(c2)...)
 
+# Capped, as rounding can push the chord of nearly opposite points above 2
 separation(c1::CartesianCoords{T}, c2::CartesianCoords{T}) where {T <: AbstractSkyCoords} =
-    2 * asin(norm(vec(c1) - vec(c2)) / 2)
+    2 * asin(min(sqrt(sum(abs2, vec(c1) - vec(c2))) / 2, 1))
 
 # Mixed types are compared in the left argument's frame. `convert` cannot target
 # a projected type, so a projected left argument is compared in its origin's frame.
@@ -460,7 +459,7 @@ end
 
 Offset a coordinate by a given angular separation, `separation`, in radians and position angle, `pa`, in radians.
 
-Follows the great circle that leaves the coordinate at position angle `pa`, accurate at any separation and position, poles included.
+Follows the great circle that leaves the coordinate at position angle `pa`.
 Returns a sky coordinate of the same type as input, so a [`ProjectedCoords`](@ref) stays projected around the same origin.
 
 ### Examples
@@ -479,13 +478,16 @@ julia> offset(c1, c2) .|> rad2deg
 """
 function offset(c::T, sep, pa) where {T <: AbstractSkyCoords}
     λ, φ = lonlat(c)
-    # The great circle in the frame rotated to longitude λ, which saves a sincos
-    k̂, ê, n̂ = _local_frame(zero(φ), φ)
+    # cos(sep) k̂ + sin(sep) (sin(pa) ê + cos(pa) n̂) for the unit vectors k̂ to the coordinate, ê East and n̂ North,
+    # in the frame where the coordinate is at longitude 0, which saves a sincos
+    sinφ, cosφ = sincos(φ)
     sin_sep, cos_sep = sincos(sep)
     sin_pa, cos_pa = sincos(pa)
-    x, y, z = cos_sep * k̂ + sin_sep * (sin_pa * ê + cos_pa * n̂)
-    # A unit vector, so `sqrt` is safe where `cart2coords` needs `hypot`
-    return _reproject(c, fromlonlat(_unprojected_type(T), λ + atan(y, x), atan(z, sqrt(x^2 + y^2))))
+    x = cos_sep * cosφ - sin_sep * cos_pa * sinφ
+    y = sin_sep * sin_pa
+    z = cos_sep * sinφ + sin_sep * cos_pa * cosφ
+    Δλ, φ′ = cart2coords((x, y, z))
+    return _reproject(c, fromlonlat(_unprojected_type(T), λ + Δλ, φ′))
 end
 
 """

@@ -5,6 +5,7 @@ using Unitful
 using DynamicQuantities: DynamicQuantities, @us_str, uconvert
 using ConstructionBase: setproperties
 using DelimitedFiles
+using ForwardDiff
 using LinearAlgebra: norm, normalize
 using NearestNeighbors
 using Random: randperm
@@ -147,10 +148,56 @@ include("astropy.jl")
         @test project(ICRSCoords(0.0, π / 2), ICRSCoords(0.0, -π / 2)).offset ≈ [0.0, -π] atol = 2.0e-15 rtol = 0
     end
 
-    # offsets may be angle quantities
+    # offsets may be angle quantities, kept as given
     o = ICRSCoords(1.0, 0.5)
     @test @inferred(convert(ICRSCoords, ProjectedCoords(o, SVector(1.0, -2.0)u"μrad"))) ≈
           convert(ICRSCoords, ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))) atol = 1.0e-16 rtol = 0
+    pμ = @inferred ProjectedCoords(o, SVector(1.0, -2.0)u"μrad")
+    @test pμ.offset === SVector(1.0, -2.0)u"μrad"
+    @test offset(pμ, 1.0e-6, 0.3).offset isa SVector{2, typeof(1.0u"μrad")}
+    @test_throws Unitful.DimensionError ProjectedCoords(o, SVector(1.0, 0.0)u"m")
+
+    # Integer and rational offsets are floated
+    @test ProjectedCoords(o, SVector(0, 0)) isa ProjectedCoords{typeof(o), Float64}
+    @test ProjectedCoords(o, SVector(1 // 1000, 0 // 1)) isa ProjectedCoords{typeof(o), Float64}
+    @test ProjectedCoords(o, SVector(1, 2)u"μrad") isa ProjectedCoords{typeof(o), typeof(1.0u"μrad")}
+    @test offset(ProjectedCoords(o, SVector(0, 0)), 1.0e-5, 0.3) ≈ project(o, offset(o, 1.0e-5, 0.3))
+
+    # An explicit integer offset type still works
+    @test convert(ICRSCoords, ProjectedCoords{typeof(o), Int}(o, SVector(0, 0))) ≈ o
+    @test convert(ICRSCoords, ProjectedCoords{typeof(o), Int}(o, SVector(0, 1))) ≈ convert(ICRSCoords, ProjectedCoords(o, SVector(0.0, 1.0)))
+
+    # Derivatives stay finite at zero offset
+    J = ForwardDiff.jacobian(Δ -> collect(SkyCoords.lonlat(ProjectedCoords(o, SVector(Δ...)))), [0.0, 0.0])
+    @test J ≈ [1 / cos(0.5) 0; 0 1]
+    H = ForwardDiff.hessian(Δ -> lat(ProjectedCoords(o, SVector(Δ...))), [0.0, 0.0])
+    @test H ≈ [-tan(0.5) 0; 0 0] atol = 1.0e-12
+    # and for a coordinate projected around itself
+    J = ForwardDiff.jacobian(θ -> collect(project(ICRSCoords(θ...), o).offset), [1.0, 0.5])
+    @test J ≈ [-cos(0.5) 0; 0 -1]
+
+    # Tiny North offsets keep full relative precision
+    @testset for d in (1.0e-12, 1.0e-14)
+        φ = 0.5 + d
+        @test project(o, ICRSCoords(1.0, φ)).offset[2] ≈ φ - 0.5 rtol = 4 * eps()
+        @test separation(o, ICRSCoords(1.0, φ)) ≈ φ - 0.5 rtol = 4 * eps()
+    end
+
+    # offset is accurate near the poles
+    c = ICRSCoords(1.0, π / 2 - 1.0e-9)
+    @test separation(c, offset(c, 1.0e-7, 0.3)) ≈ 1.0e-7 atol = 1.0e-15
+    @test offset(ProjectedCoords(c, SVector(0.0, 0.0)), 1.0e-7, 0.3).offset ≈ 1.0e-7 .* [sin(0.3), cos(0.3)] atol = 1.0e-15 rtol = 0
+
+    # Longitude in [0, 2π)
+    p = ProjectedCoords(ICRSCoords(3.5, 0.2), SVector(0.0, 0.0))
+    @test lon(p) ≈ 3.5
+    @test lon(p) == convert(ICRSCoords, p).ra
+
+    # Cartesian origins
+    @test origin(ProjectedCoords(cartesian(c0), cp.offset)) isa ICRSCoords
+    @test convert(ICRSCoords, ProjectedCoords(cartesian(c0), cp.offset)) ≈ c1
+    @test project(cartesian(c0), c1) ≈ cp
+    @test project(cartesian(c0), convert(GalCoords, c1)) ≈ cp
 end
 
 @testset "domain validation" begin
@@ -543,6 +590,13 @@ VERSION > v"1.9-DEV" && @testset "DynamicQuantities" begin
     @test offset(ICRSCoords(1, 0.5), 0.1us"rad", 2us"rad") === offset(ICRSCoords(1, 0.5), 0.1, 2)
     @test offset(ICRSCoords(1, 0.5), 0.1, 100us"deg") === offset(ICRSCoords(1, 0.5), 0.1, deg2rad(100))
     @test offset(ICRSCoords(1, 0.5), 0.1us"deg", 100us"deg") === offset(ICRSCoords(1, 0.5), deg2rad(0.1), deg2rad(100))
+
+    # ProjectedCoords offsets are stored in radians
+    o = ICRSCoords(1, 0.5)
+    @test ProjectedCoords(o, SVector(1.0, -2.0) .* us"μrad") ≈ ProjectedCoords(o, SVector(1.0e-6, -2.0e-6))
+    @test convert(ICRSCoords, ProjectedCoords(o, SVector(1.0, -2.0) .* us"μrad")) ≈
+          convert(ICRSCoords, ProjectedCoords(o, SVector(1.0e-6, -2.0e-6)))
+    @test_throws DynamicQuantities.DimensionError ProjectedCoords(o, SVector(1.0, 0.0) .* us"m")
 
     # Element-type-parameterized construction with quantities; these calls used
     # to be ambiguous against the untyped inner constructors

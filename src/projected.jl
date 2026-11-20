@@ -4,9 +4,12 @@ abstract type AbstractProjectedCoords <: AbstractSkyCoords end
     ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractSkyCoords
 
 Represent a coordinate as an offset `(east, north)` from `origin`, in the azimuthal equidistant projection around it:
-the point lies at angular distance `norm(offset)` from `origin`, at position angle `atan(offset[1], offset[2])`.
+the point lies `norm(offset)` along the great circle that leaves `origin` at position angle `atan(offset[1], offset[2])`.
+Up to `norm(offset) = π`, that is its angular distance from `origin`; longer offsets continue past the antipode.
 The projection is applicable at any distance and at any origin.
 For small offsets, `offset[1] ≈ Δlon * cos(lat)` and `offset[2] ≈ Δlat`.
+
+Offsets are in radians, or angle quantities: Unitful ones are kept as given, DynamicQuantities ones converted to radians.
 
 A projected coordinate is a _representation_ around a point, not a coordinate frame of its own.
 Its frame is the origin's. Conversions out of a `ProjectedCoords` (spherical or [`CartesianCoords`](@ref) targets alike)
@@ -23,8 +26,16 @@ struct ProjectedCoords{TC <: AbstractSkyCoords, T <: Number} <: AbstractProjecte
     ProjectedCoords{TC, T}(origin::AbstractSkyCoords, offset::AbstractVector{<:Number}) where {TC <: AbstractSkyCoords, T <: Number} =
         new(origin, offset)
 end
-ProjectedCoords(origin::TC, offset::SVector{2, T}) where {TC <: AbstractSkyCoords, T <: Number} =
-    ProjectedCoords{TC, T}(origin, offset)
+# Floated like the spherical types' angles, so `offset` results fit the same type
+# A Cartesian origin is held in spherical form
+function ProjectedCoords(origin::AbstractSkyCoords, offset::SVector{2, T}) where {T <: Number}
+    foreach(_radians, offset) # Non-angle quantities throw at compile time
+    o = spherical(origin)
+    return ProjectedCoords{typeof(o), float(T)}(o, offset)
+end
+
+# An offset in radians. The Unitful extension converts angle quantities, which are otherwise kept as given.
+_radians(x::Real) = x
 
 """
     origin(c::ProjectedCoords) -> coordinate
@@ -37,20 +48,28 @@ origin(c::ProjectedCoords) = c.origin
 # atan(east, north): cos ρ k̂ + (sin ρ / ρ) (east ê + north n̂), with k̂ the origin's unit vector and
 # ê, n̂ its East and North unit vectors.
 function coords2cart(c::AbstractProjectedCoords)
-    east, north = c.offset
-    ρ = hypot(east, north)
-    sinρ, cosρ = sincos(ρ)
-    # the origin at the offset's precision, which may exceed the origin's own
-    λ₀, φ₀, _ = promote(lonlat(origin(c))..., sinρ)
-    sinλ₀, cosλ₀ = sincos(λ₀)
-    sinφ₀, cosφ₀ = sincos(φ₀)
-    k̂ = SVector(cosφ₀ * cosλ₀, cosφ₀ * sinλ₀, sinφ₀)
-    ê = SVector(-sinλ₀, cosλ₀, 0)
-    n̂ = SVector(-sinφ₀ * cosλ₀, -sinφ₀ * sinλ₀, cosφ₀)
-    w = iszero(ρ) ? one(sinρ) : sinρ / ρ
+    east, north = map(_radians, c.offset) # Needed to keep the branch below type-stable
+    # ρ is not differentiable at zero offset: use the series in ρ² there, so derivatives and
+    # uncertainties stay finite (`float`: integers have no `eps`)
+    ρ² = east^2 + north^2
+    if ρ² < eps(float(one(ρ²)))^2
+        cosρ, w = 1 - ρ² / 2, 1 - ρ² / 6
+    else
+        ρ = hypot(east, north)
+        sinρ, cosρ = sincos(ρ)
+        w = sinρ / ρ
+    end
+    # The origin at the offset's precision, which may exceed the origin's own
+    λ₀, φ₀, _ = promote(lonlat(origin(c))..., w)
+    k̂, ê, n̂ = _local_frame(λ₀, φ₀)
     return cosρ * k̂ + w * (east * ê + north * n̂)
 end
-lonlat(c::AbstractProjectedCoords) = cart2coords(coords2cart(c))
+
+# Longitude in [0, 2π), like the spherical types
+function lonlat(c::AbstractProjectedCoords)
+    λ, φ = cart2coords(coords2cart(c))
+    return mod2pi(λ), φ
+end
 lon(c::AbstractProjectedCoords) = lonlat(c)[1]
 lat(c::AbstractProjectedCoords) = lonlat(c)[2]
 
@@ -75,21 +94,22 @@ true
 """
 project(origin::AbstractSkyCoords, c::AbstractSkyCoords) =
     ProjectedCoords(origin, _project_offset(origin, convert(typeof(origin), c)))
+project(origin::CartesianCoords, c::AbstractSkyCoords) = project(spherical(origin), c)
 
 # The offset from `origin` of `c`, which is already in `origin`'s frame: the separation θ times the
 # unit vector (sin, cos) of the position angle.
 # here, (s_E, s_N) = sin θ times that unit vector
 function _project_offset(origin, c)
-    λ₀, φ₀, λ, φ = promote(lonlat(origin)..., lonlat(c)...)
-    sinφ₀, cosφ₀ = sincos(φ₀)
-    sinφ, cosφ = sincos(φ)
-    sinΔλ, cosΔλ = sincos(λ - λ₀)
-    s_E = cosφ * sinΔλ
-    s_N = cosφ₀ * sinφ - sinφ₀ * cosφ * cosΔλ
-    sinθ = hypot(s_E, s_N)
-    cosθ = sinφ₀ * sinφ + cosφ₀ * cosφ * cosΔλ
-    # sin θ = 0 only at the origin: towards the antipode, the rounding of π leaves sin Δλ or sin Δφ nonzero
-    f = iszero(sinθ) ? one(sinθ) : atan(sinθ, cosθ) / sinθ
+    s_E, s_N, cosθ = _vincenty_terms(promote(lonlat(origin)..., lonlat(c)...)...)
+    # sin θ is not differentiable at the origin: use the series of θ / sin θ in sin²θ there, as in
+    # `coords2cart`. At the antipode sin θ is tiny but nonzero (π rounds); `cosθ > 0` keeps it exact.
+    sin²θ = s_E^2 + s_N^2
+    f = if sin²θ < eps(one(sin²θ))^2 && cosθ > 0
+        1 + sin²θ / 6
+    else
+        sinθ = hypot(s_E, s_N)
+        atan(sinθ, cosθ) / sinθ
+    end
     return SVector(f * s_E, f * s_N)
 end
 

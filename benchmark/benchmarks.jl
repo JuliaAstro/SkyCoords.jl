@@ -203,6 +203,23 @@ const PROJECTED = Ref(SkyCoords.project(C1[], C2[]))
 REPRESENTATION["cartesian"] = @benchmarkable cartesian($C1[]) evals = 1000
 REPRESENTATION["project"] = @benchmarkable SkyCoords.project($C1[], $C2[]) evals = 1000
 REPRESENTATION["unproject"] = @benchmarkable convert(ICRSCoords, $PROJECTED[]) evals = 1000
+# The same coordinate with its offset held as Unitful quantities, which should cost no more
+const PROJECTED_UNITFUL = Ref(
+    ProjectedCoords(C1[], Unitful.uconvert.(Unitful.u"μrad", PROJECTED[].offset .* Unitful.u"rad"))
+)
+REPRESENTATION["unproject_unitful"] = @benchmarkable convert(ICRSCoords, $PROJECTED_UNITFUL[]) evals = 1000
+# And built from DynamicQuantities offsets, which are converted to radians on construction,
+# so that is where they cost something
+const OFFSET_DQ = Ref(PROJECTED[].offset .* DynamicQuantities.u"rad")
+REPRESENTATION["construct_dynamicquantities"] =
+    @benchmarkable ProjectedCoords($C1[], $OFFSET_DQ[]) evals = 1000
+# Skipped while they are stored as quantities, which cannot be converted out of
+# TODO: Drop this `if` once #133 is on `main`. CI also runs this suite against `main`, which still stores them that way
+const PROJECTED_DQ = Ref(ProjectedCoords(C1[], OFFSET_DQ[]))
+if !(eltype(PROJECTED_DQ[].offset) <: DynamicQuantities.UnionAbstractQuantity)
+    REPRESENTATION["unproject_dynamicquantities"] =
+        @benchmarkable convert(ICRSCoords, $PROJECTED_DQ[]) evals = 1000
+end
 
 # Horizontal coordinates (SOFA extension). The first conversion against a frame
 # computes its star-independent astrometry context and caches it there, so the

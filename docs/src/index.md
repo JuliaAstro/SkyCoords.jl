@@ -144,20 +144,20 @@ Their angular separation is given by
 
 ```jldoctest sep
 julia> separation(mizar, alcor) # Radians
-0.003435309169452965
+0.0034353091694529665
 
 julia> rad2deg(separation(mizar, alcor)) * 60 # Arcminutes
-11.809723003934822
+11.809723003934828
 ```
 
 We can then find the position angle from Mizar to Alcor with [`position_angle`](@ref):
 
 ```jldoctest sep
 julia> position_angle(mizar, alcor) # radians
-1.2446024012417884
+1.244602401241787
 
 julia> position_angle(mizar, alcor) |> rad2deg # degrees
-71.31046476300233
+71.31046476300224
 ```
 
 ### Offsets between Coordinates
@@ -172,7 +172,7 @@ julia> c2 = ICRSCoords(deg2rad(2), deg2rad(2))
 ICRSCoords{Float64}(0.03490658503988659, 0.03490658503988659)
 
 julia> sep = separation(c1, c2)
-0.024678297290546682
+0.024678297290546686
 
 julia> pa = position_angle(c1, c2)
 0.785017383892913

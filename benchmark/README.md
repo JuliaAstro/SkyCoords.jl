@@ -63,7 +63,7 @@ Operations upstream does not cover:
 
 - `transform`: ICRS to FK5 (J2000 and J1975), supergalactic, ecliptic, and FK4, plus FK4 back to ICRS, as scalars and for two of them over 10⁵ coordinates.
 - `geometry`: `separation` (same frame, mixed frames, and over 10⁵ pairs), `position_angle`, and `offset`.
-- `representation`: `cartesian`, `SkyCoords.project`, and the conversion back out of a projected coordinate.
+- `representation`: `cartesian`, `SkyCoords.project`, and the conversion back out of a projected coordinate, with plain, Unitful, and DynamicQuantities offsets, plus construction from DynamicQuantities offsets.
 - `altaz`: ICRS to horizontal coordinates and back through the SOFA.jl extension, against a fresh frame, against a frame whose astrometry context is already cached, and over 10⁴ coordinates.
 
 ### Adding benchmarks
@@ -93,12 +93,30 @@ To compare the working tree, uncommitted changes included, against `main`, use t
 ```sh
 julia -e 'using Pkg; Pkg.add("AirspeedVelocity"); Pkg.build("AirspeedVelocity")'   # once
 mkdir -p benchmark/results
+benchpkg SkyCoords --rev=main,dirty --path=. --output-dir=benchmark/results/
+```
+
+Results land in `benchmark/results/`, which is gitignored. The suite and `benchmark/Project.toml` are taken from the last commit of the checked-out branch, so `dirty` covers uncommitted changes to the package but not to the suite itself. To try uncommitted changes to the suite, pass it explicitly. An explicit `--script` makes AirspeedVelocity skip `benchmark/Project.toml`, so its packages go in `--add`:
+
+```sh
 benchpkg SkyCoords --rev=main,dirty --path=. --script=benchmark/benchmarks.jl \
     --add=NearestNeighbors,Unitful,DynamicQuantities,SOFA,StableRNGs \
     --output-dir=benchmark/results/
 ```
 
-`--add` is needed here because an explicit `--script` makes AirspeedVelocity skip `benchmark/Project.toml`. Results land in `benchmark/results/`, which is gitignored.
+To follow the suite across several commits, list them in `--rev` and plot the results with `benchpkgplot`:
+
+```sh
+benchpkg SkyCoords --rev=3303eeb,main,dirty --path=. --output-dir=benchmark/results/
+benchpkgplot SkyCoords --rev=3303eeb,main,dirty \
+    --input-dir=benchmark/results/ --output-dir=benchmark/results/
+```
+
+This writes `benchmark/results/plot_SkyCoords_1.png` and so on, ten benchmarks to a file, each with the revisions along the x-axis in the order given. Three things to watch for:
+
+- Every revision is run against the same suite, so it has to provide everything the suite calls. Commits before `3303eeb` do not.
+- Only benchmarks that ran on the first revision listed are plotted.
+- An abbreviated hash that reads as a number, such as `8061e90`, is plotted as one. Use a longer abbreviation (`8061e905`).
 
 ## Comparison with astropy
 

@@ -49,6 +49,16 @@ end
     return atan(y, x), abs(z) < r ? asin(z / n) : copysign(acos(r / n), z)
 end
 
+# Unit vector at (lon, lat) and the East and North unit vectors there (set by lon at a pole)
+function _local_frame(lon, lat)
+    sinlon, coslon = sincos(lon)
+    sinlat, coslat = sincos(lat)
+    k̂ = SVector(coslat * coslon, coslat * sinlon, sinlat)
+    ê = SVector(-sinlon, coslon, 0)
+    n̂ = SVector(-sinlat * coslon, -sinlat * sinlon, coslat)
+    return k̂, ê, n̂
+end
+
 # -----------------------------------------------------------------------------
 # Constant rotation matrices and precession matrix function
 
@@ -369,15 +379,24 @@ frame_transform(::Type{T}, ::Type{<:ProjectedCoords{TC}}, v) where {T <: AltAzCo
 # ------------------------------------------------------------------------------
 # Distance between coordinates
 
-function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
-    Δλ = λ_2 - λ_1
-    sin_Δλ, cos_Δλ = sincos(Δλ)
+# Vincenty terms from (λ_1, ϕ_1) to (λ_2, ϕ_2): sin θ sin pa (East), sin θ cos pa (North), cos θ.
+# Free of cancellation for nearby points in three sincos: h = 1 - cos Δλ = 2 sin²(Δλ/2), and cos ϕ_2 from ϕ_1 and Δϕ.
+# Inlined, since as a call it costs about 15% of `separation`.
+@inline function _vincenty_terms(λ_1, ϕ_1, λ_2, ϕ_2)
+    sin_hΔλ, cos_hΔλ = sincos((λ_2 - λ_1) / 2)
     sin_ϕ1, cos_ϕ1 = sincos(ϕ_1)
-    sin_ϕ2, cos_ϕ2 = sincos(ϕ_2)
-    return atan(
-        hypot(cos_ϕ2 * sin_Δλ, cos_ϕ1 * sin_ϕ2 - sin_ϕ1 * cos_ϕ2 * cos_Δλ),
-        sin_ϕ1 * sin_ϕ2 + cos_ϕ1 * cos_ϕ2 * cos_Δλ,
-    )
+    sin_Δϕ, cos_Δϕ = sincos(ϕ_2 - ϕ_1)
+    cos_ϕ2 = cos_ϕ1 * cos_Δϕ - sin_ϕ1 * sin_Δϕ
+    h = 2 * sin_hΔλ^2
+    east = 2 * sin_hΔλ * cos_hΔλ * cos_ϕ2
+    north = sin_Δϕ + h * sin_ϕ1 * cos_ϕ2
+    cosθ = cos_Δϕ - h * cos_ϕ1 * cos_ϕ2
+    return east, north, cosθ
+end
+
+function _separation(λ_1, ϕ_1, λ_2, ϕ_2)
+    east, north, cosθ = _vincenty_terms(λ_1, ϕ_1, λ_2, ϕ_2)
+    return atan(hypot(east, north), cosθ)
 end
 
 """
@@ -431,14 +450,8 @@ end
 
 
 function _position_angle(λ1, ϕ1, λ2, ϕ2)
-    sin_Δλ, cos_Δλ = sincos(λ2 - λ1)
-    sin_ϕ1, cos_ϕ1 = sincos(ϕ1)
-    sin_ϕ2, cos_ϕ2 = sincos(ϕ2)
-
-    x = sin_ϕ2 * cos_ϕ1 - cos_ϕ2 * sin_ϕ1 * cos_Δλ
-    y = sin_Δλ * cos_ϕ2
-
-    return mod2pi(atan(y, x))
+    east, north, _ = _vincenty_terms(λ1, ϕ1, λ2, ϕ2)
+    return mod2pi(atan(east, north))
 end
 
 """
